@@ -1,0 +1,92 @@
+<div class="dashboard-container">
+
+  <!-- Period Selector -->
+  <div class="period-row">
+    <h2 class="period-title">Monthly Overview</h2>
+    <div class="period-controls">
+      <mat-form-field appearance="outline" class="period-field">
+        <mat-label>Month</mat-label>
+        <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
+          @for (m of months; track m.value) {
+            <mat-option [value]="m.value">{{ m.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="period-field">
+        <mat-label>Year</mat-label>
+        <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
+          @for (y of years; track y) {
+            <mat-option [value]="y">{{ y }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <mat-card class="summary-card total">
+      <mat-card-content>
+        <mat-icon class="card-icon">account_balance_wallet</mat-icon>
+        <div class="card-value">{{ (summary?.total ?? 0) | currency:'USD' }}</div>
+        <div class="card-label">Total Spent</div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card count">
+      <mat-card-content>
+        <mat-icon class="card-icon">receipt_long</mat-icon>
+        <div class="card-value">{{ summary?.count ?? 0 }}</div>
+        <div class="card-label">Transactions</div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card top">
+      <mat-card-content>
+        <mat-icon class="card-icon">trending_up</mat-icon>
+        <div class="card-value top-cat">{{ topCategory }}</div>
+        <div class="card-label">Top Category</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Category Breakdown -->
+  <mat-card class="breakdown-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>pie_chart</mat-icon>
+        Spending by Category
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (sortedCategories.length === 0) {
+        <div class="empty-state">
+          <mat-icon>bar_chart</mat-icon>
+          <p>No expenses for this period</p>
+          <small>Add some expenses to see your breakdown</small>
+        </div>
+      } @else {
+        <div class="category-list">
+          @for (entry of sortedCategories; track entry[0]) {
+            <div class="category-row">
+              <div class="cat-info">
+                <span class="cat-dot" [style.background]="getCategoryColor(entry[0])"></span>
+                <mat-icon class="cat-icon" [style.color]="getCategoryColor(entry[0])">
+                  {{ getCategoryIcon(entry[0]) }}
+                </mat-icon>
+                <span class="cat-label">{{ getCategoryLabel(entry[0]) }}</span>
+                <span class="cat-pct">{{ getCategoryPercentage(entry[1]) }}%</span>
+                <span class="cat-amount">{{ entry[1] | currency:'USD' }}</span>
+              </div>
+              <mat-progress-bar
+                mode="determinate"
+                [value]="getCategoryPercentage(entry[1])"
+                [style.--mdc-linear-progress-active-indicator-color]="getCategoryColor(entry[0])">
+              </mat-progress-bar>
+            </div>
+          }
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

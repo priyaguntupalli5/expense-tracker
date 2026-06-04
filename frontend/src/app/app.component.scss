@@ -1,0 +1,60 @@
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.brand-icon {
+  margin-right: 8px;
+  font-size: 1.4rem;
+}
+
+.brand-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+a[mat-button] {
+  margin: 0 2px;
+  opacity: 0.85;
+  border-radius: 6px;
+  transition: opacity 0.2s, background 0.2s;
+
+  mat-icon {
+    margin-right: 4px;
+  }
+
+  &:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  &.nav-active {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.add-btn {
+  background: white !important;
+  color: #1976d2 !important;
+  margin-left: 10px;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .brand-name,
+  .nav-label,
+  .add-label {
+    display: none;
+  }
+  .brand-icon {
+    margin-right: 0;
+  }
+}

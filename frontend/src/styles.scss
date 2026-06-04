@@ -1,0 +1,15 @@
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+body {
+  background-color: #f4f6f9;
+}
+
+* {
+  box-sizing: border-box;
+}

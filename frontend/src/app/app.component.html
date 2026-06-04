@@ -1,0 +1,19 @@
+<mat-toolbar color="primary" class="app-toolbar">
+  <mat-icon class="brand-icon">account_balance_wallet</mat-icon>
+  <span class="brand-name">Expense Tracker</span>
+  <span class="spacer"></span>
+  <a mat-button routerLink="/dashboard" routerLinkActive="nav-active">
+    <mat-icon>dashboard</mat-icon>
+    <span class="nav-label">Dashboard</span>
+  </a>
+  <a mat-button routerLink="/expenses" routerLinkActive="nav-active">
+    <mat-icon>receipt_long</mat-icon>
+    <span class="nav-label">Expenses</span>
+  </a>
+  <button mat-flat-button class="add-btn" (click)="openAddExpense()">
+    <mat-icon>add</mat-icon>
+    <span class="add-label">Add</span>
+  </button>
+</mat-toolbar>
+
+<router-outlet></router-outlet>
