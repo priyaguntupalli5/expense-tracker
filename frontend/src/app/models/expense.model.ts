@@ -7,6 +7,19 @@ export interface Expense {
   notes?: string;
 }
 
+export interface FixedExpense {
+  id?: number;
+  title: string;
+  amount: number;
+  category: string;
+  notes?: string;
+}
+
+export interface MonthlySalary {
+  priyaSalary: number;
+  vamsiSalary: number;
+}
+
 export interface Summary {
   total: number;
   count: number;

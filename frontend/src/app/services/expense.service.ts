@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { Expense, Summary } from '../models/expense.model';
+import { Expense, FixedExpense, MonthlySalary, Summary } from '../models/expense.model';
 
 @Injectable({ providedIn: 'root' })
 export class ExpenseService {
   private readonly storageKey = 'expense-tracker-expenses';
+  private readonly fixedKey   = 'expense-tracker-fixed';
   private readonly refreshSubject = new Subject<void>();
   readonly onRefresh$ = this.refreshSubject.asObservable();
 
   private readonly periodSubject = new BehaviorSubject<{ month: number; year: number }>({
     month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(),
+    year:  new Date().getFullYear(),
   });
   readonly period$ = this.periodSubject.asObservable();
 
@@ -26,12 +27,13 @@ export class ExpenseService {
     this.refreshSubject.next();
   }
 
+  // ── Actual Expenses ────────────────────────────────────────────────────────
+
   getAll(month?: number, year?: number): Observable<Expense[]> {
-    const expenses = this.readExpenses();
-    const filtered = expenses.filter(expense => {
+    const filtered = this.readExpenses().filter(e => {
       if (month !== undefined && year !== undefined) {
-        const date = new Date(expense.date);
-        return date.getMonth() + 1 === month && date.getFullYear() === year;
+        const d = new Date(e.date);
+        return d.getMonth() + 1 === month && d.getFullYear() === year;
       }
       return true;
     });
@@ -39,71 +41,101 @@ export class ExpenseService {
   }
 
   getSummary(month?: number, year?: number): Observable<Summary> {
-    const expenses = this.readExpenses().filter(expense => {
+    const expenses = this.readExpenses().filter(e => {
       if (month !== undefined && year !== undefined) {
-        const date = new Date(expense.date);
-        return date.getMonth() + 1 === month && date.getFullYear() === year;
+        const d = new Date(e.date);
+        return d.getMonth() + 1 === month && d.getFullYear() === year;
       }
       return true;
     });
 
     const breakdown: Record<string, number> = {};
     let total = 0;
-
-    expenses.forEach(expense => {
-      const value = Number(expense.amount) || 0;
-      total += value;
-      breakdown[expense.category] = (breakdown[expense.category] || 0) + value;
+    expenses.forEach(e => {
+      const v = Number(e.amount) || 0;
+      total += v;
+      breakdown[e.category] = (breakdown[e.category] || 0) + v;
     });
 
-    return of({
-      total,
-      count: expenses.length,
-      categoryBreakdown: breakdown,
-    });
+    return of({ total, count: expenses.length, categoryBreakdown: breakdown });
   }
 
   create(expense: Expense): Observable<Expense> {
     const expenses = this.readExpenses();
-    const nextId = this.getNextId(expenses);
-    const newExpense: Expense = { ...expense, id: nextId };
+    const newExpense = { ...expense, id: this.nextId(expenses) };
     this.saveExpenses([...expenses, newExpense]);
     return of(newExpense);
   }
 
   update(id: number, expense: Expense): Observable<Expense> {
     const expenses = this.readExpenses();
-    const index = expenses.findIndex(item => item.id === id);
-    if (index < 0) {
-      return of(expense);
+    const index = expenses.findIndex(e => e.id === id);
+    if (index >= 0) {
+      expenses[index] = { ...expense, id };
+      this.saveExpenses(expenses);
+      return of(expenses[index]);
     }
-    expenses[index] = { ...expense, id };
-    this.saveExpenses(expenses);
-    return of(expenses[index]);
+    return of(expense);
   }
 
   delete(id: number): Observable<void> {
-    const expenses = this.readExpenses().filter(item => item.id !== id);
-    this.saveExpenses(expenses);
+    this.saveExpenses(this.readExpenses().filter(e => e.id !== id));
     return of(void 0);
   }
 
-  importCsv(csvText: string): Observable<Expense[]> {
-    const imported = this.parseCsv(csvText);
-    if (!imported.length) {
-      return of([]);
+  // ── Fixed Expenses ─────────────────────────────────────────────────────────
+
+  getFixedExpenses(): FixedExpense[] {
+    try {
+      const stored = localStorage.getItem(this.fixedKey);
+      return stored ? (JSON.parse(stored) as FixedExpense[]) : [];
+    } catch {
+      return [];
     }
-    const expenses = this.readExpenses();
-    const startId = this.getNextId(expenses);
-    const newExpenses = imported.map((expense, index) => ({ ...expense, id: startId + index }));
-    this.saveExpenses([...expenses, ...newExpenses]);
-    return of(newExpenses);
   }
+
+  createFixedExpense(expense: FixedExpense): FixedExpense {
+    const expenses = this.getFixedExpenses();
+    const newExpense = { ...expense, id: this.nextId(expenses) };
+    localStorage.setItem(this.fixedKey, JSON.stringify([...expenses, newExpense]));
+    return newExpense;
+  }
+
+  updateFixedExpense(id: number, expense: FixedExpense): void {
+    const expenses = this.getFixedExpenses();
+    const index = expenses.findIndex(e => e.id === id);
+    if (index >= 0) {
+      expenses[index] = { ...expense, id };
+      localStorage.setItem(this.fixedKey, JSON.stringify(expenses));
+    }
+  }
+
+  deleteFixedExpense(id: number): void {
+    const expenses = this.getFixedExpenses().filter(e => e.id !== id);
+    localStorage.setItem(this.fixedKey, JSON.stringify(expenses));
+  }
+
+  // ── Monthly Salary ─────────────────────────────────────────────────────────
+
+  getSalary(month: number, year: number): MonthlySalary {
+    try {
+      const stored = localStorage.getItem(`salary-${year}-${month}`);
+      return stored ? (JSON.parse(stored) as MonthlySalary) : { priyaSalary: 0, vamsiSalary: 0 };
+    } catch {
+      return { priyaSalary: 0, vamsiSalary: 0 };
+    }
+  }
+
+  setSalary(month: number, year: number, salary: MonthlySalary): void {
+    localStorage.setItem(`salary-${year}-${month}`, JSON.stringify(salary));
+  }
+
+  // ── Private ────────────────────────────────────────────────────────────────
 
   private readExpenses(): Expense[] {
     try {
       const stored = localStorage.getItem(this.storageKey);
-      return stored ? JSON.parse(stored) as Expense[] : [];
+      return stored ? (JSON.parse(stored) as Expense[]) : [];
     } catch {
       return [];
     }
@@ -113,118 +145,7 @@ export class ExpenseService {
     localStorage.setItem(this.storageKey, JSON.stringify(expenses));
   }
 
-  private getNextId(expenses: Expense[]) {
-    return expenses.length ? Math.max(...expenses.map(item => item.id ?? 0)) + 1 : 1;
-  }
-
-  private parseCsv(csvText: string): Expense[] {
-    const lines = csvText
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    if (lines.length < 2) {
-      return [];
-    }
-
-    const headers = this.parseCsvLine(lines[0]);
-    const rows = lines.slice(1).map(line => this.parseCsvLine(line));
-
-    const mappedRows = rows
-      .map(values => this.buildExpenseFromRow(headers, values))
-      .filter((expense): expense is Expense => expense !== null);
-
-    return mappedRows;
-  }
-
-  private parseCsvLine(line: string): string[] {
-    const values: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-        continue;
-      }
-      if (char === ',' && !inQuotes) {
-        values.push(current.trim());
-        current = '';
-        continue;
-      }
-      current += char;
-    }
-    values.push(current.trim());
-    return values;
-  }
-
-  private buildExpenseFromRow(headers: string[], values: string[]): Expense | null {
-    const row: Record<string, string> = {};
-    headers.forEach((header, index) => {
-      row[header.toLowerCase()] = values[index] ?? '';
-    });
-
-    const title = this.firstValue(row, ['description', 'merchant', 'transaction', 'details', 'title', 'name']);
-    const rawAmount = this.firstValue(row, ['amount', 'transaction amount', 'debit', 'credit', 'value']);
-    const rawDate = this.firstValue(row, ['date', 'transaction date', 'posted date', 'post date']);
-    const rawCategory = this.firstValue(row, ['category', 'tag', 'type']);
-    const notes = this.firstValue(row, ['notes', 'memo']);
-
-    const amount = this.parseAmount(rawAmount);
-    const date = this.parseDate(rawDate);
-    const category = rawCategory && rawCategory.length > 0 ? rawCategory.toUpperCase() : 'OTHER';
-
-    if (!title || amount === null || !date) {
-      return null;
-    }
-
-    return {
-      title,
-      amount,
-      date,
-      category,
-      notes: notes || undefined,
-    };
-  }
-
-  private firstValue(row: Record<string, string>, keys: string[]): string {
-    for (const key of keys) {
-      if (row[key]) {
-        return row[key];
-      }
-    }
-    return '';
-  }
-
-  private parseAmount(value: string): number | null {
-    if (!value) return null;
-    const normalized = value
-      .replace(/\(/g, '-')
-      .replace(/\)/g, '')
-      .replace(/[^0-9.-]/g, '');
-    const amount = Number(normalized);
-    return Number.isFinite(amount) ? Math.abs(amount) : null;
-  }
-
-  private parseDate(value: string): string | null {
-    if (!value) return null;
-    const trimmed = value.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-      return trimmed;
-    }
-    const parts = trimmed.split(/[\/\-\.]/).map(part => part.trim());
-    if (parts.length === 3) {
-      const [a, b, c] = parts;
-      if (a.length === 4) {
-        return `${a}-${b.padStart(2, '0')}-${c.padStart(2, '0')}`;
-      }
-      return `${c.padStart(4, '0')}-${a.padStart(2, '0')}-${b.padStart(2, '0')}`;
-    }
-    const date = new Date(trimmed);
-    if (Number.isNaN(date.getTime())) {
-      return null;
-    }
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  private nextId(items: { id?: number }[]): number {
+    return items.length ? Math.max(...items.map(e => e.id ?? 0)) + 1 : 1;
   }
 }
