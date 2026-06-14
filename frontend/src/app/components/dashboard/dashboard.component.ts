@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
-import { Summary, CATEGORIES, CATEGORY_COLORS } from '../../models/expense.model';
+import { Summary } from '../../models/expense.model';
 
 interface PieSlice {
   path: string;
@@ -56,6 +56,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   ngOnInit() {
+    this.expenseService.loadCategories().subscribe();
     this.expenseService.onRefresh$.pipe(takeUntil(this.destroy$)).subscribe(() => this.loadData());
     this.loadData();
   }
@@ -105,7 +106,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (sorted.length === 1) {
       this.pieSlices = [{
         path: `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`,
-        color: CATEGORY_COLORS[sorted[0][0]] ?? '#607d8b',
+        color: this.expenseService.getCategoryByValue(sorted[0][0])?.color ?? '#607d8b',
         category: sorted[0][0],
         amount: sorted[0][1],
         percentage: 100,
@@ -126,7 +127,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       slices.push({
         path: `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`,
-        color: CATEGORY_COLORS[category] ?? '#607d8b',
+        color: this.expenseService.getCategoryByValue(category)?.color ?? '#607d8b',
         category,
         amount,
         percentage: Math.round((amount / total) * 100),
@@ -158,10 +159,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getCategoryLabel(value: string) {
-    return CATEGORIES.find(c => c.value === value)?.label ?? value;
+    return this.expenseService.getCategoryByValue(value)?.label ?? value;
   }
 
   getCategoryIcon(value: string) {
-    return CATEGORIES.find(c => c.value === value)?.icon ?? 'more_horiz';
+    return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
   }
 }

@@ -8,7 +8,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseService } from '../../services/expense.service';
-import { FixedExpense, CATEGORIES, CATEGORY_COLORS } from '../../models/expense.model';
+import { FixedExpense } from '../../models/expense.model';
 import { FixedExpenseFormComponent } from '../fixed-expense-form/fixed-expense-form.component';
 
 @Component({
@@ -30,6 +30,7 @@ export class FixedExpensesComponent implements OnInit {
   displayedColumns = ['title', 'category', 'amount', 'actions'];
 
   ngOnInit() {
+    this.expenseService.loadCategories().subscribe();
     this.load();
   }
 
@@ -74,14 +75,14 @@ export class FixedExpensesComponent implements OnInit {
   }
 
   getCategoryLabel(value: string) {
-    return CATEGORIES.find(c => c.value === value)?.label ?? value;
+    return this.expenseService.getCategoryByValue(value)?.label ?? value;
   }
 
   getCategoryIcon(value: string) {
-    return CATEGORIES.find(c => c.value === value)?.icon ?? 'more_horiz';
+    return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
   }
 
   getCategoryColor(value: string) {
-    return CATEGORY_COLORS[value] ?? '#607d8b';
+    return this.expenseService.getCategoryByValue(value)?.color ?? '#607d8b';
   }
 }

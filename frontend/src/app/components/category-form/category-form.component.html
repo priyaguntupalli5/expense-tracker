@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>{{ isEditing ? 'Edit Category' : 'New Category' }}</h2>
+
+<mat-dialog-content [formGroup]="form" class="form-content">
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Name</mat-label>
+    <input matInput formControlName="label" placeholder="e.g. Groceries" />
+    @if (form.get('label')?.hasError('required')) {
+      <mat-error>Name is required</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Icon</mat-label>
+    <mat-select formControlName="icon">
+      @for (opt of icons; track opt.value) {
+        <mat-option [value]="opt.value">
+          <mat-icon class="opt-icon">{{ opt.value }}</mat-icon>
+          {{ opt.label }}
+        </mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <div class="color-row">
+    <label class="color-label">Colour</label>
+    <input type="color" formControlName="color" class="color-input" />
+    <span class="color-preview"
+      [style.background]="form.get('color')?.value + '22'"
+      [style.color]="form.get('color')?.value"
+      [style.border-color]="form.get('color')?.value + '60'">
+      <mat-icon style="font-size:1rem;width:1rem;height:1rem">
+        {{ form.get('icon')?.value }}
+      </mat-icon>
+      {{ form.get('label')?.value || 'Preview' }}
+    </span>
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()" [disabled]="saving">Cancel</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="saving || form.invalid">
+    @if (saving) {
+      <mat-spinner diameter="18" style="display:inline-block"></mat-spinner>
+    } @else {
+      {{ isEditing ? 'Update' : 'Add' }}
+    }
+  </button>
+</mat-dialog-actions>

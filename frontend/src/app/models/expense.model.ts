@@ -20,6 +20,14 @@ export interface MonthlySalary {
   vamsiSalary: number;
 }
 
+export interface Category {
+  id?: number;
+  value: string;
+  label: string;
+  icon: string;
+  color: string;
+}
+
 export interface Summary {
   total: number;
   count: number;

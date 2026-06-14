@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, Subject, catchError, of } from 'rxjs';
-import { Expense, FixedExpense, MonthlySalary, Summary } from '../models/expense.model';
+import { BehaviorSubject, Observable, Subject, catchError, of, tap } from 'rxjs';
+import { Category, Expense, FixedExpense, MonthlySalary, Summary } from '../models/expense.model';
 
 const API = 'http://localhost:8080/api';
 
@@ -10,6 +10,11 @@ export class ExpenseService {
   private readonly http = inject(HttpClient);
   private readonly refreshSubject = new Subject<void>();
   readonly onRefresh$ = this.refreshSubject.asObservable();
+
+  private readonly categoriesSubject = new BehaviorSubject<Category[]>([]);
+  readonly categories$ = this.categoriesSubject.asObservable();
+
+  get categories(): Category[] { return this.categoriesSubject.value; }
 
   private readonly periodSubject = new BehaviorSubject<{ month: number; year: number }>({
     month: new Date().getMonth() + 1,
@@ -33,14 +38,16 @@ export class ExpenseService {
     const params: Record<string, string> = {};
     if (month !== undefined) params['month'] = String(month);
     if (year  !== undefined) params['year']  = String(year);
-    return this.http.get<Expense[]>(`${API}/expenses`, { params });
+    return this.http.get<Expense[]>(`${API}/expenses`, { params })
+      .pipe(catchError(() => of<Expense[]>([])));
   }
 
   getSummary(month?: number, year?: number): Observable<Summary> {
     const params: Record<string, string> = {};
     if (month !== undefined) params['month'] = String(month);
     if (year  !== undefined) params['year']  = String(year);
-    return this.http.get<Summary>(`${API}/expenses/summary`, { params });
+    return this.http.get<Summary>(`${API}/expenses/summary`, { params })
+      .pipe(catchError(() => of<Summary>({ total: 0, count: 0, categoryBreakdown: {} })));
   }
 
   create(expense: Expense): Observable<Expense> {
@@ -58,7 +65,8 @@ export class ExpenseService {
   // ── Fixed Expenses ─────────────────────────────────────────────────────────
 
   getFixedExpenses(): Observable<FixedExpense[]> {
-    return this.http.get<FixedExpense[]>(`${API}/fixed-expenses`);
+    return this.http.get<FixedExpense[]>(`${API}/fixed-expenses`)
+      .pipe(catchError(() => of<FixedExpense[]>([])));
   }
 
   createFixedExpense(expense: FixedExpense): Observable<FixedExpense> {
@@ -88,5 +96,36 @@ export class ExpenseService {
       priyaSalary: salary.priyaSalary,
       vamsiSalary: salary.vamsiSalary,
     });
+  }
+
+  // ── Categories ─────────────────────────────────────────────────────────────
+
+  loadCategories(): Observable<Category[]> {
+    return this.http.get<Category[]>(`${API}/categories`).pipe(
+      tap(cats => this.categoriesSubject.next(cats)),
+      catchError(() => of<Category[]>([])),
+    );
+  }
+
+  createCategory(category: Omit<Category, 'id' | 'value'>): Observable<Category> {
+    return this.http.post<Category>(`${API}/categories`, category).pipe(
+      tap(() => this.loadCategories().subscribe()),
+    );
+  }
+
+  updateCategory(id: number, category: Omit<Category, 'id' | 'value'>): Observable<Category> {
+    return this.http.put<Category>(`${API}/categories/${id}`, category).pipe(
+      tap(() => this.loadCategories().subscribe()),
+    );
+  }
+
+  deleteCategory(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/categories/${id}`).pipe(
+      tap(() => this.loadCategories().subscribe()),
+    );
+  }
+
+  getCategoryByValue(value: string): Category | undefined {
+    return this.categoriesSubject.value.find(c => c.value === value);
   }
 }

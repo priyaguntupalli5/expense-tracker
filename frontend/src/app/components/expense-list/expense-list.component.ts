@@ -9,7 +9,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
-import { Expense, CATEGORIES, CATEGORY_COLORS } from '../../models/expense.model';
+import { Expense } from '../../models/expense.model';
 import { ExpenseFormComponent } from '../expense-form/expense-form.component';
 
 @Component({
@@ -32,6 +32,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   displayedColumns = ['date', 'title', 'category', 'amount', 'actions'];
 
   ngOnInit() {
+    this.expenseService.loadCategories().subscribe();
     this.expenseService.period$.pipe(takeUntil(this.destroy$)).subscribe(({ month, year }) => {
       this.load(month, year);
     });
@@ -75,14 +76,14 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   }
 
   getCategoryLabel(value: string) {
-    return CATEGORIES.find(c => c.value === value)?.label ?? value;
+    return this.expenseService.getCategoryByValue(value)?.label ?? value;
   }
 
   getCategoryIcon(value: string) {
-    return CATEGORIES.find(c => c.value === value)?.icon ?? 'more_horiz';
+    return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
   }
 
   getCategoryColor(value: string) {
-    return CATEGORY_COLORS[value] ?? '#607d8b';
+    return this.expenseService.getCategoryByValue(value)?.color ?? '#607d8b';
   }
 }

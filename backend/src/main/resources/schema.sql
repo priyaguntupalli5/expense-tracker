@@ -1,3 +1,13 @@
+CREATE TABLE IF NOT EXISTS categories (
+    id    BIGINT NOT NULL AUTO_INCREMENT,
+    value VARCHAR(50)  NOT NULL,
+    label VARCHAR(100) NOT NULL,
+    icon  VARCHAR(100) NOT NULL,
+    color VARCHAR(10)  NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_value (value)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 CREATE TABLE IF NOT EXISTS expenses (
     id       BIGINT NOT NULL AUTO_INCREMENT,
     title    VARCHAR(100) NOT NULL,
