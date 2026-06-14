@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseService } from '../../services/expense.service';
-import { Expense, CATEGORIES } from '../../models/expense.model';
+import { Category, Expense } from '../../models/expense.model';
 
 @Component({
   selector: 'app-expense-form',
@@ -31,7 +31,7 @@ export class ExpenseFormComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   readonly data: Expense | null = inject(MAT_DIALOG_DATA, { optional: true });
 
-  readonly categories = CATEGORIES;
+  categories: Category[] = [];
   isEditing = false;
   saving = false;
 
@@ -44,6 +44,12 @@ export class ExpenseFormComponent implements OnInit {
   });
 
   ngOnInit() {
+    this.expenseService.loadCategories().subscribe(cats => {
+      this.categories = cats;
+      if (!this.isEditing && cats.length > 0) {
+        this.form.patchValue({ category: cats[0].value });
+      }
+    });
     if (this.data) {
       this.isEditing = true;
       this.form.patchValue({

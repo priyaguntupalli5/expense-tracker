@@ -3,6 +3,20 @@ param([string]$MavenVersion = "3.9.9")
 
 $ErrorActionPreference = "Stop"
 
+# Load credentials from .env (never committed to git)
+$EnvFile = Join-Path $PSScriptRoot ".env"
+if (Test-Path $EnvFile) {
+    Get-Content $EnvFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]+?)\s*=\s*(.*)\s*$') {
+            [System.Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), 'Process')
+        }
+    }
+    Write-Host "Loaded credentials from .env" -ForegroundColor Green
+} else {
+    Write-Host "WARNING: .env file not found at $EnvFile" -ForegroundColor Yellow
+    Write-Host "Create backend\.env with DB_USERNAME and DB_PASSWORD." -ForegroundColor Yellow
+}
+
 # Validate JAVA_HOME is set and javac exists
 if (-not $env:JAVA_HOME -or -not (Test-Path "$env:JAVA_HOME\bin\javac.exe")) {
     Write-Host "ERROR: JAVA_HOME is not properly set or javac not found." -ForegroundColor Red

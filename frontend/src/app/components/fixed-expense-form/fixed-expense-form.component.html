@@ -1,0 +1,63 @@
+<div class="dialog-titlebar">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ isEditing ? 'edit' : 'add_circle' }}</mat-icon>
+    {{ isEditing ? 'Edit Fixed Expense' : 'Add Fixed Expense' }}
+  </h2>
+  <button mat-icon-button (click)="cancel()" matTooltip="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="expense-form">
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Title</mat-label>
+      <input matInput formControlName="title" placeholder="e.g. Rent, EMI, Electricity, Gym">
+      <mat-icon matSuffix>label</mat-icon>
+      @if (form.get('title')?.hasError('required')) {
+        <mat-error>Title is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Monthly Amount</mat-label>
+      <span matPrefix>$&nbsp;</span>
+      <input matInput type="number" formControlName="amount" placeholder="0" min="0.01">
+      @if (form.get('amount')?.hasError('required')) {
+        <mat-error>Amount is required</mat-error>
+      }
+      @if (form.get('amount')?.hasError('min')) {
+        <mat-error>Must be greater than 0</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Category</mat-label>
+      <mat-select formControlName="category">
+        @for (cat of categories; track cat.value) {
+          <mat-option [value]="cat.value">
+            <mat-icon>{{ cat.icon }}</mat-icon>
+            {{ cat.label }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Notes (optional)</mat-label>
+      <textarea matInput formControlName="notes" rows="2" placeholder="Any details..."></textarea>
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || saving">
+    @if (saving) {
+      <mat-spinner diameter="20" style="display:inline-block; margin-right:8px;"></mat-spinner>
+    }
+    {{ saving ? 'Saving...' : (isEditing ? 'Update' : 'Add Fixed Expense') }}
+  </button>
+</mat-dialog-actions>

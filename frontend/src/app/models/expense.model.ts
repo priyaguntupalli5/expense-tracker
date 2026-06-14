@@ -7,6 +7,27 @@ export interface Expense {
   notes?: string;
 }
 
+export interface FixedExpense {
+  id?: number;
+  title: string;
+  amount: number;
+  category: string;
+  notes?: string;
+}
+
+export interface MonthlySalary {
+  priyaSalary: number;
+  vamsiSalary: number;
+}
+
+export interface Category {
+  id?: number;
+  value: string;
+  label: string;
+  icon: string;
+  color: string;
+}
+
 export interface Summary {
   total: number;
   count: number;
