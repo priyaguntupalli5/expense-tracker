@@ -36,3 +36,12 @@ CREATE TABLE IF NOT EXISTS monthly_salaries (
     PRIMARY KEY (id),
     UNIQUE KEY uk_month_year (month, year)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id       BIGINT       NOT NULL AUTO_INCREMENT,
+    endpoint VARCHAR(2000) NOT NULL,
+    p256dh   VARCHAR(500) NOT NULL,
+    auth     VARCHAR(200) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_endpoint (endpoint(500))
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

@@ -1,5 +1,15 @@
 <div class="dashboard-container">
 
+  <!-- Notification toggle (only visible when installed as PWA / production build) -->
+  @if (pushService.swAvailable) {
+    <button class="notif-btn"
+            [class.notif-on]="pushService.enabled()"
+            (click)="toggleNotifications()">
+      <mat-icon>{{ pushService.enabled() ? 'notifications_active' : 'notifications_none' }}</mat-icon>
+      {{ pushService.enabled() ? 'Notifications on' : 'Enable daily reminders' }}
+    </button>
+  }
+
   <!-- Period Selector -->
   <div class="period-row">
     <h2 class="period-title">Monthly Overview</h2>
