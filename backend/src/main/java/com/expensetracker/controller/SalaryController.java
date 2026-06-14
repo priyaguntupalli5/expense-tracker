@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/salaries")
-@CrossOrigin(origins = "http://localhost:4200")
 public class SalaryController {
 
     private final MonthlySalaryRepository repository;

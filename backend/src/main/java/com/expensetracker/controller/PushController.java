@@ -8,7 +8,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/push")
-@CrossOrigin(origins = "http://localhost:4200")
 public class PushController {
 
     private final PushNotificationService pushService;

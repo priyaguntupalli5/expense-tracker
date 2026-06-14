@@ -2,8 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, catchError, of, tap } from 'rxjs';
 import { Category, Expense, FixedExpense, MonthlySalary, Summary } from '../models/expense.model';
+import { environment } from '../../environments/environment';
 
-const API = 'http://localhost:8080/api';
+const API = environment.apiUrl;
 
 @Injectable({ providedIn: 'root' })
 export class ExpenseService {

@@ -2,8 +2,9 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { SwPush } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
 
-const API = 'http://localhost:8080/api';
+const API = environment.apiUrl;
 
 @Injectable({ providedIn: 'root' })
 export class PushNotificationService {
