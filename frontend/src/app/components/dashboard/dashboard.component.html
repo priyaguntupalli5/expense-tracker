@@ -35,7 +35,7 @@
           </div>
           <mat-form-field appearance="outline" class="salary-field">
             <mat-label>Salary</mat-label>
-            <span matPrefix>₹&nbsp;</span>
+            <span matPrefix>$&nbsp;</span>
             <input matInput type="number" formControlName="priyaSalary" min="0"
                    (blur)="saveSalary()" placeholder="0">
           </mat-form-field>
@@ -50,7 +50,7 @@
           </div>
           <mat-form-field appearance="outline" class="salary-field">
             <mat-label>Salary</mat-label>
-            <span matPrefix>₹&nbsp;</span>
+            <span matPrefix>$&nbsp;</span>
             <input matInput type="number" formControlName="vamsiSalary" min="0"
                    (blur)="saveSalary()" placeholder="0">
           </mat-form-field>
@@ -64,7 +64,7 @@
     <mat-card class="summary-card income-card">
       <mat-card-content>
         <mat-icon class="card-icon">account_balance</mat-icon>
-        <div class="card-value">{{ totalIncome | currency:'INR':'symbol':'1.0-0' }}</div>
+        <div class="card-value">{{ totalIncome | currency:'CAD':'symbol-narrow':'1.0-2' }}</div>
         <div class="card-label">Total Income</div>
       </mat-card-content>
     </mat-card>
@@ -72,7 +72,7 @@
     <mat-card class="summary-card fixed-card">
       <mat-card-content>
         <mat-icon class="card-icon">repeat</mat-icon>
-        <div class="card-value">{{ fixedTotal | currency:'INR':'symbol':'1.0-0' }}</div>
+        <div class="card-value">{{ fixedTotal | currency:'CAD':'symbol-narrow':'1.0-2' }}</div>
         <div class="card-label">Fixed Expenses</div>
       </mat-card-content>
     </mat-card>
@@ -80,7 +80,7 @@
     <mat-card class="summary-card actual-card">
       <mat-card-content>
         <mat-icon class="card-icon">receipt_long</mat-icon>
-        <div class="card-value">{{ actualTotal | currency:'INR':'symbol':'1.0-0' }}</div>
+        <div class="card-value">{{ actualTotal | currency:'CAD':'symbol-narrow':'1.0-2' }}</div>
         <div class="card-label">Actual Expenses</div>
       </mat-card-content>
     </mat-card>
@@ -88,7 +88,7 @@
     <mat-card class="summary-card savings-card" [ngClass]="savings >= 0 ? 'positive' : 'negative'">
       <mat-card-content>
         <mat-icon class="card-icon">{{ savings >= 0 ? 'savings' : 'trending_down' }}</mat-icon>
-        <div class="card-value">{{ savings | currency:'INR':'symbol':'1.0-0' }}</div>
+        <div class="card-value">{{ savings | currency:'CAD':'symbol-narrow':'1.0-2' }}</div>
         <div class="card-label">{{ savings >= 0 ? 'Estimated Savings' : 'Over Budget' }}</div>
       </mat-card-content>
     </mat-card>
@@ -129,7 +129,7 @@
                 <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
                 <span class="legend-label">{{ getCategoryLabel(slice.category) }}</span>
                 <span class="legend-pct">{{ slice.percentage }}%</span>
-                <span class="legend-amt">{{ slice.amount | currency:'INR':'symbol':'1.0-0' }}</span>
+                <span class="legend-amt">{{ slice.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}</span>
               </div>
             }
           </div>

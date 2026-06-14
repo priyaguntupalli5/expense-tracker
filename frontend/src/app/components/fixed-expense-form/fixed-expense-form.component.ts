@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseService } from '../../services/expense.service';
 import { FixedExpense, CATEGORIES } from '../../models/expense.model';
@@ -15,7 +16,7 @@ import { FixedExpense, CATEGORIES } from '../../models/expense.model';
   imports: [
     ReactiveFormsModule,
     MatDialogModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatButtonModule, MatIconModule,
+    MatSelectModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule,
   ],
   templateUrl: './fixed-expense-form.component.html',
   styleUrl: './fixed-expense-form.component.scss',
@@ -29,6 +30,7 @@ export class FixedExpenseFormComponent implements OnInit {
 
   readonly categories = CATEGORIES;
   isEditing = false;
+  saving    = false;
 
   form = this.fb.group({
     title:    ['', [Validators.required, Validators.maxLength(100)]],
@@ -46,6 +48,7 @@ export class FixedExpenseFormComponent implements OnInit {
 
   save() {
     if (this.form.invalid) return;
+    this.saving = true;
     const v = this.form.value;
     const expense: FixedExpense = {
       title:    v.title!,
@@ -54,18 +57,24 @@ export class FixedExpenseFormComponent implements OnInit {
       notes:    v.notes || undefined,
     };
 
-    if (this.isEditing) {
-      this.expenseService.updateFixedExpense(this.data!.id!, expense);
-    } else {
-      this.expenseService.createFixedExpense(expense);
-    }
+    const op = this.isEditing
+      ? this.expenseService.updateFixedExpense(this.data!.id!, expense)
+      : this.expenseService.createFixedExpense(expense);
 
-    this.snackBar.open(
-      this.isEditing ? 'Fixed expense updated!' : 'Fixed expense added!',
-      'OK',
-      { duration: 3000 },
-    );
-    this.dialogRef.close(true);
+    op.subscribe({
+      next: () => {
+        this.snackBar.open(
+          this.isEditing ? 'Fixed expense updated!' : 'Fixed expense added!',
+          'OK',
+          { duration: 3000 },
+        );
+        this.dialogRef.close(true);
+      },
+      error: () => {
+        this.snackBar.open('Failed to save. Is the backend running?', 'OK', { duration: 4000 });
+        this.saving = false;
+      },
+    });
   }
 
   cancel() {

@@ -22,7 +22,7 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Monthly Amount</mat-label>
-      <span matPrefix>₹&nbsp;</span>
+      <span matPrefix>$&nbsp;</span>
       <input matInput type="number" formControlName="amount" placeholder="0" min="0.01">
       @if (form.get('amount')?.hasError('required')) {
         <mat-error>Amount is required</mat-error>
@@ -54,7 +54,10 @@
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="cancel()">Cancel</button>
-  <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid">
-    {{ isEditing ? 'Update' : 'Add Fixed Expense' }}
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || saving">
+    @if (saving) {
+      <mat-spinner diameter="20" style="display:inline-block; margin-right:8px;"></mat-spinner>
+    }
+    {{ saving ? 'Saving...' : (isEditing ? 'Update' : 'Add Fixed Expense') }}
   </button>
 </mat-dialog-actions>

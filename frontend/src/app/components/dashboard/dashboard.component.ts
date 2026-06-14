@@ -6,7 +6,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { Summary, CATEGORIES, CATEGORY_COLORS } from '../../models/expense.model';
 
@@ -75,25 +75,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.expenseService.setSalary(this.selectedMonth, this.selectedYear, {
       priyaSalary: Number(v.priyaSalary) || 0,
       vamsiSalary: Number(v.vamsiSalary) || 0,
-    });
+    }).subscribe();
   }
 
   private loadData() {
-    const salary = this.expenseService.getSalary(this.selectedMonth, this.selectedYear);
-    this.salaryForm.patchValue(
-      { priyaSalary: salary.priyaSalary, vamsiSalary: salary.vamsiSalary },
-      { emitEvent: false },
-    );
-
-    this.fixedTotal = this.expenseService.getFixedExpenses()
-      .reduce((sum, e) => sum + Number(e.amount), 0);
-
-    this.expenseService.getSummary(this.selectedMonth, this.selectedYear)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(s => {
-        this.summary = s;
-        this.buildPieChart();
-      });
+    forkJoin({
+      salary:  this.expenseService.getSalary(this.selectedMonth, this.selectedYear),
+      fixed:   this.expenseService.getFixedExpenses(),
+      summary: this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
+    }).pipe(takeUntil(this.destroy$)).subscribe(({ salary, fixed, summary }) => {
+      this.salaryForm.patchValue(
+        { priyaSalary: Number(salary.priyaSalary), vamsiSalary: Number(salary.vamsiSalary) },
+        { emitEvent: false },
+      );
+      this.fixedTotal = fixed.reduce((sum, e) => sum + Number(e.amount), 0);
+      this.summary    = summary;
+      this.buildPieChart();
+    });
   }
 
   private buildPieChart() {
@@ -146,7 +144,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get actualTotal(): number {
-    return this.summary?.total ?? 0;
+    return Number(this.summary?.total ?? 0);
   }
 
   get savings(): number {
@@ -154,9 +152,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   formatCompact(amount: number): string {
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-    if (amount >= 1000)   return `₹${(amount / 1000).toFixed(1)}K`;
-    return `₹${amount.toFixed(0)}`;
+    if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
+    if (amount >= 1_000)     return `$${(amount / 1_000).toFixed(1)}K`;
+    return `$${amount.toFixed(0)}`;
   }
 
   getCategoryLabel(value: string) {

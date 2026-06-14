@@ -34,7 +34,9 @@ export class FixedExpensesComponent implements OnInit {
   }
 
   private load() {
-    this.expenses = this.expenseService.getFixedExpenses();
+    this.expenseService.getFixedExpenses().subscribe(expenses => {
+      this.expenses = expenses;
+    });
   }
 
   get total(): number {
@@ -61,10 +63,14 @@ export class FixedExpensesComponent implements OnInit {
 
   confirmDelete(expense: FixedExpense) {
     if (!confirm(`Delete "${expense.title}"?`)) return;
-    this.expenseService.deleteFixedExpense(expense.id!);
-    this.snackBar.open('Fixed expense deleted', 'Dismiss', { duration: 3000 });
-    this.load();
-    this.expenseService.notifyRefresh();
+    this.expenseService.deleteFixedExpense(expense.id!).subscribe({
+      next: () => {
+        this.snackBar.open('Fixed expense deleted', 'Dismiss', { duration: 3000 });
+        this.load();
+        this.expenseService.notifyRefresh();
+      },
+      error: () => this.snackBar.open('Failed to delete', 'Dismiss', { duration: 3000 }),
+    });
   }
 
   getCategoryLabel(value: string) {
