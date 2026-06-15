@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
@@ -26,7 +27,7 @@ interface PieSlice {
   imports: [
     CurrencyPipe, NgClass, FormsModule, ReactiveFormsModule,
     MatCardModule, MatSelectModule, MatFormFieldModule,
-    MatInputModule, MatIconModule, MatButtonModule,
+    MatInputModule, MatIconModule, MatButtonModule, MatTooltipModule,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -191,6 +192,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getCategoryIcon(value: string) {
     return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
+  }
+
+  async testNotification() {
+    this.expenseService.sendTestNotification().subscribe({
+      next: () => this.snackBar.open('Test notification sent!', 'OK', { duration: 3000 }),
+      error: () => this.snackBar.open('Failed to send test notification', 'OK', { duration: 3000 }),
+    });
   }
 
   async toggleNotifications() {

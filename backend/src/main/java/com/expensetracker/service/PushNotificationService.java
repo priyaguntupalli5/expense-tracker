@@ -99,6 +99,10 @@ public class PushNotificationService {
         sendReminder("weekend noon");
     }
 
+    public void sendTestNotification() {
+        sendReminder("test");
+    }
+
     private void sendReminder(String trigger) {
         if (vapidPublicKey == null || vapidPublicKey.isBlank()) {
             log.warn("VAPID keys not configured — skipping {} notification", trigger);

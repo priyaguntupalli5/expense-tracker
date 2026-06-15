@@ -2,12 +2,20 @@
 
   <!-- Notification toggle (only visible when installed as PWA / production build) -->
   @if (pushService.swAvailable) {
-    <button class="notif-btn"
-            [class.notif-on]="pushService.enabled()"
-            (click)="toggleNotifications()">
-      <mat-icon>{{ pushService.enabled() ? 'notifications_active' : 'notifications_none' }}</mat-icon>
-      {{ pushService.enabled() ? 'Notifications on' : 'Enable daily reminders' }}
-    </button>
+    <div class="notif-row">
+      <button class="notif-btn"
+              [class.notif-on]="pushService.enabled()"
+              (click)="toggleNotifications()">
+        <mat-icon>{{ pushService.enabled() ? 'notifications_active' : 'notifications_none' }}</mat-icon>
+        {{ pushService.enabled() ? 'Notifications on' : 'Enable daily reminders' }}
+      </button>
+      @if (pushService.enabled()) {
+        <button class="notif-test-btn" (click)="testNotification()" matTooltip="Send a test notification now">
+          <mat-icon>send</mat-icon>
+          Test
+        </button>
+      }
+    </div>
   }
 
   <!-- Period Selector -->

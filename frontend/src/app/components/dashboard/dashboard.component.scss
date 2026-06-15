@@ -304,7 +304,15 @@
   small { font-size: 0.85rem; }
 }
 
+.notif-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
 .notif-btn {
+  margin-bottom: 0 !important;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -327,6 +335,25 @@
     background: rgba(25,118,210,0.12);
     border-color: #1976d2;
   }
+}
+
+.notif-test-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: white;
+  color: #555;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+
+  &:hover { background: #f5f5f5; }
 }
 
 @media (max-width: 767px) {

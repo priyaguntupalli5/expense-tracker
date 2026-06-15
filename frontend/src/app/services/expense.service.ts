@@ -144,6 +144,10 @@ export class ExpenseService {
     );
   }
 
+  sendTestNotification(): Observable<void> {
+    return this.http.post<void>(`${API}/push/test`, {});
+  }
+
   getSubcategoriesFull(categoryValue: string): Observable<Subcategory[]> {
     return this.http.get<Subcategory[]>(`${API}/subcategories`, { params: { category: categoryValue } }).pipe(
       catchError(() => of<Subcategory[]>([])),
