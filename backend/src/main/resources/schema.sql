@@ -52,16 +52,6 @@ CREATE TABLE IF NOT EXISTS fixed_expenses (
     PRIMARY KEY (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
-CREATE TABLE IF NOT EXISTS monthly_salaries (
-    id            BIGINT NOT NULL AUTO_INCREMENT,
-    month         INT    NOT NULL,
-    year          INT    NOT NULL,
-    priya_salary  DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
-    vamsi_salary  DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
-    group_id      BIGINT NULL,
-    PRIMARY KEY (id)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
 CREATE TABLE IF NOT EXISTS income_entries (
     id          BIGINT         NOT NULL AUTO_INCREMENT,
     title       VARCHAR(100)   NOT NULL,
@@ -111,10 +101,9 @@ ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS group_id       BIGINT      
 ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS recurrence     VARCHAR(20)  NOT NULL DEFAULT 'MONTHLY';
 ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS payment_day    INT          NULL;
 ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS payment_month  INT          NULL;
-ALTER TABLE monthly_salaries ADD COLUMN IF NOT EXISTS group_id   BIGINT       NULL;
 ALTER TABLE categories      ADD COLUMN IF NOT EXISTS is_income   BOOLEAN      NOT NULL DEFAULT FALSE;
 ALTER TABLE `groups`        ADD COLUMN IF NOT EXISTS group_code  VARCHAR(6)   NULL;
 ALTER TABLE `groups`        ADD COLUMN IF NOT EXISTS currency    VARCHAR(10)  NOT NULL DEFAULT 'CAD';
 
--- Note: monthly_salaries unique key migration (uk_month_year → uk_group_month_year) and
--- group_code unique key + backfill are handled by SchemaMigration.java on startup.
+-- Note: group_code unique key + backfill, and migration of old monthly_salaries data
+-- into income_entries, are handled by SchemaMigration.java on startup.

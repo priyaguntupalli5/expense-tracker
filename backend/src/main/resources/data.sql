@@ -1,12 +1,10 @@
 -- Migrate legacy group 1 expense data to group 2 (one-time; idempotent because group_id=1 rows disappear after first run)
-UPDATE expenses         SET group_id = 2 WHERE group_id = 1;
-UPDATE fixed_expenses   SET group_id = 2 WHERE group_id = 1;
-UPDATE monthly_salaries SET group_id = 2 WHERE group_id = 1;
+UPDATE expenses       SET group_id = 2 WHERE group_id = 1;
+UPDATE fixed_expenses SET group_id = 2 WHERE group_id = 1;
 
 -- Assign any remaining ungrouped data to group 2
-UPDATE expenses         SET group_id = 2 WHERE group_id IS NULL;
-UPDATE fixed_expenses   SET group_id = 2 WHERE group_id IS NULL;
-UPDATE monthly_salaries SET group_id = 2 WHERE group_id IS NULL;
+UPDATE expenses       SET group_id = 2 WHERE group_id IS NULL;
+UPDATE fixed_expenses SET group_id = 2 WHERE group_id IS NULL;
 
 -- Default categories (global, shared across all groups)
 INSERT IGNORE INTO categories (value, label, icon, color) VALUES
