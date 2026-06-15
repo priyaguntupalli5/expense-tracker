@@ -51,7 +51,7 @@
 
         <div class="filter-total">
           <span class="total-label">Total</span>
-          <span class="total-value">{{ total | currency:'CAD':'symbol-narrow':'1.0-2' }}</span>
+          <span class="total-value">{{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
         </div>
       </div>
     </div>
@@ -108,9 +108,9 @@
               <td mat-cell *matCellDef="let e" class="amount-col amount-value"
                   [class.credit-amount]="isCredit(e.category)">
                 @if (isCredit(e.category)) {
-                  +{{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
+                  +{{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
                 } @else {
-                  {{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
+                  {{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
                 }
               </td>
             </ng-container>

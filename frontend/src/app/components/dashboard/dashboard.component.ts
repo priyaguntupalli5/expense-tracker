@@ -39,7 +39,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroy$ = new Subject<void>();
   readonly pushService = inject(PushNotificationService);
-  private readonly settingsService = inject(SettingsService);
+  readonly settingsService = inject(SettingsService);
 
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;

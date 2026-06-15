@@ -8,6 +8,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseService } from '../../services/expense.service';
+import { SettingsService } from '../../services/settings.service';
 import { FixedExpense } from '../../models/expense.model';
 import { FixedExpenseFormComponent } from '../fixed-expense-form/fixed-expense-form.component';
 
@@ -25,6 +26,7 @@ export class FixedExpensesComponent implements OnInit {
   private readonly expenseService = inject(ExpenseService);
   private readonly dialog         = inject(MatDialog);
   private readonly snackBar       = inject(MatSnackBar);
+  readonly settingsService        = inject(SettingsService);
 
   expenses: FixedExpense[] = [];
   displayedColumns = ['title', 'category', 'amount', 'actions'];

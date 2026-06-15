@@ -7,7 +7,7 @@
           <span>Fixed Monthly Expenses</span>
           <span class="count-chip">{{ expenses.length }}</span>
         </div>
-        <div class="header-sub">Total: {{ total | currency:'CAD':'symbol-narrow':'1.0-2' }} / month</div>
+        <div class="header-sub">Total: {{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} / month</div>
       </div>
       <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
         <mat-icon>add</mat-icon> Add Fixed Expense
@@ -62,9 +62,9 @@
               <td mat-cell *matCellDef="let e" class="amount-col amount-value"
                   [class.credit-amount]="isCredit(e.category)">
                 @if (isCredit(e.category)) {
-                  +{{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
+                  +{{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
                 } @else {
-                  {{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
+                  {{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
                 }
               </td>
             </ng-container>
