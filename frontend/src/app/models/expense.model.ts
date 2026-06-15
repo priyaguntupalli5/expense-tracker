@@ -5,6 +5,7 @@ export interface Expense {
   category: string;
   date: string;
   notes?: string;
+  subcategory?: string;
 }
 
 export interface FixedExpense {
@@ -13,6 +14,13 @@ export interface FixedExpense {
   amount: number;
   category: string;
   notes?: string;
+  subcategory?: string;
+}
+
+export interface Subcategory {
+  id: number;
+  categoryValue: string;
+  name: string;
 }
 
 export interface MonthlySalary {

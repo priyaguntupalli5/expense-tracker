@@ -45,3 +45,14 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     PRIMARY KEY (id),
     UNIQUE KEY uk_endpoint (endpoint(500))
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS subcategories (
+    id             BIGINT       NOT NULL AUTO_INCREMENT,
+    category_value VARCHAR(50)  NOT NULL,
+    name           VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_subcategory (category_value, name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100) NULL;
+ALTER TABLE fixed_expenses ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100) NULL;

@@ -31,6 +31,9 @@ public class Expense {
     @Size(max = 255)
     private String notes;
 
+    @Size(max = 100)
+    private String subcategory;
+
     public Expense() {}
 
     public Expense(String title, BigDecimal amount, String category, LocalDate date, String notes) {
@@ -58,4 +61,7 @@ public class Expense {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public String getSubcategory() { return subcategory; }
+    public void setSubcategory(String subcategory) { this.subcategory = subcategory; }
 }

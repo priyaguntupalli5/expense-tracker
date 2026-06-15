@@ -29,14 +29,16 @@ export class FixedExpenseFormComponent implements OnInit {
   readonly data: FixedExpense | null = inject(MAT_DIALOG_DATA, { optional: true });
 
   categories: Category[] = [];
+  subcategories: string[] = [];
   isEditing = false;
   saving    = false;
 
   form = this.fb.group({
-    title:    ['', [Validators.required, Validators.maxLength(100)]],
-    amount:   [null as number | null, [Validators.required, Validators.min(0.01)]],
-    category: ['HOUSING', Validators.required],
-    notes:    [''],
+    title:       ['', [Validators.required, Validators.maxLength(100)]],
+    amount:      [null as number | null, [Validators.required, Validators.min(0.01)]],
+    category:    ['HOUSING', Validators.required],
+    subcategory: ['' as string | null],
+    notes:       [''],
   });
 
   ngOnInit() {
@@ -44,12 +46,30 @@ export class FixedExpenseFormComponent implements OnInit {
       this.categories = cats;
       if (!this.isEditing && cats.length > 0) {
         this.form.patchValue({ category: cats[0].value });
+        this.loadSubcategories(cats[0].value);
       }
     });
+
+    this.form.get('category')!.valueChanges.subscribe(val => {
+      if (val) {
+        this.form.patchValue({ subcategory: null }, { emitEvent: false });
+        this.loadSubcategories(val);
+      }
+    });
+
     if (this.data) {
       this.isEditing = true;
-      this.form.patchValue(this.data);
+      this.form.patchValue({ ...this.data, subcategory: this.data.subcategory ?? null });
+      if (this.data.category) {
+        this.loadSubcategories(this.data.category);
+      }
     }
+  }
+
+  private loadSubcategories(categoryValue: string) {
+    this.expenseService.getSubcategories(categoryValue).subscribe(subs => {
+      this.subcategories = subs;
+    });
   }
 
   save() {
@@ -57,10 +77,11 @@ export class FixedExpenseFormComponent implements OnInit {
     this.saving = true;
     const v = this.form.value;
     const expense: FixedExpense = {
-      title:    v.title!,
-      amount:   v.amount!,
-      category: v.category!,
-      notes:    v.notes || undefined,
+      title:       v.title!,
+      amount:      v.amount!,
+      category:    v.category!,
+      subcategory: v.subcategory || undefined,
+      notes:       v.notes || undefined,
     };
 
     const op = this.isEditing

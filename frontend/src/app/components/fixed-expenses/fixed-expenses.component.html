@@ -44,14 +44,19 @@
             <ng-container matColumnDef="category">
               <th mat-header-cell *matHeaderCellDef>Category</th>
               <td mat-cell *matCellDef="let e">
-                <span
-                  class="category-badge"
-                  [style.background]="getCategoryColor(e.category) + '1a'"
-                  [style.color]="getCategoryColor(e.category)"
-                  [style.border-color]="getCategoryColor(e.category) + '40'">
-                  <mat-icon class="badge-icon">{{ getCategoryIcon(e.category) }}</mat-icon>
-                  {{ getCategoryLabel(e.category) }}
-                </span>
+                <div class="category-cell">
+                  <span
+                    class="category-badge"
+                    [style.background]="getCategoryColor(e.category) + '1a'"
+                    [style.color]="getCategoryColor(e.category)"
+                    [style.border-color]="getCategoryColor(e.category) + '40'">
+                    <mat-icon class="badge-icon">{{ getCategoryIcon(e.category) }}</mat-icon>
+                    {{ getCategoryLabel(e.category) }}
+                  </span>
+                  @if (e.subcategory) {
+                    <span class="subcategory-tag">{{ e.subcategory }}</span>
+                  }
+                </div>
               </td>
             </ng-container>
 

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, Subject, catchError, of, tap } from 'rxjs';
-import { Category, Expense, FixedExpense, MonthlySalary, Summary } from '../models/expense.model';
+import { BehaviorSubject, Observable, Subject, catchError, map, of, tap } from 'rxjs';
+import { Category, Expense, FixedExpense, MonthlySalary, Subcategory, Summary } from '../models/expense.model';
 import { environment } from '../../environments/environment';
 
 const API = environment.apiUrl;
@@ -133,5 +133,14 @@ export class ExpenseService {
 
   getCategoryByValue(value: string): Category | undefined {
     return this.categoriesSubject.value.find(c => c.value === value);
+  }
+
+  // ── Subcategories ──────────────────────────────────────────────────────────
+
+  getSubcategories(categoryValue: string): Observable<string[]> {
+    return this.http.get<Subcategory[]>(`${API}/subcategories`, { params: { category: categoryValue } }).pipe(
+      map(items => items.map(s => s.name)),
+      catchError(() => of<string[]>([])),
+    );
   }
 }

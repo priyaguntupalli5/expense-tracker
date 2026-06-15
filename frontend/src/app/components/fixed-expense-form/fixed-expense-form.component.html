@@ -44,6 +44,19 @@
       </mat-select>
     </mat-form-field>
 
+    @if (subcategories.length > 0) {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Subcategory (optional)</mat-label>
+        <mat-select formControlName="subcategory">
+          <mat-option [value]="null">— None —</mat-option>
+          @for (sub of subcategories; track sub) {
+            <mat-option [value]="sub">{{ sub }}</mat-option>
+          }
+        </mat-select>
+        <mat-icon matSuffix>subdirectory_arrow_right</mat-icon>
+      </mat-form-field>
+    }
+
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Notes (optional)</mat-label>
       <textarea matInput formControlName="notes" rows="2" placeholder="Any details..."></textarea>
