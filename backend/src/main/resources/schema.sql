@@ -114,5 +114,28 @@ ALTER TABLE categories      ADD COLUMN IF NOT EXISTS is_income   BOOLEAN      NO
 ALTER TABLE `groups`        ADD COLUMN IF NOT EXISTS group_code  VARCHAR(6)   NULL;
 ALTER TABLE `groups`        ADD COLUMN IF NOT EXISTS currency    VARCHAR(10)  NOT NULL DEFAULT 'CAD';
 
+CREATE TABLE IF NOT EXISTS group_categories (
+    id        BIGINT       NOT NULL AUTO_INCREMENT,
+    group_id  BIGINT       NOT NULL,
+    value     VARCHAR(50)  NOT NULL,
+    label     VARCHAR(100) NOT NULL,
+    icon      VARCHAR(100) NOT NULL,
+    color     VARCHAR(10)  NOT NULL,
+    is_income BOOLEAN      NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_group_category (group_id, value),
+    FOREIGN KEY (group_id) REFERENCES `groups`(id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS group_subcategories (
+    id             BIGINT       NOT NULL AUTO_INCREMENT,
+    group_id       BIGINT       NOT NULL,
+    category_value VARCHAR(50)  NOT NULL,
+    name           VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_group_subcategory (group_id, category_value, name),
+    FOREIGN KEY (group_id) REFERENCES `groups`(id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 -- Note: group_code unique key + backfill, and migration of old monthly_salaries data
 -- into income_entries, are handled by SchemaMigration.java on startup.

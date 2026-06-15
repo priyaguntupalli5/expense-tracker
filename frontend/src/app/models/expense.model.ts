@@ -56,6 +56,7 @@ export interface Subcategory {
   id: number;
   categoryValue: string;
   name: string;
+  isShared?: boolean;
 }
 
 export interface Category {
@@ -65,6 +66,7 @@ export interface Category {
   icon: string;
   color: string;
   isIncome?: boolean;
+  isShared?: boolean;
 }
 
 export interface Summary {

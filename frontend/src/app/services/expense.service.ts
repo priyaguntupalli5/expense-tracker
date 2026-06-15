@@ -102,14 +102,14 @@ export class ExpenseService {
     );
   }
 
-  updateCategory(id: number, category: Omit<Category, 'id' | 'value'>): Observable<Category> {
-    return this.http.put<Category>(`${API}/categories/${id}`, category).pipe(
+  updateCategory(id: number, isShared: boolean, category: Omit<Category, 'id' | 'value' | 'isShared'>): Observable<Category> {
+    return this.http.put<Category>(`${API}/categories/${id}?shared=${isShared}`, category).pipe(
       tap(() => this.loadCategories().subscribe()),
     );
   }
 
-  deleteCategory(id: number): Observable<void> {
-    return this.http.delete<void>(`${API}/categories/${id}`).pipe(
+  deleteCategory(id: number, isShared: boolean): Observable<void> {
+    return this.http.delete<void>(`${API}/categories/${id}?shared=${isShared}`).pipe(
       tap(() => this.loadCategories().subscribe()),
     );
   }

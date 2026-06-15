@@ -25,4 +25,5 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     boolean existsBySourceFixedIdAndDate(Long sourceFixedId, LocalDate date);
 
     long countByCategory(String category);
+    long countByCategoryAndGroupId(String category, Long groupId);
 }

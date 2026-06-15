@@ -82,8 +82,8 @@ export class CategoriesComponent implements OnInit {
     });
   }
 
-  removeSubcategory(id: number, categoryValue: string) {
-    this.expenseService.deleteSubcategory(id).subscribe({
+  removeSubcategory(sub: Subcategory, categoryValue: string) {
+    this.expenseService.deleteSubcategory(sub.id).subscribe({
       next: () => this.loadSubcategories(categoryValue),
       error: () => this.snackBar.open('Failed to delete subcategory', 'Dismiss', { duration: 3000 }),
     });
@@ -104,8 +104,12 @@ export class CategoriesComponent implements OnInit {
   }
 
   confirmDelete(category: Category) {
+    if (category.isShared) {
+      this.snackBar.open('Default categories cannot be deleted. Edit to customise for your group.', 'OK', { duration: 4000 });
+      return;
+    }
     if (!confirm(`Delete category "${category.label}"?`)) return;
-    this.expenseService.deleteCategory(category.id!).subscribe({
+    this.expenseService.deleteCategory(category.id!, false).subscribe({
       next: () => {
         this.snackBar.open('Category deleted', 'Dismiss', { duration: 3000 });
         this.load();

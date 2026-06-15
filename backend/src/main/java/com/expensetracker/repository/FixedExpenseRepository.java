@@ -13,4 +13,5 @@ public interface FixedExpenseRepository extends JpaRepository<FixedExpense, Long
     Optional<FixedExpense> findByIdAndGroupId(Long id, Long groupId);
     boolean existsByIdAndGroupId(Long id, Long groupId);
     long countByCategory(String category);
+    long countByCategoryAndGroupId(String category, Long groupId);
 }
