@@ -19,6 +19,10 @@
       <mat-icon>label</mat-icon>
       <span class="nav-label">Categories</span>
     </a>
+    <a mat-button routerLink="/settings" routerLinkActive="nav-active" class="desktop-nav">
+      <mat-icon>settings</mat-icon>
+      <span class="nav-label">Settings</span>
+    </a>
     <button mat-icon-button [matTooltip]="auth.groupName ?? ''" (click)="auth.logout()" class="logout-btn">
       <mat-icon>logout</mat-icon>
     </button>
@@ -46,9 +50,9 @@
       <mat-icon>label</mat-icon>
       <span>Categories</span>
     </a>
-    <button class="bottom-item logout-bottom" (click)="auth.logout()">
-      <mat-icon>logout</mat-icon>
-      <span>Logout</span>
-    </button>
+    <a routerLink="/settings" routerLinkActive="bottom-active" class="bottom-item">
+      <mat-icon>settings</mat-icon>
+      <span>Settings</span>
+    </a>
   </nav>
 }

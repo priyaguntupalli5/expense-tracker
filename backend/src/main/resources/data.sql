@@ -1,5 +1,5 @@
 -- Ensure group 1 exists (required by FK before assigning users to it)
-INSERT IGNORE INTO `groups` (id, name, group_code) VALUES (1, 'household', '100000');
+INSERT IGNORE INTO `groups` (id, name, group_code, currency) VALUES (1, 'household', '100000', 'CAD');
 
 -- Pin priya and vamsi to group 1
 UPDATE users SET group_id = 1 WHERE username IN ('priya', 'vamsi');

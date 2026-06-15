@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS `groups` (
-    id         BIGINT      NOT NULL AUTO_INCREMENT,
+    id         BIGINT       NOT NULL AUTO_INCREMENT,
     name       VARCHAR(100) NOT NULL,
-    group_code VARCHAR(6)  NULL,
+    group_code VARCHAR(6)   NULL,
+    currency   VARCHAR(10)  NOT NULL DEFAULT 'CAD',
     PRIMARY KEY (id),
     UNIQUE KEY uk_group_name (name),
     UNIQUE KEY uk_group_code (group_code)
@@ -84,6 +85,7 @@ ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS group_id    BIGINT       NU
 ALTER TABLE monthly_salaries ADD COLUMN IF NOT EXISTS group_id   BIGINT       NULL;
 ALTER TABLE categories      ADD COLUMN IF NOT EXISTS is_income   BOOLEAN      NOT NULL DEFAULT FALSE;
 ALTER TABLE `groups`        ADD COLUMN IF NOT EXISTS group_code  VARCHAR(6)   NULL;
+ALTER TABLE `groups`        ADD COLUMN IF NOT EXISTS currency    VARCHAR(10)  NOT NULL DEFAULT 'CAD';
 
 -- Note: monthly_salaries unique key migration (uk_month_year → uk_group_month_year) and
 -- group_code unique key + backfill are handled by SchemaMigration.java on startup.

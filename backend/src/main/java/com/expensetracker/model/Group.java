@@ -16,6 +16,9 @@ public class Group {
     @Column(name = "group_code", unique = true, length = 6)
     private String groupCode;
 
+    @Column(nullable = false, length = 10)
+    private String currency = "CAD";
+
     public Group() {}
 
     public Long getId() { return id; }
@@ -26,4 +29,7 @@ public class Group {
 
     public String getGroupCode() { return groupCode; }
     public void setGroupCode(String groupCode) { this.groupCode = groupCode; }
+
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
 }

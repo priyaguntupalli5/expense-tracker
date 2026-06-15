@@ -12,6 +12,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { PushNotificationService } from '../../services/push-notification.service';
+import { SettingsService } from '../../services/settings.service';
 import { FixedExpense, Summary } from '../../models/expense.model';
 
 interface PieSlice {
@@ -38,6 +39,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroy$ = new Subject<void>();
   readonly pushService = inject(PushNotificationService);
+  private readonly settingsService = inject(SettingsService);
 
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;
@@ -203,7 +205,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   formatCompact(amount: number): string {
-    return '$' + amount.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return amount.toLocaleString('en-CA', {
+      style: 'currency',
+      currency: this.settingsService.currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
 
   getCategoryLabel(value: string) {
