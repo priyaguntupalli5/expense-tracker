@@ -30,3 +30,15 @@
 
   mat-form-field { width: 100%; }
 }
+
+.recurring-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 8px;
+
+  .toggle-hint {
+    font-size: 0.78rem;
+    color: #666;
+  }
+}

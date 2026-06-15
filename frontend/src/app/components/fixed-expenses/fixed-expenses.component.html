@@ -30,7 +30,12 @@
               <th mat-header-cell *matHeaderCellDef>Description</th>
               <td mat-cell *matCellDef="let e">
                 <div class="title-cell">
-                  <span class="title-text">{{ e.title }}</span>
+                  <span class="title-text">
+                    {{ e.title }}
+                    @if (e.startDate) {
+                      <span class="auto-badge" matTooltip="Auto-generates expense entries from {{ e.startDate }}">auto</span>
+                    }
+                  </span>
                   @if (e.notes) {
                     <span class="notes-text">{{ e.notes }}</span>
                   }

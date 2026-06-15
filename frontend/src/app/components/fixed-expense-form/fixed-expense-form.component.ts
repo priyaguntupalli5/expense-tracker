@@ -75,6 +75,7 @@ export class FixedExpenseFormComponent implements OnInit {
     recurrence:   ['MONTHLY', Validators.required],
     paymentDay:   [null as number | null],
     paymentMonth: [null as number | null],
+    startDate:    ['' as string],
     subcategory:  ['' as string | null],
     notes:        [''],
   });
@@ -130,6 +131,7 @@ export class FixedExpenseFormComponent implements OnInit {
         recurrence:   this.data.recurrence   ?? 'MONTHLY',
         paymentDay:   this.data.paymentDay   ?? null,
         paymentMonth: this.data.paymentMonth ?? null,
+        startDate:    this.data.startDate    ?? '',
         subcategory:  this.data.subcategory  ?? null,
       });
       if (this.data.category) this.loadSubcategories(this.data.category);
@@ -157,6 +159,7 @@ export class FixedExpenseFormComponent implements OnInit {
       recurrence:   v.recurrence!,
       paymentDay:   v.paymentDay   ?? undefined,
       paymentMonth: this.isYearly ? (v.paymentMonth ?? undefined) : undefined,
+      startDate:    v.startDate    || undefined,
       subcategory:  v.subcategory  || undefined,
       notes:        v.notes        || undefined,
     };

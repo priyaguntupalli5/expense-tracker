@@ -19,6 +19,11 @@ export const SOURCE_TYPES = [
 export class IncomeService {
   private readonly http = inject(HttpClient);
 
+  getTemplates(): Observable<Income[]> {
+    return this.http.get<Income[]>(`${API}/income/templates`)
+      .pipe(catchError(() => of<Income[]>([])));
+  }
+
   getAll(month?: number, year?: number): Observable<Income[]> {
     const params: Record<string, string> = {};
     if (month !== undefined) params['month'] = String(month);

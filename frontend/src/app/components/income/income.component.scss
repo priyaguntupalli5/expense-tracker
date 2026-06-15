@@ -16,11 +16,21 @@
 }
 
 .page-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 1.5rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
   letter-spacing: -0.3px;
+
+  .title-icon {
+    color: #2e7d32;
+    font-size: 1.6rem;
+    width: 1.6rem;
+    height: 1.6rem;
+  }
 }
 
 .header-right {
@@ -28,6 +38,82 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.add-recurring-btn {
+  border-radius: 20px !important;
+  font-size: 0.85rem;
+  height: 40px;
+  border-color: #2e7d32 !important;
+  color: #2e7d32 !important;
+}
+
+.add-btn {
+  border-radius: 20px !important;
+  font-size: 0.85rem;
+  height: 40px;
+}
+
+// ── Recurring templates section ───────────────────────────────────────────────
+
+.section-card {
+  border-radius: 12px !important;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.recurring-card {
+  border-left: 4px solid #2e7d32 !important;
+
+  ::ng-deep .mat-mdc-card-header { padding: 14px 16px 4px; }
+
+  mat-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem !important;
+    font-weight: 600;
+    color: #1b5e20;
+  }
+}
+
+.section-icon {
+  font-size: 1.15rem;
+  width: 1.15rem;
+  height: 1.15rem;
+
+  &.recurring-icon { color: #2e7d32; }
+}
+
+.recurrence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  border-radius: 12px;
+  padding: 3px 10px 3px 7px;
+  font-size: 0.78rem;
+  font-weight: 500;
+
+  .chip-icon { font-size: 0.8rem; width: 0.8rem; height: 0.8rem; }
+}
+
+// ── Period row + Total banner ─────────────────────────────────────────────────
+
+.period-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.period-selectors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .period-field {
@@ -42,33 +128,23 @@
 
 .year-field { width: 90px; }
 
-.add-btn {
-  border-radius: 20px !important;
-  font-size: 0.85rem;
-  height: 40px;
-}
-
-// ── Total banner ──────────────────────────────────────────────────────────────
-
 .total-banner {
-  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
-  border-radius: 18px;
-  padding: 18px 24px;
-  margin-bottom: 18px;
-  box-shadow: 0 4px 20px rgba(27, 94, 32, 0.3);
-}
-
-.total-inner {
   display: flex;
   align-items: center;
   gap: 14px;
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 4px 16px rgba(27, 94, 32, 0.25);
   color: white;
+  flex: 1;
+  min-width: 240px;
 }
 
 .total-icon {
-  font-size: 2rem;
-  width: 2rem;
-  height: 2rem;
+  font-size: 1.8rem;
+  width: 1.8rem;
+  height: 1.8rem;
   opacity: 0.85;
   flex-shrink: 0;
 }
@@ -88,7 +164,7 @@
 }
 
 .total-value {
-  font-size: 1.9rem;
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.5px;
   line-height: 1.1;
@@ -105,14 +181,9 @@
 
 // ── Table ─────────────────────────────────────────────────────────────────────
 
-.list-card {
-  border-radius: 12px !important;
-  overflow: hidden;
-}
+.list-card { border-radius: 12px !important; overflow: hidden; }
 
-.table-wrapper {
-  overflow-x: auto;
-}
+.table-wrapper { overflow-x: auto; }
 
 .income-table { width: 100%; }
 
@@ -135,19 +206,31 @@
   .badge-icon { font-size: 0.95rem; width: 0.95rem; height: 0.95rem; }
 }
 
-.title-cell { font-weight: 500; font-size: 0.95rem; }
+.title-cell {
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auto-chip {
+  display: inline-block;
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.date-cell { font-size: 0.82rem; color: #666; white-space: nowrap; }
 
 .amount-col   { text-align: right; }
 .amount-value { font-weight: 700; font-size: 1rem; color: #1b5e20; }
-
-.notes-cell {
-  font-size: 0.82rem;
-  color: #888;
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 .actions-col { text-align: right; white-space: nowrap; width: 96px; }
 
@@ -155,7 +238,7 @@
 
 .empty-state {
   text-align: center;
-  padding: 64px 16px;
+  padding: 56px 16px;
   opacity: 0.45;
 
   mat-icon {
@@ -176,5 +259,7 @@
   .income-container { padding: 16px 14px 40px; }
   .page-header { flex-direction: column; align-items: flex-start; }
   .header-right { width: 100%; }
-  .total-value { font-size: 1.5rem; }
+  .period-row { flex-direction: column; align-items: flex-start; }
+  .total-banner { width: 100%; }
+  .total-value { font-size: 1.4rem; }
 }

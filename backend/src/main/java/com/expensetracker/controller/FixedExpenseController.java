@@ -3,6 +3,7 @@ package com.expensetracker.controller;
 import com.expensetracker.model.FixedExpense;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.FixedExpenseRepository;
+import com.expensetracker.service.RecurringJobService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +17,11 @@ import java.util.List;
 public class FixedExpenseController {
 
     private final FixedExpenseRepository repository;
+    private final RecurringJobService recurringJobService;
 
-    public FixedExpenseController(FixedExpenseRepository repository) {
-        this.repository = repository;
+    public FixedExpenseController(FixedExpenseRepository repository, RecurringJobService recurringJobService) {
+        this.repository          = repository;
+        this.recurringJobService = recurringJobService;
     }
 
     @GetMapping
@@ -31,7 +34,9 @@ public class FixedExpenseController {
                                                @Valid @RequestBody FixedExpense expense) {
         expense.setId(null);
         expense.setGroupId(user.getGroup().getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(expense));
+        FixedExpense saved = repository.save(expense);
+        if (saved.getStartDate() != null) recurringJobService.generateForFixedExpense(saved);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{id}")
@@ -47,7 +52,10 @@ public class FixedExpenseController {
             existing.setRecurrence(updated.getRecurrence());
             existing.setPaymentDay(updated.getPaymentDay());
             existing.setPaymentMonth(updated.getPaymentMonth());
-            return ResponseEntity.ok(repository.save(existing));
+            existing.setStartDate(updated.getStartDate());
+            FixedExpense saved = repository.save(existing);
+            if (saved.getStartDate() != null) recurringJobService.generateForFixedExpense(saved);
+            return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
 

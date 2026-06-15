@@ -2,6 +2,7 @@ package com.expensetracker.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "income_entries")
@@ -32,6 +33,28 @@ public class Income {
     @Column(name = "group_id", nullable = false)
     private Long groupId;
 
+    // ── Recurrence fields ─────────────────────────────────────────────────────
+    @Column
+    private String recurrence;          // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
+
+    @Column(name = "payment_day")
+    private Integer paymentDay;         // day-of-week (1–7) or day-of-month (1–31)
+
+    @Column(name = "payment_month")
+    private Integer paymentMonth;       // 1–12, only for YEARLY
+
+    @Column(name = "start_date")
+    private LocalDate startDate;        // first payment date (anchor for recurrence)
+
+    @Column(name = "is_template", nullable = false)
+    private boolean isTemplate = false; // true = recurring definition; false = actual entry
+
+    @Column(name = "template_id")
+    private Long templateId;            // populated on auto-generated entries
+
+    @Column(name = "payment_date")
+    private LocalDate paymentDate;      // exact date the auto-generated entry represents
+
     public Income() {}
 
     public Long getId() { return id; }
@@ -57,4 +80,25 @@ public class Income {
 
     public Long getGroupId() { return groupId; }
     public void setGroupId(Long groupId) { this.groupId = groupId; }
+
+    public String getRecurrence() { return recurrence; }
+    public void setRecurrence(String recurrence) { this.recurrence = recurrence; }
+
+    public Integer getPaymentDay() { return paymentDay; }
+    public void setPaymentDay(Integer paymentDay) { this.paymentDay = paymentDay; }
+
+    public Integer getPaymentMonth() { return paymentMonth; }
+    public void setPaymentMonth(Integer paymentMonth) { this.paymentMonth = paymentMonth; }
+
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+    public boolean isTemplate() { return isTemplate; }
+    public void setTemplate(boolean isTemplate) { this.isTemplate = isTemplate; }
+
+    public Long getTemplateId() { return templateId; }
+    public void setTemplateId(Long templateId) { this.templateId = templateId; }
+
+    public LocalDate getPaymentDate() { return paymentDate; }
+    public void setPaymentDate(LocalDate paymentDate) { this.paymentDate = paymentDate; }
 }

@@ -40,6 +40,9 @@ public class Expense {
     @Column(name = "group_id")
     private Long groupId;
 
+    @Column(name = "source_fixed_id")
+    private Long sourceFixedId;
+
     public Expense() {}
 
     public Long getId() { return id; }
@@ -68,4 +71,7 @@ public class Expense {
 
     public Long getGroupId() { return groupId; }
     public void setGroupId(Long groupId) { this.groupId = groupId; }
+
+    public Long getSourceFixedId() { return sourceFixedId; }
+    public void setSourceFixedId(Long sourceFixedId) { this.sourceFixedId = sourceFixedId; }
 }

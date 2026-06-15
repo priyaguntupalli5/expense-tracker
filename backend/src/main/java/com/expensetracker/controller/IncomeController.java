@@ -3,6 +3,7 @@ package com.expensetracker.controller;
 import com.expensetracker.model.Income;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.IncomeRepository;
+import com.expensetracker.service.RecurringJobService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -16,22 +17,32 @@ import java.util.Map;
 public class IncomeController {
 
     private final IncomeRepository repository;
+    private final RecurringJobService recurringJobService;
 
-    public IncomeController(IncomeRepository repository) {
-        this.repository = repository;
+    public IncomeController(IncomeRepository repository, RecurringJobService recurringJobService) {
+        this.repository          = repository;
+        this.recurringJobService = recurringJobService;
     }
 
+    /** Recurring templates for the group (not period-filtered). */
+    @GetMapping("/templates")
+    public List<Income> getTemplates(@AuthenticationPrincipal User user) {
+        return repository.findByGroupIdAndIsTemplateTrue(user.getGroup().getId());
+    }
+
+    /** Actual (non-template) entries, optionally filtered by month/year. */
     @GetMapping
     public List<Income> getAll(@AuthenticationPrincipal User user,
                                @RequestParam(required = false) Integer month,
                                @RequestParam(required = false) Integer year) {
         Long groupId = user.getGroup().getId();
         if (month != null && year != null) {
-            return repository.findByGroupIdAndMonthAndYearOrderByIdDesc(groupId, month, year);
+            return repository.findByGroupIdAndIsTemplateFalseAndMonthAndYearOrderByIdDesc(groupId, month, year);
         }
-        return repository.findByGroupIdOrderByYearDescMonthDescIdDesc(groupId);
+        return repository.findByGroupIdAndIsTemplateFalseOrderByYearDescMonthDescIdDesc(groupId);
     }
 
+    /** Monthly income total (non-template entries only). */
     @GetMapping("/total")
     public Map<String, BigDecimal> getTotal(@AuthenticationPrincipal User user,
                                             @RequestParam int month,
@@ -43,6 +54,12 @@ public class IncomeController {
     @PostMapping
     public Income create(@AuthenticationPrincipal User user, @RequestBody Income income) {
         income.setGroupId(user.getGroup().getId());
+        // If recurring template, auto-generate past-due entries immediately
+        if (income.isTemplate() && income.getStartDate() != null) {
+            income = repository.save(income);
+            recurringJobService.generateForTemplate(income);
+            return income;
+        }
         return repository.save(income);
     }
 
@@ -58,7 +75,16 @@ public class IncomeController {
                 existing.setMonth(income.getMonth());
                 existing.setYear(income.getYear());
                 existing.setNotes(income.getNotes());
-                return ResponseEntity.ok(repository.save(existing));
+                existing.setRecurrence(income.getRecurrence());
+                existing.setPaymentDay(income.getPaymentDay());
+                existing.setPaymentMonth(income.getPaymentMonth());
+                existing.setStartDate(income.getStartDate());
+                Income saved = repository.save(existing);
+                // Re-run generation if this is a template
+                if (saved.isTemplate() && saved.getStartDate() != null) {
+                    recurringJobService.generateForTemplate(saved);
+                }
+                return ResponseEntity.ok(saved);
             })
             .orElse(ResponseEntity.notFound().build());
     }

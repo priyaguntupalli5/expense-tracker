@@ -77,7 +77,12 @@
               <th mat-header-cell *matHeaderCellDef>Description</th>
               <td mat-cell *matCellDef="let e">
                 <div class="title-cell">
-                  <span class="title-text">{{ e.title }}</span>
+                  <span class="title-text">
+                    {{ e.title }}
+                    @if (e.sourceFixedId) {
+                      <span class="auto-chip">auto</span>
+                    }
+                  </span>
                   @if (e.notes) {
                     <span class="notes-text">{{ e.notes }}</span>
                   }

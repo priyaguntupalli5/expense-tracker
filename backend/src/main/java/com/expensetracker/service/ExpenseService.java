@@ -62,7 +62,19 @@ public class ExpenseService {
     }
 
     public SummaryDTO getSummary(Long groupId, Integer month, Integer year) {
-        List<Expense> expenses = getAll(groupId, month, year, null, null);
+        // Exclude auto-generated expenses (sourceFixedId != null) — they are already
+        // counted in the Fixed Expenses total on the dashboard to avoid double-counting.
+        List<Expense> expenses;
+        if (month != null && year != null) {
+            LocalDate start = LocalDate.of(year, month, 1);
+            LocalDate end   = start.withDayOfMonth(start.lengthOfMonth());
+            expenses = repository.findByGroupIdAndDateBetweenAndSourceFixedIdIsNullOrderByDateDesc(groupId, start, end);
+        } else {
+            expenses = repository.findByGroupIdOrderByDateDesc(groupId).stream()
+                .filter(e -> e.getSourceFixedId() == null)
+                .toList();
+        }
+
         BigDecimal total = expenses.stream()
             .map(Expense::getAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);

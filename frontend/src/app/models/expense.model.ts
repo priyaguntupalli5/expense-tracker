@@ -7,6 +7,7 @@ export interface Expense {
   notes?: string;
   subcategory?: string;
   imageData?: string;
+  sourceFixedId?: number; // set on auto-generated entries from fixed expenses
 }
 
 export interface FixedExpense {
@@ -19,6 +20,7 @@ export interface FixedExpense {
   recurrence?: string;   // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
   paymentDay?: number;   // day-of-month (1-31) or day-of-week (1=Mon..7=Sun)
   paymentMonth?: number; // 1-12, only for YEARLY
+  startDate?: string;    // ISO 'YYYY-MM-DD' — anchors auto-generation
 }
 
 export function monthlyEquivalent(fe: FixedExpense): number {
@@ -40,6 +42,14 @@ export interface Income {
   month: number;
   year: number;
   notes?: string;
+  // recurrence
+  recurrence?: string;   // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
+  paymentDay?: number;
+  paymentMonth?: number;
+  startDate?: string;    // ISO 'YYYY-MM-DD'
+  isTemplate?: boolean;
+  templateId?: number;
+  paymentDate?: string;  // ISO 'YYYY-MM-DD', set on auto-generated entries
 }
 
 export interface Subcategory {
