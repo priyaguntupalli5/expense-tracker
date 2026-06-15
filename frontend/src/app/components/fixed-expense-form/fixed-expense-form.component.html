@@ -12,11 +12,34 @@
   <form [formGroup]="form" class="expense-form">
 
     <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Category</mat-label>
+      <mat-select formControlName="category">
+        @for (cat of categories; track cat.value) {
+          <mat-option [value]="cat.value">
+            <mat-icon>{{ cat.icon }}</mat-icon>
+            {{ cat.label }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Title</mat-label>
-      <input matInput formControlName="title" placeholder="e.g. Rent, EMI, Electricity, Gym">
+      <input matInput
+        formControlName="title"
+        placeholder="e.g. Rent, Netflix, Gym"
+        [matAutocomplete]="titleAuto">
       <mat-icon matSuffix>label</mat-icon>
+      <mat-autocomplete #titleAuto (optionSelected)="onSuggestionSelected($event)">
+        @for (suggestion of filteredSuggestions$ | async; track suggestion) {
+          <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+        }
+      </mat-autocomplete>
       @if (form.get('title')?.hasError('required')) {
         <mat-error>Title is required</mat-error>
+      }
+      @if (form.get('title')?.hasError('maxlength')) {
+        <mat-error>Max 100 characters</mat-error>
       }
     </mat-form-field>
 
@@ -31,31 +54,6 @@
         <mat-error>Must be greater than 0</mat-error>
       }
     </mat-form-field>
-
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Category</mat-label>
-      <mat-select formControlName="category">
-        @for (cat of categories; track cat.value) {
-          <mat-option [value]="cat.value">
-            <mat-icon>{{ cat.icon }}</mat-icon>
-            {{ cat.label }}
-          </mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
-    @if (subcategories.length > 0) {
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Subcategory (optional)</mat-label>
-        <mat-select formControlName="subcategory">
-          <mat-option [value]="null">— None —</mat-option>
-          @for (sub of subcategories; track sub) {
-            <mat-option [value]="sub">{{ sub }}</mat-option>
-          }
-        </mat-select>
-        <mat-icon matSuffix>subdirectory_arrow_right</mat-icon>
-      </mat-form-field>
-    }
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Notes (optional)</mat-label>
