@@ -6,8 +6,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
+import { PushNotificationService } from '../../services/push-notification.service';
 import { Summary } from '../../models/expense.model';
 
 interface PieSlice {
@@ -23,7 +26,7 @@ interface PieSlice {
   imports: [
     CurrencyPipe, NgClass, FormsModule, ReactiveFormsModule,
     MatCardModule, MatSelectModule, MatFormFieldModule,
-    MatInputModule, MatIconModule,
+    MatInputModule, MatIconModule, MatButtonModule,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -31,7 +34,9 @@ interface PieSlice {
 export class DashboardComponent implements OnInit, OnDestroy {
   private readonly expenseService = inject(ExpenseService);
   private readonly fb = inject(FormBuilder);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly destroy$ = new Subject<void>();
+  readonly pushService = inject(PushNotificationService);
 
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;
@@ -164,5 +169,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getCategoryIcon(value: string) {
     return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
+  }
+
+  async toggleNotifications() {
+    try {
+      if (this.pushService.enabled()) {
+        await this.pushService.disable();
+        this.snackBar.open('Daily notifications disabled', 'OK', { duration: 3000 });
+      } else {
+        await this.pushService.enable();
+        this.snackBar.open('Daily notifications enabled — you\'ll hear from us at 8 PM!', 'OK', { duration: 4000 });
+      }
+    } catch (err: any) {
+      this.snackBar.open(err.message ?? 'Could not update notification settings', 'OK', { duration: 4000 });
+    }
   }
 }

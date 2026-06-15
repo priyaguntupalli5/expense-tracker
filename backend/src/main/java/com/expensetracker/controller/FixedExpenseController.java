@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/fixed-expenses")
-@CrossOrigin(origins = "http://localhost:4200")
 public class FixedExpenseController {
 
     private final FixedExpenseRepository repository;
