@@ -87,6 +87,77 @@
   margin-top: 4px;
 }
 
+.register-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .rtab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #f5f7fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+
+    &.active {
+      background: #e8f0fe;
+      border-color: #1976d2;
+      color: #1976d2;
+    }
+  }
+}
+
+.code-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 0 4px;
+  gap: 8px;
+
+  .code-reveal-icon {
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #1976d2;
+  }
+
+  .code-reveal-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0a1628;
+    margin: 0;
+  }
+
+  .code-reveal-hint {
+    font-size: 0.88rem;
+    color: #666;
+    margin: 0;
+  }
+
+  .group-code {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: #1976d2;
+    background: #e8f0fe;
+    border-radius: 12px;
+    padding: 12px 28px;
+    margin: 4px 0 8px;
+  }
+}
+
 .submit-btn {
   margin-top: 8px;
   height: 48px;

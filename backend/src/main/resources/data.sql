@@ -1,10 +1,18 @@
--- Seed default group (id=1) for existing data migration
-INSERT IGNORE INTO `groups` (id, name) VALUES (1, 'Priya & Vamsi');
+-- Ensure group 1 exists (required by FK before assigning users to it)
+INSERT IGNORE INTO `groups` (id, name, group_code) VALUES (1, 'household', '100000');
 
--- Assign all existing data to group 1 (runs safely on every restart; WHERE group_id IS NULL is idempotent)
-UPDATE expenses        SET group_id = 1 WHERE group_id IS NULL;
-UPDATE fixed_expenses  SET group_id = 1 WHERE group_id IS NULL;
-UPDATE monthly_salaries SET group_id = 1 WHERE group_id IS NULL;
+-- Pin priya and vamsi to group 1
+UPDATE users SET group_id = 1 WHERE username IN ('priya', 'vamsi');
+
+-- Migrate legacy group 1 expense data to group 2 (one-time; idempotent because group_id=1 rows disappear after first run)
+UPDATE expenses         SET group_id = 2 WHERE group_id = 1;
+UPDATE fixed_expenses   SET group_id = 2 WHERE group_id = 1;
+UPDATE monthly_salaries SET group_id = 2 WHERE group_id = 1;
+
+-- Assign any remaining ungrouped data to group 2
+UPDATE expenses         SET group_id = 2 WHERE group_id IS NULL;
+UPDATE fixed_expenses   SET group_id = 2 WHERE group_id IS NULL;
+UPDATE monthly_salaries SET group_id = 2 WHERE group_id IS NULL;
 
 -- Default categories (global, shared across all groups)
 INSERT IGNORE INTO categories (value, label, icon, color) VALUES

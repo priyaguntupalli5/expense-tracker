@@ -1,8 +1,10 @@
 CREATE TABLE IF NOT EXISTS `groups` (
-    id   BIGINT       NOT NULL AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
+    id         BIGINT      NOT NULL AUTO_INCREMENT,
+    name       VARCHAR(100) NOT NULL,
+    group_code VARCHAR(6)  NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_group_name (name)
+    UNIQUE KEY uk_group_name (name),
+    UNIQUE KEY uk_group_code (group_code)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS users (
@@ -81,27 +83,7 @@ ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100) NU
 ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS group_id    BIGINT       NULL;
 ALTER TABLE monthly_salaries ADD COLUMN IF NOT EXISTS group_id   BIGINT       NULL;
 ALTER TABLE categories      ADD COLUMN IF NOT EXISTS is_income   BOOLEAN      NOT NULL DEFAULT FALSE;
+ALTER TABLE `groups`        ADD COLUMN IF NOT EXISTS group_code  VARCHAR(6)   NULL;
 
--- Fix monthly_salaries unique key to include group_id (idempotent via procedure)
-DROP PROCEDURE IF EXISTS fix_salary_unique_key;
-CREATE PROCEDURE fix_salary_unique_key()
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS
-        WHERE TABLE_SCHEMA = DATABASE()
-          AND TABLE_NAME = 'monthly_salaries'
-          AND INDEX_NAME = 'uk_month_year'
-    ) THEN
-        ALTER TABLE monthly_salaries DROP INDEX uk_month_year;
-    END IF;
-    IF NOT EXISTS (
-        SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS
-        WHERE TABLE_SCHEMA = DATABASE()
-          AND TABLE_NAME = 'monthly_salaries'
-          AND INDEX_NAME = 'uk_group_month_year'
-    ) THEN
-        ALTER TABLE monthly_salaries ADD UNIQUE KEY uk_group_month_year (group_id, month, year);
-    END IF;
-END;
-CALL fix_salary_unique_key();
-DROP PROCEDURE IF EXISTS fix_salary_unique_key;
+-- Note: monthly_salaries unique key migration (uk_month_year → uk_group_month_year) and
+-- group_code unique key + backfill are handled by SchemaMigration.java on startup.

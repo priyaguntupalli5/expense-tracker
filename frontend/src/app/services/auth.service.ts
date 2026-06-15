@@ -10,6 +10,7 @@ interface AuthResponse {
   token: string;
   username: string;
   groupName: string;
+  groupCode: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -17,14 +18,19 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  private readonly TOKEN_KEY    = 'auth_token';
-  private readonly USERNAME_KEY = 'auth_username';
-  private readonly GROUP_KEY    = 'auth_group';
+  private readonly TOKEN_KEY      = 'auth_token';
+  private readonly USERNAME_KEY   = 'auth_username';
+  private readonly GROUP_KEY      = 'auth_group';
+  private readonly GROUP_CODE_KEY = 'auth_group_code';
 
-  get token(): string | null         { return localStorage.getItem(this.TOKEN_KEY); }
+  get token(): string | null           { return localStorage.getItem(this.TOKEN_KEY); }
   get currentUsername(): string | null { return localStorage.getItem(this.USERNAME_KEY); }
-  get groupName(): string | null     { return localStorage.getItem(this.GROUP_KEY); }
-  get isLoggedIn(): boolean          { return !!this.token; }
+  get groupName(): string | null       { return localStorage.getItem(this.GROUP_KEY); }
+  get groupCode(): string | null       { return localStorage.getItem(this.GROUP_CODE_KEY); }
+  get isLoggedIn(): boolean            { return !!this.token; }
+
+  /** Holds the group code from the most recent register call (create flow only). */
+  lastCreatedGroupCode: string | null = null;
 
   login(username: string, password: string): Observable<void> {
     return this.http.post<AuthResponse>(`${API}/auth/login`, { username, password }).pipe(
@@ -33,9 +39,12 @@ export class AuthService {
     );
   }
 
-  register(username: string, password: string, groupName: string): Observable<void> {
-    return this.http.post<AuthResponse>(`${API}/auth/register`, { username, password, groupName }).pipe(
-      tap(res => this.storeSession(res)),
+  register(username: string, password: string, groupName?: string, groupCode?: string): Observable<void> {
+    return this.http.post<AuthResponse>(`${API}/auth/register`, { username, password, groupName, groupCode }).pipe(
+      tap(res => {
+        this.storeSession(res);
+        this.lastCreatedGroupCode = groupName ? res.groupCode : null;
+      }),
       map(() => void 0),
     );
   }
@@ -44,6 +53,7 @@ export class AuthService {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USERNAME_KEY);
     localStorage.removeItem(this.GROUP_KEY);
+    localStorage.removeItem(this.GROUP_CODE_KEY);
     this.router.navigate(['/login']);
   }
 
@@ -51,5 +61,6 @@ export class AuthService {
     localStorage.setItem(this.TOKEN_KEY, res.token);
     localStorage.setItem(this.USERNAME_KEY, res.username);
     localStorage.setItem(this.GROUP_KEY, res.groupName);
+    if (res.groupCode) localStorage.setItem(this.GROUP_CODE_KEY, res.groupCode);
   }
 }

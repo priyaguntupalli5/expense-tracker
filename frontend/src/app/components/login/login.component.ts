@@ -19,44 +19,76 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
-  private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
+  readonly auth = inject(AuthService);
+  readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
 
   mode: 'login' | 'register' = 'login';
+  registerMode: 'create' | 'join' = 'create';
   loading = false;
   error = '';
   hidePassword = true;
+  newGroupCode = '';
 
   form = this.fb.group({
     username:  ['', [Validators.required, Validators.minLength(3)]],
     password:  ['', [Validators.required, Validators.minLength(8)]],
     groupName: [''],
+    groupCode: ['', [Validators.pattern(/^\d{6}$/)]],
   });
 
   switchMode(mode: 'login' | 'register') {
     this.mode = mode;
+    this.registerMode = 'create';
     this.error = '';
+    this.newGroupCode = '';
     this.form.reset();
+  }
+
+  switchRegisterMode(m: 'create' | 'join') {
+    this.registerMode = m;
+    this.error = '';
+    this.form.patchValue({ groupName: '', groupCode: '' });
   }
 
   submit() {
     if (this.form.invalid) return;
-    if (this.mode === 'register' && !this.form.value.groupName?.trim()) {
-      this.error = 'Group name is required.';
-      return;
-    }
     this.loading = true;
     this.error = '';
 
-    const { username, password, groupName } = this.form.value;
+    const { username, password, groupName, groupCode } = this.form.value;
+
+    if (this.mode === 'register') {
+      if (this.registerMode === 'create' && !groupName?.trim()) {
+        this.error = 'Group name is required.';
+        this.loading = false;
+        return;
+      }
+      if (this.registerMode === 'join' && !/^\d{6}$/.test(groupCode ?? '')) {
+        this.error = 'Enter a valid 6-digit group code.';
+        this.loading = false;
+        return;
+      }
+    }
 
     const req$ = this.mode === 'login'
       ? this.auth.login(username!, password!)
-      : this.auth.register(username!, password!, groupName!.trim());
+      : this.auth.register(
+          username!,
+          password!,
+          this.registerMode === 'create' ? groupName!.trim() : undefined,
+          this.registerMode === 'join'   ? groupCode!.trim() : undefined,
+        );
 
     req$.subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: () => {
+        this.loading = false;
+        if (this.mode === 'register' && this.registerMode === 'create' && this.auth.lastCreatedGroupCode) {
+          this.newGroupCode = this.auth.lastCreatedGroupCode;
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
+      },
       error: (err) => {
         this.loading = false;
         this.error = err.error?.error ?? (this.mode === 'login' ? 'Invalid username or password.' : 'Registration failed.');

@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Random;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -22,6 +23,7 @@ public class AuthController {
     private final GroupRepository groupRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final Random random = new Random();
 
     public AuthController(UserRepository userRepository, GroupRepository groupRepository,
                           PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
@@ -36,21 +38,34 @@ public class AuthController {
         if (req.username() == null || req.username().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username is required."));
         }
-        if (req.groupName() == null || req.groupName().isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Group name is required."));
-        }
         if (userRepository.existsByUsername(req.username().trim())) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username already taken."));
         }
 
-        // Group name is the shared key: existing name → join, new name → create
-        String groupName = req.groupName().trim();
-        Group group = groupRepository.findByName(groupName)
-            .orElseGet(() -> {
-                Group g = new Group();
-                g.setName(groupName);
-                return groupRepository.save(g);
-            });
+        boolean hasName = req.groupName() != null && !req.groupName().isBlank();
+        boolean hasCode = req.groupCode() != null && !req.groupCode().isBlank();
+
+        if (!hasName && !hasCode) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Provide a group name to create one, or a group code to join one."));
+        }
+
+        Group group;
+        if (hasCode) {
+            group = groupRepository.findByGroupCode(req.groupCode().trim())
+                .orElse(null);
+            if (group == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "No group found with that code."));
+            }
+        } else {
+            String groupName = req.groupName().trim();
+            if (groupRepository.existsByName(groupName)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Group name already taken."));
+            }
+            group = new Group();
+            group.setName(groupName);
+            group.setGroupCode(generateUniqueCode());
+            group = groupRepository.save(group);
+        }
 
         User user = new User();
         user.setUsername(req.username().trim());
@@ -59,7 +74,7 @@ public class AuthController {
         userRepository.save(user);
 
         String token = jwtUtil.generate(user.getUsername(), group.getId());
-        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), group.getName()));
+        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), group.getName(), group.getGroupCode()));
     }
 
     @PostMapping("/login")
@@ -68,8 +83,16 @@ public class AuthController {
             .filter(u -> passwordEncoder.matches(req.password(), u.getPassword()))
             .map(u -> {
                 String token = jwtUtil.generate(u.getUsername(), u.getGroup().getId());
-                return ResponseEntity.ok(new AuthResponse(token, u.getUsername(), u.getGroup().getName()));
+                return ResponseEntity.ok(new AuthResponse(token, u.getUsername(), u.getGroup().getName(), u.getGroup().getGroupCode()));
             })
             .orElse(ResponseEntity.status(401).body(null));
+    }
+
+    private String generateUniqueCode() {
+        String code;
+        do {
+            code = String.format("%06d", random.nextInt(1_000_000));
+        } while (groupRepository.existsByGroupCode(code));
+        return code;
     }
 }
