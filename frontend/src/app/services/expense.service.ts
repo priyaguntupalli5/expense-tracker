@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, catchError, map, of, tap } from 'rxjs';
-import { Category, Expense, FixedExpense, MonthlySalary, Subcategory, Summary } from '../models/expense.model';
+import { Category, Expense, FixedExpense, Subcategory, Summary } from '../models/expense.model';
 import { environment } from '../../environments/environment';
 
 const API = environment.apiUrl;
@@ -85,23 +85,6 @@ export class ExpenseService {
 
   deleteFixedExpense(id: number): Observable<void> {
     return this.http.delete<void>(`${API}/fixed-expenses/${id}`);
-  }
-
-  // ── Monthly Salary ─────────────────────────────────────────────────────────
-
-  getSalary(month: number, year: number): Observable<MonthlySalary> {
-    return this.http
-      .get<MonthlySalary>(`${API}/salaries`, { params: { month: String(month), year: String(year) } })
-      .pipe(catchError(() => of<MonthlySalary>({ priyaSalary: 0, vamsiSalary: 0 })));
-  }
-
-  setSalary(month: number, year: number, salary: MonthlySalary): Observable<MonthlySalary> {
-    return this.http.post<MonthlySalary>(`${API}/salaries`, {
-      month,
-      year,
-      priyaSalary: salary.priyaSalary,
-      vamsiSalary: salary.vamsiSalary,
-    });
   }
 
   // ── Categories ─────────────────────────────────────────────────────────────

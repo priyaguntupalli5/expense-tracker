@@ -33,9 +33,7 @@
     </div>
   </div>
 
-  <!-- Hero + Income side by side -->
-  <div class="top-row">
-
+  <!-- Hero card -->
   <div class="hero-card">
     <div class="hero-top">
       <span class="hero-label">{{ savings >= 0 ? 'Estimated Savings' : 'Over Budget' }}</span>
@@ -46,9 +44,9 @@
 
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="stat-icon income-icon"><mat-icon>account_balance</mat-icon></div>
+        <div class="stat-icon income-icon"><mat-icon>account_balance_wallet</mat-icon></div>
         <div class="stat-text">
-          <span class="stat-val">{{ formatCompact(totalIncome) }}</span>
+          <span class="stat-val">{{ formatCompact(incomeTotal) }}</span>
           <span class="stat-lbl">Income</span>
         </div>
       </div>
@@ -88,37 +86,6 @@
       }
     </div>
   </div>
-
-  <div class="income-card" [formGroup]="salaryForm">
-    <div class="income-meta">
-      <mat-icon class="income-meta-icon">account_balance_wallet</mat-icon>
-      <span class="income-meta-label">Monthly Income</span>
-    </div>
-    <div class="income-inputs">
-      <div class="income-person">
-        <span class="person-avatar priya-avatar">P</span>
-        <mat-form-field appearance="outline" class="income-field">
-          <mat-label>Priya</mat-label>
-          <span matPrefix>$&nbsp;</span>
-          <input matInput type="number" formControlName="priyaSalary" min="0" placeholder="0">
-        </mat-form-field>
-      </div>
-      <div class="income-person">
-        <span class="person-avatar vamsi-avatar">V</span>
-        <mat-form-field appearance="outline" class="income-field">
-          <mat-label>Vamsi</mat-label>
-          <span matPrefix>$&nbsp;</span>
-          <input matInput type="number" formControlName="vamsiSalary" min="0" placeholder="0">
-        </mat-form-field>
-      </div>
-      <button mat-flat-button class="income-save-btn" [class.saved]="salarySaved" (click)="saveSalary()">
-        <mat-icon>{{ salarySaved ? 'check' : 'save' }}</mat-icon>
-        {{ salarySaved ? 'Saved!' : 'Save' }}
-      </button>
-    </div>
-  </div>
-
-  </div><!-- end .top-row -->
 
   <!-- Spending chart -->
   <mat-card class="chart-card">

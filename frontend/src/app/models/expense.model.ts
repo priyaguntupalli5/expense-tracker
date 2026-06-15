@@ -32,15 +32,20 @@ export function monthlyEquivalent(fe: FixedExpense): number {
   }
 }
 
+export interface Income {
+  id?: number;
+  title: string;
+  amount: number;
+  sourceType: string; // SALARY | BONUS | INVESTMENT | FREELANCE | RENTAL | OTHER
+  month: number;
+  year: number;
+  notes?: string;
+}
+
 export interface Subcategory {
   id: number;
   categoryValue: string;
   name: string;
-}
-
-export interface MonthlySalary {
-  priyaSalary: number;
-  vamsiSalary: number;
 }
 
 export interface Category {

@@ -1,0 +1,180 @@
+.income-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.period-field {
+  width: 120px;
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .mat-mdc-form-field-infix { padding-top: 8px !important; padding-bottom: 8px !important; min-height: unset; }
+    .mat-mdc-text-field-wrapper { height: 40px; }
+  }
+}
+
+.year-field { width: 90px; }
+
+.add-btn {
+  border-radius: 20px !important;
+  font-size: 0.85rem;
+  height: 40px;
+}
+
+// ── Total banner ──────────────────────────────────────────────────────────────
+
+.total-banner {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
+  border-radius: 18px;
+  padding: 18px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 20px rgba(27, 94, 32, 0.3);
+}
+
+.total-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: white;
+}
+
+.total-icon {
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.total-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.total-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.total-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.entry-count {
+  font-size: 0.8rem;
+  background: rgba(255,255,255,0.15);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+
+.list-card {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.income-table { width: 100%; }
+
+.income-row {
+  transition: background 0.15s;
+  &:hover { background: rgba(0,0,0,0.025); }
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 7px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  .badge-icon { font-size: 0.95rem; width: 0.95rem; height: 0.95rem; }
+}
+
+.title-cell { font-weight: 500; font-size: 0.95rem; }
+
+.amount-col   { text-align: right; }
+.amount-value { font-weight: 700; font-size: 1rem; color: #1b5e20; }
+
+.notes-cell {
+  font-size: 0.82rem;
+  color: #888;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions-col { text-align: right; white-space: nowrap; width: 96px; }
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+.empty-state {
+  text-align: center;
+  padding: 64px 16px;
+  opacity: 0.45;
+
+  mat-icon {
+    font-size: 3.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: block;
+    margin: 0 auto 12px;
+  }
+
+  p { font-size: 1.1rem; margin: 0 0 4px; }
+  small { font-size: 0.85rem; }
+}
+
+// ── Mobile ────────────────────────────────────────────────────────────────────
+
+@media (max-width: 640px) {
+  .income-container { padding: 16px 14px 40px; }
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .header-right { width: 100%; }
+  .total-value { font-size: 1.5rem; }
+}

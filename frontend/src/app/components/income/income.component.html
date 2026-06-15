@@ -1,0 +1,106 @@
+<div class="income-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Income</h1>
+    </div>
+    <div class="header-right">
+      <mat-form-field appearance="outline" class="period-field">
+        <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
+          @for (m of months; track m.value) {
+            <mat-option [value]="m.value">{{ m.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="period-field year-field">
+        <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
+          @for (y of years; track y) {
+            <mat-option [value]="y">{{ y }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
+        <mat-icon>add</mat-icon> Add Income
+      </button>
+    </div>
+  </div>
+
+  <!-- Total banner -->
+  <div class="total-banner">
+    <div class="total-inner">
+      <mat-icon class="total-icon">account_balance_wallet</mat-icon>
+      <div class="total-text">
+        <span class="total-label">Total Income</span>
+        <span class="total-value">{{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+      </div>
+      <span class="entry-count">{{ entries.length }} {{ entries.length === 1 ? 'entry' : 'entries' }}</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <mat-card class="list-card">
+    <mat-card-content>
+
+      @if (entries.length === 0) {
+        <div class="empty-state">
+          <mat-icon>account_balance_wallet</mat-icon>
+          <p>No income recorded for this period</p>
+          <small>Add salaries, bonuses, investments and more</small>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="entries" class="income-table">
+
+            <ng-container matColumnDef="source">
+              <th mat-header-cell *matHeaderCellDef>Source</th>
+              <td mat-cell *matCellDef="let e">
+                <span class="source-badge"
+                  [style.background]="sourceInfo(e.sourceType).color + '18'"
+                  [style.color]="sourceInfo(e.sourceType).color"
+                  [style.border-color]="sourceInfo(e.sourceType).color + '40'">
+                  <mat-icon class="badge-icon">{{ sourceInfo(e.sourceType).icon }}</mat-icon>
+                  {{ sourceInfo(e.sourceType).label }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>Description</th>
+              <td mat-cell *matCellDef="let e" class="title-cell">{{ e.title }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef class="amount-col">Amount</th>
+              <td mat-cell *matCellDef="let e" class="amount-col amount-value">
+                {{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="notes">
+              <th mat-header-cell *matHeaderCellDef>Notes</th>
+              <td mat-cell *matCellDef="let e" class="notes-cell">{{ e.notes }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let e" class="actions-col">
+                <button mat-icon-button matTooltip="Edit" (click)="openEdit(e)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button matTooltip="Delete" color="warn" (click)="confirmDelete(e)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="income-row"></tr>
+          </table>
+        </div>
+      }
+
+    </mat-card-content>
+  </mat-card>
+
+</div>

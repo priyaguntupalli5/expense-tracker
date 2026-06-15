@@ -62,6 +62,18 @@ CREATE TABLE IF NOT EXISTS monthly_salaries (
     PRIMARY KEY (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS income_entries (
+    id          BIGINT         NOT NULL AUTO_INCREMENT,
+    title       VARCHAR(100)   NOT NULL,
+    amount      DECIMAL(12,2)  NOT NULL,
+    source_type VARCHAR(20)    NOT NULL DEFAULT 'SALARY',
+    month       INT            NOT NULL,
+    year        INT            NOT NULL,
+    notes       VARCHAR(255)   NULL,
+    group_id    BIGINT         NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
     id       BIGINT       NOT NULL AUTO_INCREMENT,
     endpoint VARCHAR(2000) NOT NULL,

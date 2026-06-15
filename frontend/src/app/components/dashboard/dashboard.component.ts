@@ -1,16 +1,15 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
+import { IncomeService } from '../../services/income.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { SettingsService } from '../../services/settings.service';
 import { FixedExpense, Summary, monthlyEquivalent } from '../../models/expense.model';
@@ -26,32 +25,26 @@ interface PieSlice {
 @Component({
   selector: 'app-dashboard',
   imports: [
-    CurrencyPipe, FormsModule, ReactiveFormsModule,
+    CurrencyPipe, FormsModule,
     MatCardModule, MatSelectModule, MatFormFieldModule,
-    MatInputModule, MatIconModule, MatButtonModule, MatTooltipModule,
+    MatIconModule, MatButtonModule, MatTooltipModule,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private readonly expenseService = inject(ExpenseService);
-  private readonly fb = inject(FormBuilder);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly destroy$ = new Subject<void>();
-  readonly pushService = inject(PushNotificationService);
+  private readonly incomeService  = inject(IncomeService);
+  private readonly destroy$       = new Subject<void>();
+  readonly pushService    = inject(PushNotificationService);
   readonly settingsService = inject(SettingsService);
 
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
   pieSlices: PieSlice[] = [];
-  salarySaved   = false;
+  incomeTotal = 0;
   private fixedExpenses: FixedExpense[] = [];
-
-  salaryForm = this.fb.group({
-    priyaSalary: [0],
-    vamsiSalary: [0],
-  });
 
   readonly months = [
     { value: 1,  label: 'January' },   { value: 2,  label: 'February' },
@@ -79,31 +72,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadData();
   }
 
-  saveSalary() {
-    const v = this.salaryForm.value;
-    this.expenseService.setSalary(this.selectedMonth, this.selectedYear, {
-      priyaSalary: Number(v.priyaSalary) || 0,
-      vamsiSalary: Number(v.vamsiSalary) || 0,
-    }).subscribe({
-      next: () => {
-        this.salarySaved = true;
-        setTimeout(() => this.salarySaved = false, 2000);
-      },
-      error: () => this.snackBar.open('Failed to save income', 'OK', { duration: 3000 }),
-    });
-  }
-
   private loadData() {
     forkJoin({
-      categories: this.expenseService.loadCategories(),
-      salary:     this.expenseService.getSalary(this.selectedMonth, this.selectedYear),
-      fixed:      this.expenseService.getFixedExpenses(),
-      summary:    this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
-    }).pipe(takeUntil(this.destroy$)).subscribe(({ salary, fixed, summary }) => {
-      this.salaryForm.patchValue(
-        { priyaSalary: Number(salary.priyaSalary), vamsiSalary: Number(salary.vamsiSalary) },
-        { emitEvent: false },
-      );
+      categories:  this.expenseService.loadCategories(),
+      incomeTotal: this.incomeService.getMonthlyTotal(this.selectedMonth, this.selectedYear),
+      fixed:       this.expenseService.getFixedExpenses(),
+      summary:     this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
+    }).pipe(takeUntil(this.destroy$)).subscribe(({ incomeTotal, fixed, summary }) => {
+      this.incomeTotal   = incomeTotal;
       this.fixedExpenses = fixed;
       this.summary       = summary;
       this.buildPieChart();
@@ -111,7 +87,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private buildPieChart() {
-    // Merge variable + fixed expenses by category, excluding income/credit categories
     const breakdown: Record<string, number> = {};
 
     for (const [cat, amount] of Object.entries(this.summary?.categoryBreakdown ?? {})) {
@@ -167,11 +142,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.pieSlices = slices;
   }
 
-  get totalIncome(): number {
-    const v = this.salaryForm.value;
-    return (Number(v.priyaSalary) || 0) + (Number(v.vamsiSalary) || 0);
-  }
-
   get fixedTotal(): number {
     return this.fixedExpenses
       .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
@@ -201,7 +171,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get savings(): number {
-    return this.totalIncome + this.creditsTotal - this.fixedTotal - this.actualTotal;
+    return this.incomeTotal + this.creditsTotal - this.fixedTotal - this.actualTotal;
   }
 
   formatCompact(amount: number): string {
@@ -222,23 +192,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async testNotification() {
-    this.expenseService.sendTestNotification().subscribe({
-      next: () => this.snackBar.open('Test notification sent!', 'OK', { duration: 3000 }),
-      error: () => this.snackBar.open('Failed to send test notification', 'OK', { duration: 3000 }),
-    });
+    this.expenseService.sendTestNotification().subscribe();
   }
 
   async toggleNotifications() {
     try {
       if (this.pushService.enabled()) {
         await this.pushService.disable();
-        this.snackBar.open('Daily notifications disabled', 'OK', { duration: 3000 });
       } else {
         await this.pushService.enable();
-        this.snackBar.open('Daily notifications enabled — you\'ll hear from us at 8 PM!', 'OK', { duration: 4000 });
       }
-    } catch (err: any) {
-      this.snackBar.open(err.message ?? 'Could not update notification settings', 'OK', { duration: 4000 });
-    }
+    } catch {}
   }
 }
