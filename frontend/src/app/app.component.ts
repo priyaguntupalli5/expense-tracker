@@ -3,10 +3,7 @@ import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/rou
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog } from '@angular/material/dialog';
 import { SwPush } from '@angular/service-worker';
-import { ExpenseService } from './services/expense.service';
-import { ExpenseFormComponent } from './components/expense-form/expense-form.component';
 
 @Component({
   selector: 'app-root',
@@ -18,10 +15,8 @@ import { ExpenseFormComponent } from './components/expense-form/expense-form.com
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
-  private readonly dialog         = inject(MatDialog);
-  private readonly expenseService = inject(ExpenseService);
-  private readonly swPush         = inject(SwPush);
-  private readonly router         = inject(Router);
+  private readonly swPush = inject(SwPush);
+  private readonly router = inject(Router);
 
   ngOnInit() {
     if (this.swPush.isEnabled) {
@@ -30,15 +25,5 @@ export class AppComponent implements OnInit {
         this.router.navigateByUrl(url);
       });
     }
-  }
-
-  openAddExpense() {
-    const ref = this.dialog.open(ExpenseFormComponent, {
-      width: '520px',
-      maxWidth: '95vw',
-    });
-    ref.afterClosed().subscribe(saved => {
-      if (saved) this.expenseService.notifyRefresh();
-    });
   }
 }

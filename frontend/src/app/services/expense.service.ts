@@ -43,6 +43,11 @@ export class ExpenseService {
       .pipe(catchError(() => of<Expense[]>([])));
   }
 
+  getByDateRange(startDate: string, endDate: string): Observable<Expense[]> {
+    return this.http.get<Expense[]>(`${API}/expenses`, { params: { startDate, endDate } })
+      .pipe(catchError(() => of<Expense[]>([])));
+  }
+
   getSummary(month?: number, year?: number): Observable<Summary> {
     const params: Record<string, string> = {};
     if (month !== undefined) params['month'] = String(month);

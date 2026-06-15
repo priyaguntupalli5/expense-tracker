@@ -27,13 +27,6 @@ a[mat-button] {
   &.nav-active { opacity: 1; background: rgba(255,255,255,0.18); }
 }
 
-.add-btn {
-  background: white !important;
-  color: #1976d2 !important;
-  margin-left: 10px;
-  font-weight: 600;
-}
-
 // ── Bottom navigation (mobile only) ──────────────────────────────────────────
 
 .bottom-nav {
@@ -64,30 +57,6 @@ a[mat-button] {
   &.bottom-active {
     color: #1976d2;
   }
-}
-
-.bottom-fab {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: #1976d2;
-  color: white;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(25,118,210,0.45);
-  flex-shrink: 0;
-  margin-bottom: 4px;
-  transition: transform 0.15s, box-shadow 0.15s;
-
-  &:active {
-    transform: scale(0.93);
-    box-shadow: 0 2px 8px rgba(25,118,210,0.35);
-  }
-
-  mat-icon { font-size: 1.55rem; width: 1.55rem; height: 1.55rem; }
 }
 
 // ── Mobile breakpoint ─────────────────────────────────────────────────────────

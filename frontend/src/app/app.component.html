@@ -18,10 +18,6 @@
     <mat-icon>label</mat-icon>
     <span class="nav-label">Categories</span>
   </a>
-  <button mat-flat-button class="add-btn desktop-nav" (click)="openAddExpense()">
-    <mat-icon>add</mat-icon>
-    <span class="add-label">Add</span>
-  </button>
 </mat-toolbar>
 
 <router-outlet></router-outlet>
@@ -36,15 +32,12 @@
     <mat-icon>receipt_long</mat-icon>
     <span>Expenses</span>
   </a>
-  <button class="bottom-fab" (click)="openAddExpense()">
-    <mat-icon>add</mat-icon>
-  </button>
   <a routerLink="/fixed-expenses" routerLinkActive="bottom-active" class="bottom-item">
     <mat-icon>repeat</mat-icon>
     <span>Fixed</span>
   </a>
   <a routerLink="/categories" routerLinkActive="bottom-active" class="bottom-item">
     <mat-icon>label</mat-icon>
-    <span>More</span>
+    <span>Categories</span>
   </a>
 </nav>

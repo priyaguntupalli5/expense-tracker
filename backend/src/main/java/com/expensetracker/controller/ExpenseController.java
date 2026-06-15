@@ -4,10 +4,12 @@ import com.expensetracker.model.Expense;
 import com.expensetracker.model.SummaryDTO;
 import com.expensetracker.service.ExpenseService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -23,9 +25,11 @@ public class ExpenseController {
     @GetMapping
     public List<Expense> getAll(
         @RequestParam(required = false) Integer month,
-        @RequestParam(required = false) Integer year
+        @RequestParam(required = false) Integer year,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        return service.getAll(month, year);
+        return service.getAll(month, year, startDate, endDate);
     }
 
     @GetMapping("/summary")
