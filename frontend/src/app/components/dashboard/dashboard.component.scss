@@ -1,5 +1,5 @@
 .dashboard-container {
-  max-width: 960px;
+  max-width: 1140px;
   margin: 0 auto;
   padding: 24px 20px 48px;
 }
@@ -127,7 +127,7 @@
   width: 1px;
   height: 30px;
   background: rgba(255, 255, 255, 0.18);
-  margin: 0 6px;
+  margin: 0 4px;
   flex-shrink: 0;
 }
 
@@ -156,7 +156,7 @@
 }
 
 .stat-val {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: white;
   line-height: 1.25;
