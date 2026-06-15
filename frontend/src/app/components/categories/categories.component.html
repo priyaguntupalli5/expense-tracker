@@ -1,16 +1,15 @@
 <div class="list-container">
   <mat-card class="list-card">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon>label</mat-icon>
-        Categories
-      </mat-card-title>
-      <mat-card-subtitle>{{ categories.length }} categories configured</mat-card-subtitle>
-      <span class="header-spacer"></span>
-      <button mat-flat-button color="primary" (click)="openAdd()">
-        <mat-icon>add</mat-icon> Add Category
+    <div class="card-header">
+      <div class="card-title">
+        <mat-icon class="title-icon">label</mat-icon>
+        <span>Categories</span>
+        <span class="count-chip">{{ categories.length }}</span>
+      </div>
+      <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
+        <mat-icon>add</mat-icon> Add
       </button>
-    </mat-card-header>
+    </div>
 
     <mat-card-content>
       @if (categories.length === 0) {
@@ -19,49 +18,28 @@
           <p>No categories yet</p>
         </div>
       } @else {
-        <div class="table-wrapper">
-          <table mat-table [dataSource]="categories" class="cat-table">
-
-            <ng-container matColumnDef="color">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let c">
-                <span class="color-dot" [style.background]="c.color"></span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="label">
-              <th mat-header-cell *matHeaderCellDef>Category</th>
-              <td mat-cell *matCellDef="let c">
-                <span class="cat-badge"
-                  [style.background]="c.color + '1a'"
-                  [style.color]="c.color"
-                  [style.border-color]="c.color + '40'">
-                  <mat-icon class="badge-icon">{{ c.icon }}</mat-icon>
-                  {{ c.label }}
-                </span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="icon">
-              <th mat-header-cell *matHeaderCellDef>Icon name</th>
-              <td mat-cell *matCellDef="let c" class="icon-name">{{ c.icon }}</td>
-            </ng-container>
-
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let c" class="actions-col">
+        <div class="cat-list">
+          @for (c of categories; track c.id) {
+            <div class="cat-row">
+              <span class="cat-accent" [style.background]="c.color"></span>
+              <span class="cat-badge"
+                [style.background]="c.color + '18'"
+                [style.color]="c.color"
+                [style.border-color]="c.color + '55'">
+                <mat-icon class="badge-icon">{{ c.icon }}</mat-icon>
+                {{ c.label }}
+              </span>
+              <span class="row-spacer"></span>
+              <div class="row-actions">
                 <button mat-icon-button matTooltip="Edit" (click)="openEdit(c)">
                   <mat-icon>edit</mat-icon>
                 </button>
                 <button mat-icon-button matTooltip="Delete" color="warn" (click)="confirmDelete(c)">
                   <mat-icon>delete_outline</mat-icon>
                 </button>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="cat-row"></tr>
-          </table>
+              </div>
+            </div>
+          }
         </div>
       }
     </mat-card-content>

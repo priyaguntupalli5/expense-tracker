@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -13,7 +12,7 @@ import { CategoryFormComponent } from '../category-form/category-form.component'
 @Component({
   selector: 'app-categories',
   imports: [
-    MatTableModule, MatIconModule, MatButtonModule,
+    MatIconModule, MatButtonModule,
     MatTooltipModule, MatCardModule,
   ],
   templateUrl: './categories.component.html',
@@ -25,14 +24,19 @@ export class CategoriesComponent implements OnInit {
   private readonly snackBar       = inject(MatSnackBar);
 
   categories: Category[] = [];
-  displayedColumns = ['color', 'label', 'icon', 'actions'];
 
   ngOnInit() {
     this.load();
   }
 
   private load() {
-    this.expenseService.loadCategories().subscribe(cats => this.categories = cats);
+    this.expenseService.loadCategories().subscribe(cats => {
+      this.categories = [...cats].sort((a, b) => {
+        if (a.value === 'OTHER') return 1;
+        if (b.value === 'OTHER') return -1;
+        return a.label.localeCompare(b.label);
+      });
+    });
   }
 
   openAdd() {
