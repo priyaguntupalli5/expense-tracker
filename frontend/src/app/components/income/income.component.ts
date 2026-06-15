@@ -40,7 +40,7 @@ export class IncomeComponent implements OnInit {
   templates: Income[] = [];
   entries:   Income[] = [];
   displayedColumns = ['source', 'title', 'recurrence', 'amount', 'actions'];
-  entryColumns     = ['source', 'title', 'date', 'amount', 'actions'];
+  entryColumns     = ['source', 'title', 'amount', 'actions'];
 
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
@@ -87,20 +87,12 @@ export class IncomeComponent implements OnInit {
     return recurrence ? (RECURRENCE_LABELS[recurrence] ?? recurrence) : '';
   }
 
-  openAddRecurring() {
+  openAdd() {
     const ref = this.dialog.open(IncomeFormComponent, {
       width: '500px', maxWidth: '95vw',
-      data: { isTemplate: true, isRecurring: true },
-    });
-    ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
-  }
-
-  openAddOnce() {
-    const ref = this.dialog.open(IncomeFormComponent, {
-      width: '460px', maxWidth: '95vw',
       data: { month: this.selectedMonth, year: this.selectedYear },
     });
-    ref.afterClosed().subscribe(saved => { if (saved) this.loadEntries(); });
+    ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }
 
   openEditTemplate(tpl: Income) {
