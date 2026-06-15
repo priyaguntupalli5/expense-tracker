@@ -39,4 +39,10 @@ public class PushController {
         pushService.removeSubscription(body.get("endpoint"));
         return ResponseEntity.ok(Map.of("success", true));
     }
+
+    @PostMapping("/test")
+    public ResponseEntity<?> test() {
+        pushService.sendTestNotification();
+        return ResponseEntity.ok(Map.of("sent", true));
+    }
 }

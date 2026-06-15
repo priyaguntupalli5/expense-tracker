@@ -5,6 +5,8 @@ export interface Expense {
   category: string;
   date: string;
   notes?: string;
+  subcategory?: string;
+  imageData?: string;
 }
 
 export interface FixedExpense {
@@ -13,6 +15,13 @@ export interface FixedExpense {
   amount: number;
   category: string;
   notes?: string;
+  subcategory?: string;
+}
+
+export interface Subcategory {
+  id: number;
+  categoryValue: string;
+  name: string;
 }
 
 export interface MonthlySalary {
@@ -26,6 +35,7 @@ export interface Category {
   label: string;
   icon: string;
   color: string;
+  isIncome?: boolean;
 }
 
 export interface Summary {

@@ -27,6 +27,9 @@ public class FixedExpense {
     @Size(max = 255)
     private String notes;
 
+    @Size(max = 100)
+    private String subcategory;
+
     public FixedExpense() {}
 
     public Long getId() { return id; }
@@ -43,4 +46,7 @@ public class FixedExpense {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public String getSubcategory() { return subcategory; }
+    public void setSubcategory(String subcategory) { this.subcategory = subcategory; }
 }

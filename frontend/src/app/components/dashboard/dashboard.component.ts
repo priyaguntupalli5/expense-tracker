@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { CurrencyPipe, NgClass } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
@@ -7,11 +7,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { PushNotificationService } from '../../services/push-notification.service';
-import { Summary } from '../../models/expense.model';
+import { FixedExpense, Summary } from '../../models/expense.model';
 
 interface PieSlice {
   path: string;
@@ -24,9 +25,9 @@ interface PieSlice {
 @Component({
   selector: 'app-dashboard',
   imports: [
-    CurrencyPipe, NgClass, FormsModule, ReactiveFormsModule,
+    CurrencyPipe, FormsModule, ReactiveFormsModule,
     MatCardModule, MatSelectModule, MatFormFieldModule,
-    MatInputModule, MatIconModule, MatButtonModule,
+    MatInputModule, MatIconModule, MatButtonModule, MatTooltipModule,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -41,8 +42,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
-  fixedTotal    = 0;
   pieSlices: PieSlice[] = [];
+  salarySaved   = false;
+  private fixedExpenses: FixedExpense[] = [];
 
   salaryForm = this.fb.group({
     priyaSalary: [0],
@@ -61,7 +63,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   ngOnInit() {
-    this.expenseService.loadCategories().subscribe();
     this.expenseService.onRefresh$.pipe(takeUntil(this.destroy$)).subscribe(() => this.loadData());
     this.loadData();
   }
@@ -81,28 +82,48 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.expenseService.setSalary(this.selectedMonth, this.selectedYear, {
       priyaSalary: Number(v.priyaSalary) || 0,
       vamsiSalary: Number(v.vamsiSalary) || 0,
-    }).subscribe();
+    }).subscribe({
+      next: () => {
+        this.salarySaved = true;
+        setTimeout(() => this.salarySaved = false, 2000);
+      },
+      error: () => this.snackBar.open('Failed to save income', 'OK', { duration: 3000 }),
+    });
   }
 
   private loadData() {
     forkJoin({
-      salary:  this.expenseService.getSalary(this.selectedMonth, this.selectedYear),
-      fixed:   this.expenseService.getFixedExpenses(),
-      summary: this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
+      categories: this.expenseService.loadCategories(),
+      salary:     this.expenseService.getSalary(this.selectedMonth, this.selectedYear),
+      fixed:      this.expenseService.getFixedExpenses(),
+      summary:    this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
     }).pipe(takeUntil(this.destroy$)).subscribe(({ salary, fixed, summary }) => {
       this.salaryForm.patchValue(
         { priyaSalary: Number(salary.priyaSalary), vamsiSalary: Number(salary.vamsiSalary) },
         { emitEvent: false },
       );
-      this.fixedTotal = fixed.reduce((sum, e) => sum + Number(e.amount), 0);
-      this.summary    = summary;
+      this.fixedExpenses = fixed;
+      this.summary       = summary;
       this.buildPieChart();
     });
   }
 
   private buildPieChart() {
-    const breakdown = this.summary?.categoryBreakdown ?? {};
-    const total     = this.summary?.total ?? 0;
+    // Merge variable + fixed expenses by category, excluding income/credit categories
+    const breakdown: Record<string, number> = {};
+
+    for (const [cat, amount] of Object.entries(this.summary?.categoryBreakdown ?? {})) {
+      if (!this.expenseService.getCategoryByValue(cat)?.isIncome) {
+        breakdown[cat] = (breakdown[cat] ?? 0) + Number(amount);
+      }
+    }
+    for (const fe of this.fixedExpenses) {
+      if (!this.expenseService.getCategoryByValue(fe.category)?.isIncome) {
+        breakdown[fe.category] = (breakdown[fe.category] ?? 0) + Number(fe.amount);
+      }
+    }
+
+    const total = Object.values(breakdown).reduce((s, a) => s + a, 0);
     if (total === 0) { this.pieSlices = []; return; }
 
     const cx = 100, cy = 100, r = 80;
@@ -149,12 +170,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return (Number(v.priyaSalary) || 0) + (Number(v.vamsiSalary) || 0);
   }
 
+  get fixedTotal(): number {
+    return this.fixedExpenses
+      .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
+      .reduce((sum, fe) => sum + Number(fe.amount), 0);
+  }
+
+  get creditsTotal(): number {
+    const breakdown = this.summary?.categoryBreakdown ?? {};
+    const variableCredits = Object.entries(breakdown)
+      .filter(([cat]) => this.expenseService.getCategoryByValue(cat)?.isIncome)
+      .reduce((sum, [, amt]) => sum + Number(amt), 0);
+    const fixedCredits = this.fixedExpenses
+      .filter(fe => this.expenseService.getCategoryByValue(fe.category)?.isIncome)
+      .reduce((sum, fe) => sum + Number(fe.amount), 0);
+    return variableCredits + fixedCredits;
+  }
+
   get actualTotal(): number {
-    return Number(this.summary?.total ?? 0);
+    const breakdown = this.summary?.categoryBreakdown ?? {};
+    return Object.entries(breakdown)
+      .filter(([cat]) => !this.expenseService.getCategoryByValue(cat)?.isIncome)
+      .reduce((sum, [, amt]) => sum + Number(amt), 0);
+  }
+
+  get combinedTotal(): number {
+    return this.actualTotal + this.fixedTotal;
   }
 
   get savings(): number {
-    return this.totalIncome - this.fixedTotal - this.actualTotal;
+    return this.totalIncome + this.creditsTotal - this.fixedTotal - this.actualTotal;
   }
 
   formatCompact(amount: number): string {
@@ -169,6 +214,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getCategoryIcon(value: string) {
     return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
+  }
+
+  async testNotification() {
+    this.expenseService.sendTestNotification().subscribe({
+      next: () => this.snackBar.open('Test notification sent!', 'OK', { duration: 3000 }),
+      error: () => this.snackBar.open('Failed to send test notification', 'OK', { duration: 3000 }),
+    });
   }
 
   async toggleNotifications() {

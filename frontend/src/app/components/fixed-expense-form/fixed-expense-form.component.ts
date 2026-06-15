@@ -1,22 +1,28 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { AsyncPipe } from '@angular/common';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
 import { ExpenseService } from '../../services/expense.service';
 import { Category, FixedExpense } from '../../models/expense.model';
 
 @Component({
   selector: 'app-fixed-expense-form',
   imports: [
+    AsyncPipe,
     ReactiveFormsModule,
     MatDialogModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule,
+    MatSelectModule, MatAutocompleteModule,
+    MatButtonModule, MatIconModule, MatProgressSpinnerModule,
   ],
   templateUrl: './fixed-expense-form.component.html',
   styleUrl: './fixed-expense-form.component.scss',
@@ -32,24 +38,61 @@ export class FixedExpenseFormComponent implements OnInit {
   isEditing = false;
   saving    = false;
 
+  private readonly subcategoriesSubject = new BehaviorSubject<string[]>([]);
+  filteredSuggestions$!: Observable<string[]>;
+
   form = this.fb.group({
-    title:    ['', [Validators.required, Validators.maxLength(100)]],
-    amount:   [null as number | null, [Validators.required, Validators.min(0.01)]],
-    category: ['HOUSING', Validators.required],
-    notes:    [''],
+    category:    ['HOUSING', Validators.required],
+    title:       ['', [Validators.required, Validators.maxLength(100)]],
+    amount:      [null as number | null, [Validators.required, Validators.min(0.01)]],
+    subcategory: ['' as string | null],
+    notes:       [''],
   });
 
   ngOnInit() {
+    this.filteredSuggestions$ = combineLatest([
+      this.form.get('title')!.valueChanges.pipe(startWith(this.form.get('title')!.value ?? '')),
+      this.subcategoriesSubject,
+    ]).pipe(
+      map(([typed, subs]) => {
+        const lower = (typed ?? '').toLowerCase().trim();
+        if (!lower) return subs;
+        return subs.filter(s => s.toLowerCase().includes(lower));
+      })
+    );
+
     this.expenseService.loadCategories().subscribe(cats => {
       this.categories = cats;
       if (!this.isEditing && cats.length > 0) {
         this.form.patchValue({ category: cats[0].value });
+        this.loadSubcategories(cats[0].value);
       }
     });
+
+    this.form.get('category')!.valueChanges.subscribe(val => {
+      if (val) {
+        this.form.patchValue({ subcategory: null }, { emitEvent: false });
+        this.loadSubcategories(val);
+      }
+    });
+
     if (this.data) {
       this.isEditing = true;
-      this.form.patchValue(this.data);
+      this.form.patchValue({ ...this.data, subcategory: this.data.subcategory ?? null });
+      if (this.data.category) {
+        this.loadSubcategories(this.data.category);
+      }
     }
+  }
+
+  private loadSubcategories(categoryValue: string) {
+    this.expenseService.getSubcategories(categoryValue).subscribe(subs => {
+      this.subcategoriesSubject.next(subs);
+    });
+  }
+
+  onSuggestionSelected(event: MatAutocompleteSelectedEvent) {
+    this.form.patchValue({ subcategory: event.option.value }, { emitEvent: false });
   }
 
   save() {
@@ -57,10 +100,11 @@ export class FixedExpenseFormComponent implements OnInit {
     this.saving = true;
     const v = this.form.value;
     const expense: FixedExpense = {
-      title:    v.title!,
-      amount:   v.amount!,
-      category: v.category!,
-      notes:    v.notes || undefined,
+      title:       v.title!,
+      amount:      v.amount!,
+      category:    v.category!,
+      subcategory: v.subcategory || undefined,
+      notes:       v.notes || undefined,
     };
 
     const op = this.isEditing

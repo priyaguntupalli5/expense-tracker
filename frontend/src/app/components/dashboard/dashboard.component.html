@@ -1,122 +1,138 @@
 <div class="dashboard-container">
 
-  <!-- Notification toggle (only visible when installed as PWA / production build) -->
-  @if (pushService.swAvailable) {
-    <button class="notif-btn"
-            [class.notif-on]="pushService.enabled()"
-            (click)="toggleNotifications()">
-      <mat-icon>{{ pushService.enabled() ? 'notifications_active' : 'notifications_none' }}</mat-icon>
-      {{ pushService.enabled() ? 'Notifications on' : 'Enable daily reminders' }}
-    </button>
-  }
-
-  <!-- Period Selector -->
-  <div class="period-row">
-    <h2 class="period-title">Monthly Overview</h2>
-    <div class="period-controls">
+  <!-- Header -->
+  <div class="dash-header">
+    <h1 class="dash-title">Dashboard</h1>
+    <div class="dash-header-right">
       <mat-form-field appearance="outline" class="period-field">
-        <mat-label>Month</mat-label>
         <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
           @for (m of months; track m.value) {
             <mat-option [value]="m.value">{{ m.label }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
-      <mat-form-field appearance="outline" class="period-field">
-        <mat-label>Year</mat-label>
+      <mat-form-field appearance="outline" class="period-field year-field">
         <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
           @for (y of years; track y) {
             <mat-option [value]="y">{{ y }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
+      @if (pushService.swAvailable) {
+        <button class="notif-icon-btn" [class.notif-on]="pushService.enabled()"
+                (click)="toggleNotifications()"
+                [matTooltip]="pushService.enabled() ? 'Notifications on – tap to disable' : 'Enable reminders'">
+          <mat-icon>{{ pushService.enabled() ? 'notifications_active' : 'notifications_none' }}</mat-icon>
+        </button>
+        @if (pushService.enabled()) {
+          <button class="notif-icon-btn" (click)="testNotification()" matTooltip="Send test notification">
+            <mat-icon>send</mat-icon>
+          </button>
+        }
+      }
     </div>
   </div>
 
-  <!-- Salary Inputs -->
-  <div class="salary-section" [formGroup]="salaryForm">
-    <div class="section-label">Monthly Income</div>
-    <div class="salary-row">
-      <mat-card class="salary-card">
-        <mat-card-content>
-          <div class="salary-person">
-            <mat-icon>person</mat-icon>
-            <span class="person-name">Priya</span>
-          </div>
-          <mat-form-field appearance="outline" class="salary-field">
-            <mat-label>Salary</mat-label>
-            <span matPrefix>$&nbsp;</span>
-            <input matInput type="number" formControlName="priyaSalary" min="0"
-                   (blur)="saveSalary()" placeholder="0">
-          </mat-form-field>
-        </mat-card-content>
-      </mat-card>
+  <!-- Hero + Income side by side -->
+  <div class="top-row">
 
-      <mat-card class="salary-card">
-        <mat-card-content>
-          <div class="salary-person">
-            <mat-icon>person</mat-icon>
-            <span class="person-name">Vamsi</span>
+  <div class="hero-card">
+    <div class="hero-top">
+      <span class="hero-label">{{ savings >= 0 ? 'Estimated Savings' : 'Over Budget' }}</span>
+      <span class="hero-value" [class.negative]="savings < 0">
+        {{ savings | currency:'CAD':'symbol-narrow':'1.0-2' }}
+      </span>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="stat-icon income-icon"><mat-icon>account_balance</mat-icon></div>
+        <div class="stat-text">
+          <span class="stat-val">{{ formatCompact(totalIncome) }}</span>
+          <span class="stat-lbl">Income</span>
+        </div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="hero-stat">
+        <div class="stat-icon expenses-icon"><mat-icon>payments</mat-icon></div>
+        <div class="stat-text">
+          <span class="stat-val">{{ formatCompact(combinedTotal) }}</span>
+          <span class="stat-lbl">Expenses</span>
+        </div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="hero-stat">
+        <div class="stat-icon fixed-icon"><mat-icon>repeat</mat-icon></div>
+        <div class="stat-text">
+          <span class="stat-val">{{ formatCompact(fixedTotal) }}</span>
+          <span class="stat-lbl">Fixed</span>
+        </div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="hero-stat">
+        <div class="stat-icon actual-icon"><mat-icon>receipt_long</mat-icon></div>
+        <div class="stat-text">
+          <span class="stat-val">{{ formatCompact(actualTotal) }}</span>
+          <span class="stat-lbl">Spent</span>
+        </div>
+      </div>
+      @if (creditsTotal > 0) {
+        <div class="stat-sep"></div>
+        <div class="hero-stat">
+          <div class="stat-icon credits-icon"><mat-icon>payments</mat-icon></div>
+          <div class="stat-text">
+            <span class="stat-val credits-val">{{ formatCompact(creditsTotal) }}</span>
+            <span class="stat-lbl">Credits</span>
           </div>
-          <mat-form-field appearance="outline" class="salary-field">
-            <mat-label>Salary</mat-label>
-            <span matPrefix>$&nbsp;</span>
-            <input matInput type="number" formControlName="vamsiSalary" min="0"
-                   (blur)="saveSalary()" placeholder="0">
-          </mat-form-field>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      }
     </div>
   </div>
 
-  <!-- Summary Cards -->
-  <div class="summary-grid">
-    <mat-card class="summary-card income-card">
-      <mat-card-content>
-        <mat-icon class="card-icon">account_balance</mat-icon>
-        <div class="card-value">{{ totalIncome | currency:'CAD':'symbol-narrow':'1.0-2' }}</div>
-        <div class="card-label">Total Income</div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="summary-card fixed-card">
-      <mat-card-content>
-        <mat-icon class="card-icon">repeat</mat-icon>
-        <div class="card-value">{{ fixedTotal | currency:'CAD':'symbol-narrow':'1.0-2' }}</div>
-        <div class="card-label">Fixed Expenses</div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="summary-card actual-card">
-      <mat-card-content>
-        <mat-icon class="card-icon">receipt_long</mat-icon>
-        <div class="card-value">{{ actualTotal | currency:'CAD':'symbol-narrow':'1.0-2' }}</div>
-        <div class="card-label">Actual Expenses</div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="summary-card savings-card" [ngClass]="savings >= 0 ? 'positive' : 'negative'">
-      <mat-card-content>
-        <mat-icon class="card-icon">{{ savings >= 0 ? 'savings' : 'trending_down' }}</mat-icon>
-        <div class="card-value">{{ savings | currency:'CAD':'symbol-narrow':'1.0-2' }}</div>
-        <div class="card-label">{{ savings >= 0 ? 'Estimated Savings' : 'Over Budget' }}</div>
-      </mat-card-content>
-    </mat-card>
+  <div class="income-card" [formGroup]="salaryForm">
+    <div class="income-meta">
+      <mat-icon class="income-meta-icon">account_balance_wallet</mat-icon>
+      <span class="income-meta-label">Monthly Income</span>
+    </div>
+    <div class="income-inputs">
+      <div class="income-person">
+        <span class="person-avatar priya-avatar">P</span>
+        <mat-form-field appearance="outline" class="income-field">
+          <mat-label>Priya</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="priyaSalary" min="0" placeholder="0">
+        </mat-form-field>
+      </div>
+      <div class="income-person">
+        <span class="person-avatar vamsi-avatar">V</span>
+        <mat-form-field appearance="outline" class="income-field">
+          <mat-label>Vamsi</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="vamsiSalary" min="0" placeholder="0">
+        </mat-form-field>
+      </div>
+      <button mat-flat-button class="income-save-btn" [class.saved]="salarySaved" (click)="saveSalary()">
+        <mat-icon>{{ salarySaved ? 'check' : 'save' }}</mat-icon>
+        {{ salarySaved ? 'Saved!' : 'Save' }}
+      </button>
+    </div>
   </div>
 
-  <!-- Pie Chart -->
+  </div><!-- end .top-row -->
+
+  <!-- Spending chart -->
   <mat-card class="chart-card">
     <mat-card-header>
       <mat-card-title>
-        <mat-icon>pie_chart</mat-icon>
-        Actual Expenses by Category
+        <mat-icon>donut_large</mat-icon>
+        Spending by Category
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
       @if (pieSlices.length === 0) {
         <div class="empty-state">
           <mat-icon>bar_chart</mat-icon>
-          <p>No actual expenses this period</p>
+          <p>No expenses this period</p>
           <small>Add expenses to see the breakdown</small>
         </div>
       } @else {
@@ -126,12 +142,11 @@
               @for (slice of pieSlices; track slice.category) {
                 <path [attr.d]="slice.path" [attr.fill]="slice.color" class="pie-slice"></path>
               }
-              <circle cx="100" cy="100" r="45" fill="white"/>
-              <text x="100" y="96" text-anchor="middle" class="donut-sm">Total</text>
-              <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(actualTotal) }}</text>
+              <circle cx="100" cy="100" r="50" fill="white"/>
+              <text x="100" y="94" text-anchor="middle" class="donut-sm">Total</text>
+              <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(combinedTotal) }}</text>
             </svg>
           </div>
-
           <div class="legend">
             @for (slice of pieSlices; track slice.category) {
               <div class="legend-row">

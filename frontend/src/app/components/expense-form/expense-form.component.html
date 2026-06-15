@@ -12,9 +12,29 @@
   <form [formGroup]="form" class="expense-form">
 
     <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Category</mat-label>
+      <mat-select formControlName="category">
+        @for (cat of categories; track cat.value) {
+          <mat-option [value]="cat.value">
+            <mat-icon>{{ cat.icon }}</mat-icon>
+            {{ cat.label }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Title</mat-label>
-      <input matInput formControlName="title" placeholder="e.g. Grocery run, Netflix, Rent">
+      <input matInput
+        formControlName="title"
+        placeholder="e.g. Tim Hortons, Grocery run, Netflix"
+        [matAutocomplete]="titleAuto">
       <mat-icon matSuffix>label</mat-icon>
+      <mat-autocomplete #titleAuto (optionSelected)="onSuggestionSelected($event)">
+        @for (suggestion of filteredSuggestions$ | async; track suggestion) {
+          <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+        }
+      </mat-autocomplete>
       @if (form.get('title')?.hasError('required')) {
         <mat-error>Title is required</mat-error>
       }
@@ -48,21 +68,27 @@
     </div>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Category</mat-label>
-      <mat-select formControlName="category">
-        @for (cat of categories; track cat.value) {
-          <mat-option [value]="cat.value">
-            <mat-icon>{{ cat.icon }}</mat-icon>
-            {{ cat.label }}
-          </mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Notes (optional)</mat-label>
       <textarea matInput formControlName="notes" rows="2" placeholder="Any additional details..."></textarea>
     </mat-form-field>
+
+    <!-- Receipt upload -->
+    <div class="receipt-section">
+      <input type="file" #fileInput accept="image/*" (change)="onFileSelected($event)" hidden>
+      @if (!form.get('imageData')?.value) {
+        <button type="button" class="receipt-upload-btn" (click)="fileInput.click()">
+          <mat-icon>add_photo_alternate</mat-icon>
+          <span>Attach Receipt</span>
+        </button>
+      } @else {
+        <div class="receipt-preview">
+          <img [src]="form.get('imageData')?.value" class="receipt-thumb" (click)="fileInput.click()">
+          <button type="button" mat-icon-button class="receipt-remove-btn" (click)="removeImage()" matTooltip="Remove receipt">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
 
   </form>
 </mat-dialog-content>

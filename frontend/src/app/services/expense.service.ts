@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, Subject, catchError, of, tap } from 'rxjs';
-import { Category, Expense, FixedExpense, MonthlySalary, Summary } from '../models/expense.model';
+import { BehaviorSubject, Observable, Subject, catchError, map, of, tap } from 'rxjs';
+import { Category, Expense, FixedExpense, MonthlySalary, Subcategory, Summary } from '../models/expense.model';
 import { environment } from '../../environments/environment';
 
 const API = environment.apiUrl;
@@ -40,6 +40,11 @@ export class ExpenseService {
     if (month !== undefined) params['month'] = String(month);
     if (year  !== undefined) params['year']  = String(year);
     return this.http.get<Expense[]>(`${API}/expenses`, { params })
+      .pipe(catchError(() => of<Expense[]>([])));
+  }
+
+  getByDateRange(startDate: string, endDate: string): Observable<Expense[]> {
+    return this.http.get<Expense[]>(`${API}/expenses`, { params: { startDate, endDate } })
       .pipe(catchError(() => of<Expense[]>([])));
   }
 
@@ -128,5 +133,32 @@ export class ExpenseService {
 
   getCategoryByValue(value: string): Category | undefined {
     return this.categoriesSubject.value.find(c => c.value === value);
+  }
+
+  // ── Subcategories ──────────────────────────────────────────────────────────
+
+  getSubcategories(categoryValue: string): Observable<string[]> {
+    return this.http.get<Subcategory[]>(`${API}/subcategories`, { params: { category: categoryValue } }).pipe(
+      map(items => items.map(s => s.name)),
+      catchError(() => of<string[]>([])),
+    );
+  }
+
+  sendTestNotification(): Observable<void> {
+    return this.http.post<void>(`${API}/push/test`, {});
+  }
+
+  getSubcategoriesFull(categoryValue: string): Observable<Subcategory[]> {
+    return this.http.get<Subcategory[]>(`${API}/subcategories`, { params: { category: categoryValue } }).pipe(
+      catchError(() => of<Subcategory[]>([])),
+    );
+  }
+
+  addSubcategory(categoryValue: string, name: string): Observable<Subcategory> {
+    return this.http.post<Subcategory>(`${API}/subcategories`, { categoryValue, name });
+  }
+
+  deleteSubcategory(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/subcategories/${id}`);
   }
 }

@@ -5,5 +5,77 @@ INSERT IGNORE INTO categories (value, label, icon, color) VALUES
   ('ENTERTAINMENT', 'Entertainment', 'movie',          '#9c27b0'),
   ('HEALTH',        'Health',        'local_hospital', '#4caf50'),
   ('SHOPPING',      'Shopping',      'shopping_cart',  '#00bcd4'),
-  ('EDUCATION',     'Education',     'school',         '#ff5722'),
   ('OTHER',         'Other',         'more_horiz',     '#607d8b');
+
+INSERT IGNORE INTO categories (value, label, icon, color, is_income) VALUES
+  ('REFUND', 'Refunds & Credits', 'payments', '#4caf50', TRUE);
+
+INSERT IGNORE INTO subcategories (category_value, name) VALUES
+  ('FOOD', 'Tim Hortons'),
+  ('FOOD', 'McDonald''s'),
+  ('FOOD', 'Subway'),
+  ('FOOD', 'Pizza Pizza'),
+  ('FOOD', 'Starbucks'),
+  ('FOOD', 'Grocery Store'),
+  ('FOOD', 'Uber Eats'),
+  ('FOOD', 'DoorDash'),
+  ('FOOD', 'Restaurant'),
+  ('FOOD', 'Other'),
+
+  ('TRANSPORT', 'Gas Station'),
+  ('TRANSPORT', 'TTC / Transit'),
+  ('TRANSPORT', 'Uber'),
+  ('TRANSPORT', 'Lyft'),
+  ('TRANSPORT', 'Parking'),
+  ('TRANSPORT', 'Car Maintenance'),
+  ('TRANSPORT', 'Car Insurance'),
+  ('TRANSPORT', 'Other'),
+
+  ('HOUSING', 'Rent'),
+  ('HOUSING', 'Electricity'),
+  ('HOUSING', 'Internet'),
+  ('HOUSING', 'Water Bill'),
+  ('HOUSING', 'Phone Bill'),
+  ('HOUSING', 'Cleaning Supplies'),
+  ('HOUSING', 'Furniture'),
+  ('HOUSING', 'Other'),
+
+  ('ENTERTAINMENT', 'Netflix'),
+  ('ENTERTAINMENT', 'Spotify'),
+  ('ENTERTAINMENT', 'Movies'),
+  ('ENTERTAINMENT', 'Games'),
+  ('ENTERTAINMENT', 'Concerts'),
+  ('ENTERTAINMENT', 'YouTube Premium'),
+  ('ENTERTAINMENT', 'Disney+'),
+  ('ENTERTAINMENT', 'Other'),
+
+  ('HEALTH', 'Pharmacy'),
+  ('HEALTH', 'Doctor Visit'),
+  ('HEALTH', 'Gym Membership'),
+  ('HEALTH', 'Dental'),
+  ('HEALTH', 'Eye Care'),
+  ('HEALTH', 'Massage'),
+  ('HEALTH', 'Other'),
+
+  ('SHOPPING', 'Amazon'),
+  ('SHOPPING', 'Winners'),
+  ('SHOPPING', 'Walmart'),
+  ('SHOPPING', 'Costco'),
+  ('SHOPPING', 'Clothing'),
+  ('SHOPPING', 'Electronics'),
+  ('SHOPPING', 'Home Goods'),
+  ('SHOPPING', 'Other'),
+
+  ('OTHER', 'Gifts'),
+  ('OTHER', 'Donations'),
+  ('OTHER', 'Banking Fees'),
+  ('OTHER', 'Miscellaneous'),
+  ('OTHER', 'Other'),
+
+  ('REFUND', 'Amazon Refund'),
+  ('REFUND', 'Price Adjustment'),
+  ('REFUND', 'Cashback'),
+  ('REFUND', 'Store Credit'),
+  ('REFUND', 'Insurance Claim'),
+  ('REFUND', 'Tax Refund'),
+  ('REFUND', 'Other');

@@ -21,7 +21,10 @@ public class ExpenseService {
         this.repository = repository;
     }
 
-    public List<Expense> getAll(Integer month, Integer year) {
+    public List<Expense> getAll(Integer month, Integer year, LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null) {
+            return repository.findByDateBetweenOrderByDateDesc(startDate, endDate);
+        }
         if (month != null && year != null) {
             LocalDate start = LocalDate.of(year, month, 1);
             LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
@@ -56,7 +59,7 @@ public class ExpenseService {
     }
 
     public SummaryDTO getSummary(Integer month, Integer year) {
-        List<Expense> expenses = getAll(month, year);
+        List<Expense> expenses = getAll(month, year, null, null);
         BigDecimal total = expenses.stream()
             .map(Expense::getAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);

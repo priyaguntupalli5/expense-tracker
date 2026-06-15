@@ -22,6 +22,9 @@ public class Category {
     @Column(nullable = false)
     private String color;
 
+    @Column(name = "is_income", nullable = false, columnDefinition = "boolean default false")
+    private boolean isIncome = false;
+
     public Category() {}
 
     public Long getId() { return id; }
@@ -38,4 +41,7 @@ public class Category {
 
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
+
+    public boolean getIsIncome() { return isIncome; }
+    public void setIsIncome(boolean isIncome) { this.isIncome = isIncome; }
 }
