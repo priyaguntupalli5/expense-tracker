@@ -1,7 +1,6 @@
 package com.expensetracker.service;
 
 import com.expensetracker.model.PushSubscription;
-import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.repository.PushSubscriptionRepository;
 import jakarta.annotation.PostConstruct;
 import nl.martijndwars.webpush.Notification;
@@ -12,13 +11,27 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class PushNotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(PushNotificationService.class);
+
+    private static final String PAYLOAD = """
+            {
+              "notification": {
+                "title": "💰 Expense Tracker",
+                "body": "Add your expenses now!",
+                "icon": "/icon-192.png",
+                "data": {
+                  "onActionClick": {
+                    "default": {"operation": "navigateLastFocusedOrOpen", "url": "/"}
+                  }
+                }
+              }
+            }
+            """;
 
     @Value("${vapid.public.key:}")
     private String vapidPublicKey;
@@ -30,12 +43,9 @@ public class PushNotificationService {
     private String vapidSubject;
 
     private final PushSubscriptionRepository subscriptionRepo;
-    private final ExpenseRepository expenseRepo;
 
-    public PushNotificationService(PushSubscriptionRepository subscriptionRepo,
-                                   ExpenseRepository expenseRepo) {
+    public PushNotificationService(PushSubscriptionRepository subscriptionRepo) {
         this.subscriptionRepo = subscriptionRepo;
-        this.expenseRepo = expenseRepo;
     }
 
     @PostConstruct
@@ -77,45 +87,26 @@ public class PushNotificationService {
         subscriptionRepo.deleteByEndpoint(endpoint);
     }
 
-    // Fires every day at 8:00 PM
-    @Scheduled(cron = "0 0 20 * * *")
-    public void sendDailyNotifications() {
+    // Every day at 10:00 PM CDT/CST
+    @Scheduled(cron = "0 0 9 * * *", zone = "America/Chicago")
+    public void sendEveningReminder() {
+        sendReminder("evening");
+    }
+
+    // Weekends only at 12:00 PM CDT/CST
+    @Scheduled(cron = "0 0 12 * * SAT,SUN", zone = "America/Chicago")
+    public void sendWeekendNoonReminder() {
+        sendReminder("weekend noon");
+    }
+
+    private void sendReminder(String trigger) {
         if (vapidPublicKey == null || vapidPublicKey.isBlank()) {
-            log.warn("VAPID keys not configured — skipping daily notification");
+            log.warn("VAPID keys not configured — skipping {} notification", trigger);
             return;
         }
 
         List<PushSubscription> subscriptions = subscriptionRepo.findAll();
         if (subscriptions.isEmpty()) return;
-
-        LocalDate today = LocalDate.now();
-        LocalDate monthStart = today.withDayOfMonth(1);
-        LocalDate monthEnd   = today.withDayOfMonth(today.lengthOfMonth());
-
-        double todayTotal = expenseRepo.findByDateBetweenOrderByDateDesc(today, today)
-                .stream().mapToDouble(e -> e.getAmount().doubleValue()).sum();
-
-        double monthTotal = expenseRepo.findByDateBetweenOrderByDateDesc(monthStart, monthEnd)
-                .stream().mapToDouble(e -> e.getAmount().doubleValue()).sum();
-
-        String body = todayTotal == 0
-                ? String.format("No expenses today. Month total: CA$%.2f", monthTotal)
-                : String.format("Today: CA$%.2f  |  Month: CA$%.2f", todayTotal, monthTotal);
-
-        String payload = """
-                {
-                  "notification": {
-                    "title": "💰 Daily Expense Update",
-                    "body": "%s",
-                    "icon": "/favicon.ico",
-                    "data": {
-                      "onActionClick": {
-                        "default": {"operation": "navigateLastFocusedOrOpen", "url": "/"}
-                      }
-                    }
-                  }
-                }
-                """.formatted(body);
 
         try {
             PushService pushService = new PushService(vapidPublicKey, vapidPrivateKey, vapidSubject);
@@ -126,7 +117,7 @@ public class PushNotificationService {
                             sub.getEndpoint(),
                             sub.getP256dh(),
                             sub.getAuth(),
-                            payload.getBytes()
+                            PAYLOAD.getBytes()
                     );
                     pushService.send(notification);
                 } catch (Exception e) {
@@ -138,7 +129,7 @@ public class PushNotificationService {
                 }
             }
 
-            log.info("Daily notification sent to {} device(s)", subscriptions.size());
+            log.info("Reminder ({}) sent to {} device(s)", trigger, subscriptions.size());
         } catch (Exception e) {
             log.error("Push service error: {}", e.getMessage());
         }
