@@ -1,3 +1,3 @@
 package com.expensetracker.dto;
 
-public record AuthResponse(String token, String email, String groupName) {}
+public record AuthResponse(String token, String username, String groupName) {}

@@ -33,43 +33,42 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
-        if (userRepository.existsByEmail(req.email())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email already registered."));
+        if (req.username() == null || req.username().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username is required."));
+        }
+        if (req.groupName() == null || req.groupName().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Group name is required."));
+        }
+        if (userRepository.existsByUsername(req.username().trim())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username already taken."));
         }
 
-        // First user ever → join the migration group (id=1) so they see existing data
-        // All subsequent users get their own group
-        Group group;
-        if (userRepository.count() == 0) {
-            group = groupRepository.findById(1L)
-                .orElseGet(() -> {
-                    Group g = new Group();
-                    g.setName(req.name() != null ? req.name() : req.email());
-                    return groupRepository.save(g);
-                });
-        } else {
-            group = new Group();
-            group.setName(req.name() != null ? req.name() : req.email());
-            group = groupRepository.save(group);
-        }
+        // Group name is the shared key: existing name → join, new name → create
+        String groupName = req.groupName().trim();
+        Group group = groupRepository.findByName(groupName)
+            .orElseGet(() -> {
+                Group g = new Group();
+                g.setName(groupName);
+                return groupRepository.save(g);
+            });
 
         User user = new User();
-        user.setEmail(req.email());
+        user.setUsername(req.username().trim());
         user.setPassword(passwordEncoder.encode(req.password()));
         user.setGroup(group);
         userRepository.save(user);
 
-        String token = jwtUtil.generate(user.getEmail(), group.getId());
-        return ResponseEntity.ok(new AuthResponse(token, user.getEmail(), group.getName()));
+        String token = jwtUtil.generate(user.getUsername(), group.getId());
+        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), group.getName()));
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
-        return userRepository.findByEmail(req.email())
+        return userRepository.findByUsername(req.username())
             .filter(u -> passwordEncoder.matches(req.password(), u.getPassword()))
             .map(u -> {
-                String token = jwtUtil.generate(u.getEmail(), u.getGroup().getId());
-                return ResponseEntity.ok(new AuthResponse(token, u.getEmail(), u.getGroup().getName()));
+                String token = jwtUtil.generate(u.getUsername(), u.getGroup().getId());
+                return ResponseEntity.ok(new AuthResponse(token, u.getUsername(), u.getGroup().getName()));
             })
             .orElse(ResponseEntity.status(401).body(null));
     }

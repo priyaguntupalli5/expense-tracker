@@ -29,9 +29,9 @@ export class LoginComponent {
   hidePassword = true;
 
   form = this.fb.group({
-    name:     [''],
-    email:    ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    username:  ['', [Validators.required, Validators.minLength(3)]],
+    password:  ['', [Validators.required, Validators.minLength(8)]],
+    groupName: [''],
   });
 
   switchMode(mode: 'login' | 'register') {
@@ -42,20 +42,24 @@ export class LoginComponent {
 
   submit() {
     if (this.form.invalid) return;
+    if (this.mode === 'register' && !this.form.value.groupName?.trim()) {
+      this.error = 'Group name is required.';
+      return;
+    }
     this.loading = true;
     this.error = '';
 
-    const { email, password, name } = this.form.value;
+    const { username, password, groupName } = this.form.value;
 
     const req$ = this.mode === 'login'
-      ? this.auth.login(email!, password!)
-      : this.auth.register(email!, password!, name || email!);
+      ? this.auth.login(username!, password!)
+      : this.auth.register(username!, password!, groupName!.trim());
 
     req$.subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: (err) => {
         this.loading = false;
-        this.error = err.error?.error ?? (this.mode === 'login' ? 'Invalid email or password.' : 'Registration failed.');
+        this.error = err.error?.error ?? (this.mode === 'login' ? 'Invalid username or password.' : 'Registration failed.');
       },
     });
   }

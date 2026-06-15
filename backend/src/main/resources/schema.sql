@@ -1,16 +1,17 @@
 CREATE TABLE IF NOT EXISTS `groups` (
     id   BIGINT       NOT NULL AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
-    PRIMARY KEY (id)
+    name VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_group_name (name)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS users (
-    id       BIGINT       NOT NULL AUTO_INCREMENT,
-    email    VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    group_id BIGINT       NOT NULL,
+    id        BIGINT       NOT NULL AUTO_INCREMENT,
+    username  VARCHAR(100) NOT NULL,
+    password  VARCHAR(255) NOT NULL,
+    group_id  BIGINT       NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_email (email),
+    UNIQUE KEY uk_username (username),
     FOREIGN KEY (group_id) REFERENCES `groups`(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
