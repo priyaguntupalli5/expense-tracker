@@ -6,6 +6,7 @@ export interface Expense {
   date: string;
   notes?: string;
   subcategory?: string;
+  imageData?: string;
 }
 
 export interface FixedExpense {

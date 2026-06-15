@@ -72,6 +72,24 @@
       <textarea matInput formControlName="notes" rows="2" placeholder="Any additional details..."></textarea>
     </mat-form-field>
 
+    <!-- Receipt upload -->
+    <div class="receipt-section">
+      <input type="file" #fileInput accept="image/*" (change)="onFileSelected($event)" hidden>
+      @if (!form.get('imageData')?.value) {
+        <button type="button" class="receipt-upload-btn" (click)="fileInput.click()">
+          <mat-icon>add_photo_alternate</mat-icon>
+          <span>Attach Receipt</span>
+        </button>
+      } @else {
+        <div class="receipt-preview">
+          <img [src]="form.get('imageData')?.value" class="receipt-thumb" (click)="fileInput.click()">
+          <button type="button" mat-icon-button class="receipt-remove-btn" (click)="removeImage()" matTooltip="Remove receipt">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+
   </form>
 </mat-dialog-content>
 

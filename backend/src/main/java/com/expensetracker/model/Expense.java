@@ -34,6 +34,9 @@ public class Expense {
     @Size(max = 100)
     private String subcategory;
 
+    @Column(name = "image_data", columnDefinition = "MEDIUMTEXT")
+    private String imageData;
+
     public Expense() {}
 
     public Expense(String title, BigDecimal amount, String category, LocalDate date, String notes) {
@@ -64,4 +67,7 @@ public class Expense {
 
     public String getSubcategory() { return subcategory; }
     public void setSubcategory(String subcategory) { this.subcategory = subcategory; }
+
+    public String getImageData() { return imageData; }
+    public void setImageData(String imageData) { this.imageData = imageData; }
 }

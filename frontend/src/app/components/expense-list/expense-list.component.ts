@@ -37,6 +37,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   expenses: Expense[] = [];
+  viewingImage: string | null = null;
   displayedColumns = ['date', 'title', 'category', 'amount', 'actions'];
 
   readonly startCtrl    = new FormControl<Date | null>(null);

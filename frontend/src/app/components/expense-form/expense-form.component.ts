@@ -50,6 +50,7 @@ export class ExpenseFormComponent implements OnInit {
     subcategory: ['' as string | null],
     date:        [new Date(), Validators.required],
     notes:       [''],
+    imageData:   ['' as string | null],
   });
 
   ngOnInit() {
@@ -86,6 +87,7 @@ export class ExpenseFormComponent implements OnInit {
         ...this.data,
         date: new Date(this.data.date),
         subcategory: this.data.subcategory ?? null,
+        imageData: this.data.imageData ?? null,
       });
       if (this.data.category) {
         this.loadSubcategories(this.data.category);
@@ -100,8 +102,31 @@ export class ExpenseFormComponent implements OnInit {
   }
 
   onSuggestionSelected(event: MatAutocompleteSelectedEvent) {
-    // Silently tag the subcategory when user picks a suggestion
     this.form.patchValue({ subcategory: event.option.value }, { emitEvent: false });
+  }
+
+  onFileSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 1024;
+        const ratio = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        this.form.patchValue({ imageData: canvas.toDataURL('image/jpeg', 0.75) });
+      };
+      img.src = e.target!.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeImage() {
+    this.form.patchValue({ imageData: null });
   }
 
   save() {
@@ -116,6 +141,7 @@ export class ExpenseFormComponent implements OnInit {
       subcategory: v.subcategory || undefined,
       date:        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
       notes:       v.notes || undefined,
+      imageData:   v.imageData || undefined,
     };
 
     const op = this.isEditing
