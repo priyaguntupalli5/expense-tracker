@@ -1,23 +1,20 @@
 <div class="list-container">
   <mat-card class="list-card">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon>repeat</mat-icon>
-        Fixed Monthly Expenses
-      </mat-card-title>
-      <mat-card-subtitle>
-        {{ expenses.length }} item(s) &nbsp;·&nbsp;
-        Total: {{ total | currency:'CAD':'symbol-narrow':'1.0-2' }} / month
-      </mat-card-subtitle>
-    </mat-card-header>
+    <div class="card-header">
+      <div class="header-left">
+        <div class="header-title">
+          <mat-icon class="title-icon">repeat</mat-icon>
+          <span>Fixed Monthly Expenses</span>
+          <span class="count-chip">{{ expenses.length }}</span>
+        </div>
+        <div class="header-sub">Total: {{ total | currency:'CAD':'symbol-narrow':'1.0-2' }} / month</div>
+      </div>
+      <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
+        <mat-icon>add</mat-icon> Add Fixed Expense
+      </button>
+    </div>
 
     <mat-card-content>
-      <div class="add-bar">
-        <button mat-flat-button color="primary" (click)="openAdd()">
-          <mat-icon>add</mat-icon>
-          Add Fixed Expense
-        </button>
-      </div>
 
       @if (expenses.length === 0) {
         <div class="empty-state">

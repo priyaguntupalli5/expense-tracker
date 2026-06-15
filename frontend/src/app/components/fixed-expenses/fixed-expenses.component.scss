@@ -6,21 +6,60 @@
 
 .list-card {
   border-radius: 12px !important;
+  overflow: hidden;
+}
 
-  mat-card-header {
-    margin-bottom: 4px;
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
 
-    mat-card-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 1.1rem;
-    }
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a1a2e;
+
+  .title-icon {
+    font-size: 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    color: #1976d2;
   }
 }
 
-.add-bar {
-  padding: 12px 0 8px;
+.count-chip {
+  background: #1976d21a;
+  color: #1976d2;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 20px;
+  line-height: 1.6;
+}
+
+.header-sub {
+  font-size: 0.8rem;
+  color: #888;
+  padding-left: 28px;
+}
+
+.add-btn {
+  border-radius: 20px !important;
+  font-size: 0.85rem;
+  height: 34px;
+  flex-shrink: 0;
 }
 
 .table-wrapper {
