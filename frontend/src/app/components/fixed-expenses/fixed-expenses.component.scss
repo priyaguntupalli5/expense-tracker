@@ -33,6 +33,15 @@
 .expense-row {
   transition: background 0.15s;
   &:hover { background: rgba(0,0,0,0.025); }
+
+  &.credit-row {
+    background: rgba(46, 125, 50, 0.04) !important;
+    &:hover { background: rgba(46, 125, 50, 0.08) !important; }
+  }
+}
+
+.credit-amount {
+  color: #2e7d32 !important;
 }
 
 .title-cell {

@@ -7,6 +7,9 @@ INSERT IGNORE INTO categories (value, label, icon, color) VALUES
   ('SHOPPING',      'Shopping',      'shopping_cart',  '#00bcd4'),
   ('OTHER',         'Other',         'more_horiz',     '#607d8b');
 
+INSERT IGNORE INTO categories (value, label, icon, color, is_income) VALUES
+  ('REFUND', 'Refunds & Credits', 'payments', '#4caf50', TRUE);
+
 INSERT IGNORE INTO subcategories (category_value, name) VALUES
   ('FOOD', 'Tim Hortons'),
   ('FOOD', 'McDonald''s'),
@@ -67,4 +70,12 @@ INSERT IGNORE INTO subcategories (category_value, name) VALUES
   ('OTHER', 'Donations'),
   ('OTHER', 'Banking Fees'),
   ('OTHER', 'Miscellaneous'),
-  ('OTHER', 'Other');
+  ('OTHER', 'Other'),
+
+  ('REFUND', 'Amazon Refund'),
+  ('REFUND', 'Price Adjustment'),
+  ('REFUND', 'Cashback'),
+  ('REFUND', 'Store Credit'),
+  ('REFUND', 'Insurance Claim'),
+  ('REFUND', 'Tax Refund'),
+  ('REFUND', 'Other');

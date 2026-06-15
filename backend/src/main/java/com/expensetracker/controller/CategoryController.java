@@ -43,6 +43,7 @@ public class CategoryController {
         c.setLabel(body.getLabel().trim());
         c.setIcon(body.getIcon());
         c.setColor(body.getColor());
+        c.setIsIncome(body.getIsIncome());
         return ResponseEntity.ok(categoryRepo.save(c));
     }
 

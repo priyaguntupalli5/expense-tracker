@@ -41,8 +41,13 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   readonly startCtrl = new FormControl<Date | null>(null);
   readonly endCtrl   = new FormControl<Date | null>(null);
 
+  isCredit(categoryValue: string): boolean {
+    return this.expenseService.getCategoryByValue(categoryValue)?.isIncome ?? false;
+  }
+
   get total(): number {
-    return this.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+    return this.expenses.reduce((sum, e) =>
+      sum + (this.isCredit(e.category) ? -Number(e.amount) : Number(e.amount)), 0);
   }
 
   constructor() {

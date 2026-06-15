@@ -42,7 +42,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
-  fixedTotal    = 0;
   pieSlices: PieSlice[] = [];
   salarySaved   = false;
   private fixedExpenses: FixedExpense[] = [];
@@ -64,7 +63,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   ngOnInit() {
-    this.expenseService.loadCategories().subscribe();
     this.expenseService.onRefresh$.pipe(takeUntil(this.destroy$)).subscribe(() => this.loadData());
     this.loadData();
   }
@@ -95,30 +93,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private loadData() {
     forkJoin({
-      salary:  this.expenseService.getSalary(this.selectedMonth, this.selectedYear),
-      fixed:   this.expenseService.getFixedExpenses(),
-      summary: this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
+      categories: this.expenseService.loadCategories(),
+      salary:     this.expenseService.getSalary(this.selectedMonth, this.selectedYear),
+      fixed:      this.expenseService.getFixedExpenses(),
+      summary:    this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
     }).pipe(takeUntil(this.destroy$)).subscribe(({ salary, fixed, summary }) => {
       this.salaryForm.patchValue(
         { priyaSalary: Number(salary.priyaSalary), vamsiSalary: Number(salary.vamsiSalary) },
         { emitEvent: false },
       );
       this.fixedExpenses = fixed;
-      this.fixedTotal    = fixed.reduce((sum, e) => sum + Number(e.amount), 0);
       this.summary       = summary;
       this.buildPieChart();
     });
   }
 
   private buildPieChart() {
-    // Merge variable expenses breakdown + fixed expenses by category
+    // Merge variable + fixed expenses by category, excluding income/credit categories
     const breakdown: Record<string, number> = {};
 
     for (const [cat, amount] of Object.entries(this.summary?.categoryBreakdown ?? {})) {
-      breakdown[cat] = (breakdown[cat] ?? 0) + Number(amount);
+      if (!this.expenseService.getCategoryByValue(cat)?.isIncome) {
+        breakdown[cat] = (breakdown[cat] ?? 0) + Number(amount);
+      }
     }
     for (const fe of this.fixedExpenses) {
-      breakdown[fe.category] = (breakdown[fe.category] ?? 0) + Number(fe.amount);
+      if (!this.expenseService.getCategoryByValue(fe.category)?.isIncome) {
+        breakdown[fe.category] = (breakdown[fe.category] ?? 0) + Number(fe.amount);
+      }
     }
 
     const total = Object.values(breakdown).reduce((s, a) => s + a, 0);
@@ -168,8 +170,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return (Number(v.priyaSalary) || 0) + (Number(v.vamsiSalary) || 0);
   }
 
+  get fixedTotal(): number {
+    return this.fixedExpenses
+      .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
+      .reduce((sum, fe) => sum + Number(fe.amount), 0);
+  }
+
+  get creditsTotal(): number {
+    const breakdown = this.summary?.categoryBreakdown ?? {};
+    const variableCredits = Object.entries(breakdown)
+      .filter(([cat]) => this.expenseService.getCategoryByValue(cat)?.isIncome)
+      .reduce((sum, [, amt]) => sum + Number(amt), 0);
+    const fixedCredits = this.fixedExpenses
+      .filter(fe => this.expenseService.getCategoryByValue(fe.category)?.isIncome)
+      .reduce((sum, fe) => sum + Number(fe.amount), 0);
+    return variableCredits + fixedCredits;
+  }
+
   get actualTotal(): number {
-    return Number(this.summary?.total ?? 0);
+    const breakdown = this.summary?.categoryBreakdown ?? {};
+    return Object.entries(breakdown)
+      .filter(([cat]) => !this.expenseService.getCategoryByValue(cat)?.isIncome)
+      .reduce((sum, [, amt]) => sum + Number(amt), 0);
   }
 
   get combinedTotal(): number {
@@ -177,7 +199,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get savings(): number {
-    return this.totalIncome - this.fixedTotal - this.actualTotal;
+    return this.totalIncome + this.creditsTotal - this.fixedTotal - this.actualTotal;
   }
 
   formatCompact(amount: number): string {

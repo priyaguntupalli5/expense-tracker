@@ -34,6 +34,7 @@ export interface Category {
   label: string;
   icon: string;
   color: string;
+  isIncome?: boolean;
 }
 
 export interface Summary {

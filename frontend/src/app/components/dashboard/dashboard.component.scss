@@ -175,9 +175,15 @@
     font-weight: 500;
   }
 
-  &.income-card { border-top: 4px solid #1976d2; .card-icon { color: #1976d2; } }
-  &.fixed-card  { border-top: 4px solid #ff9800; .card-icon { color: #ff9800; } }
-  &.actual-card { border-top: 4px solid #9c27b0; .card-icon { color: #9c27b0; } }
+  &.income-card  { border-top: 4px solid #1976d2; .card-icon { color: #1976d2; } }
+  &.fixed-card   { border-top: 4px solid #ff9800; .card-icon { color: #ff9800; } }
+  &.actual-card  { border-top: 4px solid #9c27b0; .card-icon { color: #9c27b0; } }
+  &.credits-card {
+    border-top: 4px solid #4caf50;
+    background: #f1f8f1 !important;
+    .card-icon { color: #2e7d32; }
+    .card-value { color: #2e7d32; }
+  }
 
   &.savings-card {
     &.positive {

@@ -62,8 +62,13 @@
 
             <ng-container matColumnDef="amount">
               <th mat-header-cell *matHeaderCellDef class="amount-col">Monthly Amount</th>
-              <td mat-cell *matCellDef="let e" class="amount-col amount-value">
-                {{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
+              <td mat-cell *matCellDef="let e" class="amount-col amount-value"
+                  [class.credit-amount]="isCredit(e.category)">
+                @if (isCredit(e.category)) {
+                  +{{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
+                } @else {
+                  {{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
+                }
               </td>
             </ng-container>
 
@@ -80,7 +85,8 @@
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="expense-row"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="expense-row"
+                [class.credit-row]="isCredit(row.category)"></tr>
           </table>
         </div>
       }
