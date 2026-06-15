@@ -6,6 +6,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Income } from '../../models/expense.model';
@@ -29,10 +31,12 @@ function ordinal(n: number): string {
 
 @Component({
   selector: 'app-income-form',
+  providers: [provideNativeDateAdapter()],
   imports: [
     ReactiveFormsModule, MatDialogModule, MatFormFieldModule,
     MatInputModule, MatSelectModule, MatButtonModule,
     MatIconModule, MatSlideToggleModule, MatProgressSpinnerModule,
+    MatDatepickerModule,
   ],
   templateUrl: './income-form.component.html',
   styleUrl: './income-form.component.scss',
@@ -71,13 +75,18 @@ export class IncomeFormComponent implements OnInit {
     // recurrence
     isRecurring: [false],
     recurrence:  ['MONTHLY'],
-    startDate:   [''],
+    startDate:   [null as Date | null],
     paymentDay:  [null as number | null],
     paymentMonth:[null as number | null],
   });
 
-  get isEditing()   { return !!this.data?.id && !this.data.isTemplate; }
-  get isEditingTpl(){ return !!this.data?.id && !!this.data.isTemplate; }
+  private get dataIsTemplate(): boolean {
+    if (!this.data) return false;
+    // Handle both "isTemplate" (fixed backend with @JsonProperty) and "template" (Jackson default naming)
+    return !!(this.data.isTemplate ?? (this.data as any)['template']);
+  }
+  get isEditing()   { return !!this.data?.id && !this.dataIsTemplate; }
+  get isEditingTpl(){ return !!this.data?.id && this.dataIsTemplate; }
   get isRecurring() { return !!this.form.get('isRecurring')?.value; }
   get recurrence()  { return this.form.get('recurrence')?.value ?? 'MONTHLY'; }
   get isWeekly()    { return this.recurrence === 'WEEKLY' || this.recurrence === 'BIWEEKLY'; }
@@ -105,10 +114,10 @@ export class IncomeFormComponent implements OnInit {
     if (this.data.month       !== undefined) patch['month']       = this.data.month;
     if (this.data.year        !== undefined) patch['year']        = this.data.year;
     if (this.data.notes       !== undefined) patch['notes']       = this.data.notes ?? '';
-    if (this.data.isTemplate) {
+    if (this.dataIsTemplate) {
       patch['isRecurring']  = true;
       patch['recurrence']   = this.data.recurrence  ?? 'MONTHLY';
-      patch['startDate']    = this.data.startDate   ?? '';
+      patch['startDate']    = this.data.startDate ? new Date(this.data.startDate + 'T00:00:00') : null;
       patch['paymentDay']   = this.data.paymentDay  ?? null;
       patch['paymentMonth'] = this.data.paymentMonth ?? null;
     }
@@ -121,6 +130,11 @@ export class IncomeFormComponent implements OnInit {
     const v = this.form.value;
     const recurring = v.isRecurring;
 
+    const startDateVal = recurring ? (v.startDate as Date | null) : null;
+    const startDateStr = startDateVal instanceof Date
+      ? `${startDateVal.getFullYear()}-${String(startDateVal.getMonth() + 1).padStart(2, '0')}-${String(startDateVal.getDate()).padStart(2, '0')}`
+      : undefined;
+
     const income: Income = {
       title:      v.title!,
       amount:     Number(v.amount),
@@ -130,7 +144,7 @@ export class IncomeFormComponent implements OnInit {
       notes:      v.notes || undefined,
       isTemplate: recurring || false,
       recurrence: recurring ? (v.recurrence ?? undefined) : undefined,
-      startDate:  recurring ? (v.startDate  || undefined) : undefined,
+      startDate:  startDateStr,
       paymentDay: recurring ? (v.paymentDay ?? undefined) : undefined,
       paymentMonth: (recurring && this.isYearly) ? (v.paymentMonth ?? undefined) : undefined,
     };

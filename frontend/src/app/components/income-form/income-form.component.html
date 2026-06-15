@@ -104,7 +104,9 @@
 
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Start Date</mat-label>
-        <input matInput type="date" formControlName="startDate">
+        <input matInput [matDatepicker]="startDp" formControlName="startDate">
+        <mat-datepicker-toggle matIconSuffix [for]="startDp"></mat-datepicker-toggle>
+        <mat-datepicker #startDp></mat-datepicker>
         <mat-hint>First date to generate income from</mat-hint>
       </mat-form-field>
     }

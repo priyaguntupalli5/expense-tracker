@@ -1,5 +1,6 @@
 package com.expensetracker.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -93,7 +94,10 @@ public class Income {
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
 
+    @JsonProperty("isTemplate")
     public boolean isTemplate() { return isTemplate; }
+
+    @JsonProperty("isTemplate")
     public void setTemplate(boolean isTemplate) { this.isTemplate = isTemplate; }
 
     public Long getTemplateId() { return templateId; }

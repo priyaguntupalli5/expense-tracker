@@ -14,9 +14,6 @@
   overflow: hidden;
 }
 
-.recurring-card {
-  border-left: 4px solid #2e7d32 !important;
-}
 
 .card-header {
   display: flex;
@@ -48,7 +45,6 @@
   width: 1.2rem;
   height: 1.2rem;
 
-  &.recurring-icon { color: #2e7d32; }
 }
 
 .count-chip {
@@ -92,21 +88,19 @@
   height: 40px;
 }
 
-// ── Recurrence chip ───────────────────────────────────────────────────────────
+// ── Inline tags ───────────────────────────────────────────────────────────────
 
-.recurrence-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.recurring-tag {
+  display: inline-block;
   background: #e8f5e9;
   color: #2e7d32;
   border: 1px solid #a5d6a7;
-  border-radius: 12px;
-  padding: 3px 10px 3px 7px;
-  font-size: 0.78rem;
-  font-weight: 500;
-
-  .chip-icon { font-size: 0.8rem; width: 0.8rem; height: 0.8rem; }
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
 }
 
 // ── Table ─────────────────────────────────────────────────────────────────────

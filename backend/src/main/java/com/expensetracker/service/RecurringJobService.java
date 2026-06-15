@@ -6,12 +6,14 @@ import com.expensetracker.model.Income;
 import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.repository.FixedExpenseRepository;
 import com.expensetracker.repository.IncomeRepository;
-import jakarta.annotation.PostConstruct;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +22,7 @@ import java.util.List;
  * Runs at startup (catches up on any missed days) and daily at 6 AM.
  */
 @Service
-public class RecurringJobService {
+public class RecurringJobService implements ApplicationRunner {
 
     private final IncomeRepository      incomeRepository;
     private final FixedExpenseRepository fixedExpenseRepository;
@@ -34,8 +36,9 @@ public class RecurringJobService {
         this.expenseRepository      = expenseRepository;
     }
 
-    @PostConstruct
-    public void runOnStartup() {
+    /** Runs after schema.sql/data.sql and SchemaMigration — guaranteed post-init ordering. */
+    @Override
+    public void run(ApplicationArguments args) {
         generateAll(LocalDate.now());
     }
 
@@ -45,23 +48,27 @@ public class RecurringJobService {
     }
 
     private void generateAll(LocalDate today) {
+        LocalDate until = today.with(TemporalAdjusters.lastDayOfMonth());
+
         incomeRepository.findAll().stream()
             .filter(Income::isTemplate)
-            .forEach(t -> generateForTemplate(t, today));
+            .forEach(t -> generateForTemplate(t, until));
 
         fixedExpenseRepository.findAll().stream()
             .filter(fe -> fe.getStartDate() != null)
-            .forEach(fe -> generateForFixedExpense(fe, today));
+            .forEach(fe -> generateForFixedExpense(fe, until));
     }
 
     /** Called immediately when a template is created/updated. */
     public void generateForTemplate(Income template) {
-        generateForTemplate(template, LocalDate.now());
+        LocalDate until = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
+        generateForTemplate(template, until);
     }
 
     /** Called immediately when a fixed expense is created/updated with a startDate. */
     public void generateForFixedExpense(FixedExpense fe) {
-        generateForFixedExpense(fe, LocalDate.now());
+        LocalDate until = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
+        generateForFixedExpense(fe, until);
     }
 
     // ── Income generation ─────────────────────────────────────────────────────

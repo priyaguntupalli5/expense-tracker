@@ -39,8 +39,7 @@ export class IncomeComponent implements OnInit {
 
   templates: Income[] = [];
   entries:   Income[] = [];
-  displayedColumns = ['source', 'title', 'recurrence', 'amount', 'actions'];
-  entryColumns     = ['source', 'title', 'amount', 'actions'];
+  columns = ['source', 'title', 'amount', 'actions'];
 
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
@@ -59,8 +58,16 @@ export class IncomeComponent implements OnInit {
 
   onPeriodChange() { this.loadEntries(); }
 
+  get allItems(): Income[] {
+    return [...this.templates, ...this.entries];
+  }
+
   get total(): number {
     return this.entries.reduce((s, e) => s + Number(e.amount), 0);
+  }
+
+  isTemplateItem(item: Income): boolean {
+    return !!(item.isTemplate || (item as any)['template']);
   }
 
   private load() {
@@ -95,39 +102,24 @@ export class IncomeComponent implements OnInit {
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }
 
-  openEditTemplate(tpl: Income) {
+  openEdit(item: Income) {
     const ref = this.dialog.open(IncomeFormComponent, {
       width: '500px', maxWidth: '95vw',
-      data: tpl,
+      data: item,
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }
 
-  openEdit(entry: Income) {
-    const ref = this.dialog.open(IncomeFormComponent, {
-      width: '460px', maxWidth: '95vw',
-      data: entry,
-    });
-    ref.afterClosed().subscribe(saved => { if (saved) this.loadEntries(); });
-  }
-
-  confirmDeleteTemplate(tpl: Income) {
-    if (!confirm(`Delete recurring template "${tpl.title}"? This will not remove already-generated entries.`)) return;
-    this.incomeService.delete(tpl.id!).subscribe({
+  confirmDelete(item: Income) {
+    const isTpl = this.isTemplateItem(item);
+    const msg = isTpl
+      ? `Delete recurring template "${item.title}"? This will not remove already-generated entries.`
+      : `Delete "${item.title}"?`;
+    if (!confirm(msg)) return;
+    this.incomeService.delete(item.id!).subscribe({
       next: () => {
-        this.snackBar.open('Template deleted', 'Dismiss', { duration: 3000 });
+        this.snackBar.open(isTpl ? 'Template deleted' : 'Income deleted', 'Dismiss', { duration: 3000 });
         this.load();
-      },
-      error: () => this.snackBar.open('Failed to delete', 'Dismiss', { duration: 3000 }),
-    });
-  }
-
-  confirmDelete(entry: Income) {
-    if (!confirm(`Delete "${entry.title}"?`)) return;
-    this.incomeService.delete(entry.id!).subscribe({
-      next: () => {
-        this.snackBar.open('Income entry deleted', 'Dismiss', { duration: 3000 });
-        this.loadEntries();
       },
       error: () => this.snackBar.open('Failed to delete', 'Dismiss', { duration: 3000 }),
     });
