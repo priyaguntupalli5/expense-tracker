@@ -6,7 +6,7 @@
         <div class="header-title">
           <mat-icon class="title-icon">receipt_long</mat-icon>
           <span>Expenses</span>
-          <span class="count-chip">{{ expenses.length }}</span>
+          <span class="count-chip">{{ filteredExpenses.length }}</span>
         </div>
         <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
           <mat-icon>add</mat-icon> Add Expense
@@ -28,6 +28,18 @@
           <mat-datepicker #endPicker></mat-datepicker>
         </mat-form-field>
 
+        <mat-form-field appearance="outline" class="category-field">
+          <mat-label>Category</mat-label>
+          <mat-select [formControl]="categoryCtrl">
+            <mat-option value="">All</mat-option>
+            @for (cat of categories; track cat.value) {
+              <mat-option [value]="cat.value">
+                {{ cat.label }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
         <div class="filter-total">
           <span class="total-label">Total</span>
           <span class="total-value">{{ total | currency:'CAD':'symbol-narrow':'1.0-2' }}</span>
@@ -36,14 +48,14 @@
     </div>
 
     <mat-card-content>
-      @if (expenses.length === 0) {
+      @if (filteredExpenses.length === 0) {
         <div class="empty-state">
           <mat-icon>receipt</mat-icon>
           <p>No expenses in this period</p>
         </div>
       } @else {
         <div class="table-wrapper">
-          <table mat-table [dataSource]="expenses" class="expense-table">
+          <table mat-table [dataSource]="filteredExpenses" class="expense-table">
 
             <ng-container matColumnDef="date">
               <th mat-header-cell *matHeaderCellDef>Date</th>

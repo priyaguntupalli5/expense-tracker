@@ -8,6 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -24,7 +25,7 @@ import { ExpenseFormComponent } from '../expense-form/expense-form.component';
     CurrencyPipe, DatePipe, ReactiveFormsModule,
     MatTableModule, MatIconModule, MatButtonModule,
     MatTooltipModule, MatCardModule,
-    MatFormFieldModule, MatInputModule, MatDatepickerModule,
+    MatFormFieldModule, MatInputModule, MatSelectModule, MatDatepickerModule,
   ],
   templateUrl: './expense-list.component.html',
   styleUrl: './expense-list.component.scss',
@@ -38,15 +39,24 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   expenses: Expense[] = [];
   displayedColumns = ['date', 'title', 'category', 'amount', 'actions'];
 
-  readonly startCtrl = new FormControl<Date | null>(null);
-  readonly endCtrl   = new FormControl<Date | null>(null);
+  readonly startCtrl    = new FormControl<Date | null>(null);
+  readonly endCtrl      = new FormControl<Date | null>(null);
+  readonly categoryCtrl = new FormControl<string>('');
+
+  get categories() { return this.expenseService.categories; }
+
+  get filteredExpenses(): Expense[] {
+    const cat = this.categoryCtrl.value;
+    if (!cat) return this.expenses;
+    return this.expenses.filter(e => e.category === cat);
+  }
 
   isCredit(categoryValue: string): boolean {
     return this.expenseService.getCategoryByValue(categoryValue)?.isIncome ?? false;
   }
 
   get total(): number {
-    return this.expenses.reduce((sum, e) =>
+    return this.filteredExpenses.reduce((sum, e) =>
       sum + (this.isCredit(e.category) ? -Number(e.amount) : Number(e.amount)), 0);
   }
 
@@ -58,6 +68,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.expenseService.loadCategories().subscribe();
+    this.categoryCtrl.valueChanges.pipe(takeUntil(this.destroy$)).subscribe();
 
     combineLatest([
       this.startCtrl.valueChanges.pipe(startWith(this.startCtrl.value)),
