@@ -1,19 +1,24 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
-import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { ExpenseService } from '../../services/expense.service';
-import { Category } from '../../models/expense.model';
+import { Category, Subcategory } from '../../models/expense.model';
 import { CategoryFormComponent } from '../category-form/category-form.component';
 
 @Component({
   selector: 'app-categories',
   imports: [
+    FormsModule,
     MatIconModule, MatButtonModule,
     MatTooltipModule, MatCardModule,
+    MatFormFieldModule, MatInputModule,
   ],
   templateUrl: './categories.component.html',
   styleUrl: './categories.component.scss',
@@ -24,6 +29,11 @@ export class CategoriesComponent implements OnInit {
   private readonly snackBar       = inject(MatSnackBar);
 
   categories: Category[] = [];
+
+  expandedCategory: string | null = null;
+  subcategoriesMap: Record<string, Subcategory[]> = {};
+  newSubName: Record<string, string> = {};
+  addingSubcategory: Record<string, boolean> = {};
 
   ngOnInit() {
     this.load();
@@ -36,6 +46,46 @@ export class CategoriesComponent implements OnInit {
         if (b.value === 'OTHER') return -1;
         return a.label.localeCompare(b.label);
       });
+    });
+  }
+
+  toggleExpand(categoryValue: string) {
+    if (this.expandedCategory === categoryValue) {
+      this.expandedCategory = null;
+      return;
+    }
+    this.expandedCategory = categoryValue;
+    this.loadSubcategories(categoryValue);
+  }
+
+  loadSubcategories(categoryValue: string) {
+    this.expenseService.getSubcategoriesFull(categoryValue).subscribe(subs => {
+      this.subcategoriesMap[categoryValue] = subs;
+    });
+  }
+
+  addSubcategory(categoryValue: string) {
+    const name = (this.newSubName[categoryValue] ?? '').trim();
+    if (!name) return;
+    this.addingSubcategory[categoryValue] = true;
+    this.expenseService.addSubcategory(categoryValue, name).subscribe({
+      next: () => {
+        this.newSubName[categoryValue] = '';
+        this.addingSubcategory[categoryValue] = false;
+        this.loadSubcategories(categoryValue);
+      },
+      error: (err) => {
+        const msg = err?.error?.error ?? 'Failed to add subcategory';
+        this.snackBar.open(msg, 'Dismiss', { duration: 4000 });
+        this.addingSubcategory[categoryValue] = false;
+      },
+    });
+  }
+
+  removeSubcategory(id: number, categoryValue: string) {
+    this.expenseService.deleteSubcategory(id).subscribe({
+      next: () => this.loadSubcategories(categoryValue),
+      error: () => this.snackBar.open('Failed to delete subcategory', 'Dismiss', { duration: 3000 }),
     });
   }
 

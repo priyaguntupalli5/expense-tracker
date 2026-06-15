@@ -20,24 +20,83 @@
       } @else {
         <div class="cat-list">
           @for (c of categories; track c.id) {
-            <div class="cat-row">
-              <span class="cat-accent" [style.background]="c.color"></span>
-              <span class="cat-badge"
-                [style.background]="c.color + '18'"
-                [style.color]="c.color"
-                [style.border-color]="c.color + '55'">
-                <mat-icon class="badge-icon">{{ c.icon }}</mat-icon>
-                {{ c.label }}
-              </span>
-              <span class="row-spacer"></span>
-              <div class="row-actions">
-                <button mat-icon-button matTooltip="Edit" (click)="openEdit(c)">
-                  <mat-icon>edit</mat-icon>
+            <div class="cat-item">
+
+              <!-- Category row -->
+              <div class="cat-row" [class.expanded]="expandedCategory === c.value">
+                <span class="cat-accent" [style.background]="c.color"></span>
+                <span class="cat-badge"
+                  [style.background]="c.color + '18'"
+                  [style.color]="c.color"
+                  [style.border-color]="c.color + '55'">
+                  <mat-icon class="badge-icon">{{ c.icon }}</mat-icon>
+                  {{ c.label }}
+                </span>
+                <span class="row-spacer"></span>
+
+                <!-- Subcategory toggle -->
+                <button mat-button class="sub-toggle-btn"
+                  [style.color]="c.color"
+                  (click)="toggleExpand(c.value)"
+                  matTooltip="Manage subcategories">
+                  <mat-icon>{{ expandedCategory === c.value ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  <span class="sub-toggle-label">
+                    {{ subcategoriesMap[c.value]?.length ?? '' }}
+                    {{ expandedCategory === c.value ? 'Hide' : 'Subcategories' }}
+                  </span>
                 </button>
-                <button mat-icon-button matTooltip="Delete" color="warn" (click)="confirmDelete(c)">
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
+
+                <div class="row-actions">
+                  <button mat-icon-button matTooltip="Edit" (click)="openEdit(c)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button matTooltip="Delete" color="warn" (click)="confirmDelete(c)">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
               </div>
+
+              <!-- Subcategory panel -->
+              @if (expandedCategory === c.value) {
+                <div class="sub-panel" [style.border-left-color]="c.color">
+
+                  <!-- Existing subcategories -->
+                  @if ((subcategoriesMap[c.value] ?? []).length === 0) {
+                    <p class="sub-empty">No subcategories yet. Add one below.</p>
+                  } @else {
+                    <div class="sub-chips">
+                      @for (sub of subcategoriesMap[c.value]; track sub.id) {
+                        <span class="sub-chip" [style.border-color]="c.color + '55'" [style.color]="c.color">
+                          {{ sub.name }}
+                          <button class="sub-remove" matTooltip="Remove" (click)="removeSubcategory(sub.id, c.value)">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </span>
+                      }
+                    </div>
+                  }
+
+                  <!-- Add new subcategory -->
+                  <div class="sub-add-row">
+                    <mat-form-field appearance="outline" class="sub-input">
+                      <mat-label>New subcategory</mat-label>
+                      <input matInput
+                        [(ngModel)]="newSubName[c.value]"
+                        (keyup.enter)="addSubcategory(c.value)"
+                        placeholder="e.g. Tim Hortons"
+                        maxlength="100">
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" class="sub-add-btn"
+                      [disabled]="!newSubName[c.value]?.trim() || addingSubcategory[c.value]"
+                      (click)="addSubcategory(c.value)">
+                      <mat-icon>add</mat-icon>
+                      Add
+                    </button>
+                  </div>
+
+                </div>
+              }
+
             </div>
           }
         </div>

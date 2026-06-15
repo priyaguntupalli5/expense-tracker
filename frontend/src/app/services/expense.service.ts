@@ -143,4 +143,18 @@ export class ExpenseService {
       catchError(() => of<string[]>([])),
     );
   }
+
+  getSubcategoriesFull(categoryValue: string): Observable<Subcategory[]> {
+    return this.http.get<Subcategory[]>(`${API}/subcategories`, { params: { category: categoryValue } }).pipe(
+      catchError(() => of<Subcategory[]>([])),
+    );
+  }
+
+  addSubcategory(categoryValue: string, name: string): Observable<Subcategory> {
+    return this.http.post<Subcategory>(`${API}/subcategories`, { categoryValue, name });
+  }
+
+  deleteSubcategory(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/subcategories/${id}`);
+  }
 }
