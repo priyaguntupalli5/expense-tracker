@@ -11,6 +11,16 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseService } from '../../services/expense.service';
 import { Category } from '../../models/expense.model';
 
+const COLOR_PALETTE = [
+  '#e91e63', '#2196f3', '#ff9800', '#9c27b0', '#4caf50',
+  '#00bcd4', '#ff5722', '#f44336', '#3f51b5', '#009688',
+  '#8bc34a', '#ffc107', '#795548', '#673ab7', '#00acc1',
+];
+
+function randomColor(): string {
+  return COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
+}
+
 export const ICON_OPTIONS = [
   { value: 'restaurant',      label: 'Food' },
   { value: 'directions_car',  label: 'Transport' },
@@ -57,7 +67,7 @@ export class CategoryFormComponent implements OnInit {
   form = this.fb.group({
     label: ['', [Validators.required, Validators.maxLength(50)]],
     icon:  ['more_horiz', Validators.required],
-    color: ['#607d8b', Validators.required],
+    color: [randomColor(), Validators.required],
   });
 
   ngOnInit() {
