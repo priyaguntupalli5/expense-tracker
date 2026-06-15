@@ -41,6 +41,37 @@
 
 .year-field { width: 90px; }
 
+.view-toggle {
+  display: flex;
+  border: 1px solid rgba(0,0,0,0.14);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.toggle-btn {
+  padding: 0 13px;
+  height: 38px;
+  border: none;
+  background: white;
+  color: #555;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+
+  &:first-child { border-right: 1px solid rgba(0,0,0,0.1); }
+
+  &:hover:not(.active) { background: #f0f4ff; color: #1976d2; }
+
+  &.active {
+    background: #1976d2;
+    color: white;
+  }
+}
+
 .notif-icon-btn {
   display: flex;
   align-items: center;
@@ -277,6 +308,8 @@
 
   .period-field { width: 110px; }
   .year-field   { width: 80px; }
+  .view-toggle  { width: 100%; }
+  .toggle-btn   { flex: 1; }
 
   .hero-card { padding: 22px 18px 18px; border-radius: 18px; }
   .hero-value { font-size: 2.2rem; }

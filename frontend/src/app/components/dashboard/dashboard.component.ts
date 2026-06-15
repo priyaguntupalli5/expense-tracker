@@ -22,6 +22,8 @@ interface PieSlice {
   percentage: number;
 }
 
+type ViewMode = 'to-date' | 'end-of-month';
+
 @Component({
   selector: 'app-dashboard',
   imports: [
@@ -42,6 +44,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
+  viewMode: ViewMode = 'to-date';
   pieSlices: PieSlice[] = [];
   incomeTotal = 0;
   private fixedExpenses: FixedExpense[] = [];
@@ -72,18 +75,121 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadData();
   }
 
+  setViewMode(mode: ViewMode) {
+    if (this.viewMode === mode) return;
+    this.viewMode = mode;
+    this.loadData();
+  }
+
+  // Returns today's ISO date when viewing the current month in to-date mode,
+  // undefined otherwise (backend returns the full-month result).
+  private get toDateParam(): string | undefined {
+    if (this.viewMode !== 'to-date') return undefined;
+    const now = new Date();
+    if (this.selectedYear === now.getFullYear() && this.selectedMonth === now.getMonth() + 1) {
+      return now.toISOString().slice(0, 10);
+    }
+    return undefined;
+  }
+
+  private get isFuturePeriod(): boolean {
+    const now = new Date();
+    return this.selectedYear > now.getFullYear() ||
+      (this.selectedYear === now.getFullYear() && this.selectedMonth > now.getMonth() + 1);
+  }
+
   private loadData() {
+    // Future period in to-date mode → nothing has happened yet
+    if (this.viewMode === 'to-date' && this.isFuturePeriod) {
+      this.incomeTotal   = 0;
+      this.fixedExpenses = [];
+      this.summary       = { total: 0, count: 0, categoryBreakdown: {} };
+      this.pieSlices     = [];
+      return;
+    }
+
+    const toDate = this.toDateParam;
     forkJoin({
       categories:  this.expenseService.loadCategories(),
-      incomeTotal: this.incomeService.getMonthlyTotal(this.selectedMonth, this.selectedYear),
+      incomeTotal: this.incomeService.getMonthlyTotal(this.selectedMonth, this.selectedYear, toDate),
       fixed:       this.expenseService.getFixedExpenses(),
-      summary:     this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
+      summary:     this.expenseService.getSummary(this.selectedMonth, this.selectedYear, toDate),
     }).pipe(takeUntil(this.destroy$)).subscribe(({ incomeTotal, fixed, summary }) => {
       this.incomeTotal   = incomeTotal;
       this.fixedExpenses = fixed;
       this.summary       = summary;
       this.buildPieChart();
     });
+  }
+
+  /**
+   * Amount to attribute to a fixed expense in "to-date" mode for the selected month.
+   *
+   * - Past months:   full monthly equivalent (everything already paid).
+   * - Future months: 0.
+   * - Current month:
+   *     MONTHLY/QUARTERLY — full amount if paymentDay has passed, else 0.
+   *     YEARLY            — amount if paymentMonth matches and paymentDay has passed, else 0.
+   *     WEEKLY/BIWEEKLY   — count occurrences from start of month up to today × amount.
+   */
+  private toDateEquivalent(fe: FixedExpense): number {
+    const now = new Date();
+    const thisMonth = now.getMonth() + 1;
+    const thisYear  = now.getFullYear();
+
+    if (this.selectedYear < thisYear ||
+        (this.selectedYear === thisYear && this.selectedMonth < thisMonth)) {
+      return monthlyEquivalent(fe);
+    }
+    if (this.selectedYear > thisYear ||
+        (this.selectedYear === thisYear && this.selectedMonth > thisMonth)) {
+      return 0;
+    }
+
+    const amount    = Number(fe.amount);
+    const todayDay  = now.getDate();
+    const recurrence = fe.recurrence ?? 'MONTHLY';
+
+    switch (recurrence) {
+      case 'MONTHLY':
+        return (!fe.paymentDay || fe.paymentDay <= todayDay) ? amount : 0;
+
+      case 'YEARLY':
+        if (fe.paymentMonth && fe.paymentMonth !== this.selectedMonth) return 0;
+        return (!fe.paymentDay || fe.paymentDay <= todayDay) ? amount : 0;
+
+      case 'QUARTERLY':
+        // paymentDay indicates the day-of-month for whichever quarter payment falls this month
+        return (!fe.paymentDay || fe.paymentDay <= todayDay) ? amount : 0;
+
+      case 'WEEKLY':
+      case 'BIWEEKLY': {
+        const intervalMs = (recurrence === 'WEEKLY' ? 7 : 14) * 86_400_000;
+        const anchor     = fe.startDate
+          ? new Date(fe.startDate + 'T00:00:00')
+          : new Date(thisYear, thisMonth - 1, 1);
+        const monthStart = new Date(thisYear, thisMonth - 1, 1);
+        const today      = new Date(thisYear, thisMonth - 1, todayDay);
+
+        // Advance anchor to first occurrence on or after the start of the month
+        let cursor = new Date(anchor.getTime());
+        while (cursor < monthStart) cursor = new Date(cursor.getTime() + intervalMs);
+
+        let count = 0;
+        while (cursor <= today) {
+          count++;
+          cursor = new Date(cursor.getTime() + intervalMs);
+        }
+        return count * amount;
+      }
+
+      default:
+        return (!fe.paymentDay || fe.paymentDay <= todayDay) ? amount : 0;
+    }
+  }
+
+  private fixedAmount(fe: FixedExpense): number {
+    return this.viewMode === 'to-date' ? this.toDateEquivalent(fe) : monthlyEquivalent(fe);
   }
 
   private buildPieChart() {
@@ -96,7 +202,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     for (const fe of this.fixedExpenses) {
       if (!this.expenseService.getCategoryByValue(fe.category)?.isIncome) {
-        breakdown[fe.category] = (breakdown[fe.category] ?? 0) + Number(fe.amount);
+        breakdown[fe.category] = (breakdown[fe.category] ?? 0) + this.fixedAmount(fe);
       }
     }
 
@@ -145,18 +251,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   get fixedTotal(): number {
     return this.fixedExpenses
       .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
-      .reduce((sum, fe) => sum + monthlyEquivalent(fe), 0);
-  }
-
-  get creditsTotal(): number {
-    const breakdown = this.summary?.categoryBreakdown ?? {};
-    const variableCredits = Object.entries(breakdown)
-      .filter(([cat]) => this.expenseService.getCategoryByValue(cat)?.isIncome)
-      .reduce((sum, [, amt]) => sum + Number(amt), 0);
-    const fixedCredits = this.fixedExpenses
-      .filter(fe => this.expenseService.getCategoryByValue(fe.category)?.isIncome)
-      .reduce((sum, fe) => sum + monthlyEquivalent(fe), 0);
-    return variableCredits + fixedCredits;
+      .reduce((sum, fe) => sum + this.fixedAmount(fe), 0);
   }
 
   get actualTotal(): number {
@@ -171,7 +266,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get savings(): number {
-    return this.incomeTotal + this.creditsTotal - this.fixedTotal - this.actualTotal;
+    return this.incomeTotal - this.fixedTotal - this.actualTotal;
+  }
+
+  get savingsLabel(): string {
+    if (this.savings < 0) return 'Over Budget';
+    return this.viewMode === 'to-date' ? 'Savings to Date' : 'Estimated Savings';
   }
 
   formatCompact(amount: number): string {

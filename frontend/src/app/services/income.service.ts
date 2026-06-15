@@ -32,9 +32,11 @@ export class IncomeService {
       .pipe(catchError(() => of<Income[]>([])));
   }
 
-  getMonthlyTotal(month: number, year: number): Observable<number> {
+  getMonthlyTotal(month: number, year: number, toDate?: string): Observable<number> {
+    const params: Record<string, string> = { month: String(month), year: String(year) };
+    if (toDate !== undefined) params['toDate'] = toDate;
     return this.http
-      .get<{ total: number }>(`${API}/income/total`, { params: { month: String(month), year: String(year) } })
+      .get<{ total: number }>(`${API}/income/total`, { params })
       .pipe(
         map(r => Number(r.total)),
         catchError(() => of(0)),

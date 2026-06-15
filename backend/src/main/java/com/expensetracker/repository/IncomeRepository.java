@@ -28,10 +28,21 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
     // Duplicate-guard for auto-generation
     boolean existsByTemplateIdAndPaymentDate(Long templateId, LocalDate paymentDate);
 
-    // Dashboard total: only non-template entries
+    // Manual (non-recurring) entries only — used for end-of-month projection base
     @Query("SELECT COALESCE(SUM(i.amount), 0) FROM Income i " +
-           "WHERE i.groupId = :groupId AND i.month = :month AND i.year = :year AND i.isTemplate = false")
-    BigDecimal sumByGroupIdAndMonthAndYear(@Param("groupId") Long groupId,
-                                           @Param("month") int month,
-                                           @Param("year") int year);
+           "WHERE i.groupId = :groupId AND i.month = :month AND i.year = :year " +
+           "AND i.isTemplate = false AND i.templateId IS NULL")
+    BigDecimal sumManualByGroupIdAndMonthAndYear(@Param("groupId") Long groupId,
+                                                 @Param("month") int month,
+                                                 @Param("year") int year);
+
+    // To-date total: entries with no paymentDate (manual) always count; auto-generated
+    // entries only count if their paymentDate is on or before the cutoff.
+    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM Income i " +
+           "WHERE i.groupId = :groupId AND i.month = :month AND i.year = :year AND i.isTemplate = false " +
+           "AND (i.paymentDate IS NULL OR i.paymentDate <= :toDate)")
+    BigDecimal sumByGroupIdAndMonthAndYearToDate(@Param("groupId") Long groupId,
+                                                 @Param("month") int month,
+                                                 @Param("year") int year,
+                                                 @Param("toDate") LocalDate toDate);
 }

@@ -48,10 +48,11 @@ export class ExpenseService {
       .pipe(catchError(() => of<Expense[]>([])));
   }
 
-  getSummary(month?: number, year?: number): Observable<Summary> {
+  getSummary(month?: number, year?: number, toDate?: string): Observable<Summary> {
     const params: Record<string, string> = {};
-    if (month !== undefined) params['month'] = String(month);
-    if (year  !== undefined) params['year']  = String(year);
+    if (month  !== undefined) params['month']  = String(month);
+    if (year   !== undefined) params['year']   = String(year);
+    if (toDate !== undefined) params['toDate'] = toDate;
     return this.http.get<Summary>(`${API}/expenses/summary`, { params })
       .pipe(catchError(() => of<Summary>({ total: 0, count: 0, categoryBreakdown: {} })));
   }

@@ -39,9 +39,10 @@ public class ExpenseController {
     public SummaryDTO getSummary(
         @AuthenticationPrincipal User user,
         @RequestParam(required = false) Integer month,
-        @RequestParam(required = false) Integer year
+        @RequestParam(required = false) Integer year,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
     ) {
-        return service.getSummary(user.getGroup().getId(), month, year);
+        return service.getSummary(user.getGroup().getId(), month, year, toDate);
     }
 
     @GetMapping("/{id}")

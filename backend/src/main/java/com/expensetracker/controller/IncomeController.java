@@ -4,11 +4,13 @@ import com.expensetracker.model.Income;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.IncomeRepository;
 import com.expensetracker.service.RecurringJobService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -42,12 +44,45 @@ public class IncomeController {
         return repository.findByGroupIdAndIsTemplateFalseOrderByYearDescMonthDescIdDesc(groupId);
     }
 
-    /** Monthly income total (non-template entries only). */
+    /**
+     * Monthly income total.
+     *
+     * toDate present  → to-date mode: sum entries where paymentDate ≤ toDate (or no paymentDate).
+     * toDate absent   → end-of-month projection: manual entries + recurring template payments
+     *                   for the full month (works even before auto-generated entries are written).
+     */
     @GetMapping("/total")
     public Map<String, BigDecimal> getTotal(@AuthenticationPrincipal User user,
                                             @RequestParam int month,
-                                            @RequestParam int year) {
-        BigDecimal total = repository.sumByGroupIdAndMonthAndYear(user.getGroup().getId(), month, year);
+                                            @RequestParam int year,
+                                            @RequestParam(required = false)
+                                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        Long groupId = user.getGroup().getId();
+
+        if (toDate != null) {
+            return Map.of("total",
+                repository.sumByGroupIdAndMonthAndYearToDate(groupId, month, year, toDate));
+        }
+
+        // End-of-month: manual entries + projected template payments for the month
+        BigDecimal total = repository.sumManualByGroupIdAndMonthAndYear(groupId, month, year);
+
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end   = start.withDayOfMonth(start.lengthOfMonth());
+
+        for (Income template : repository.findByGroupIdAndIsTemplateTrue(groupId)) {
+            if (template.getStartDate() == null || template.getRecurrence() == null) continue;
+            long count = recurringJobService
+                .computePaymentDates(template.getRecurrence(), template.getPaymentDay(),
+                                     template.getPaymentMonth(), template.getStartDate(), end)
+                .stream()
+                .filter(d -> !d.isBefore(start))
+                .count();
+            if (count > 0) {
+                total = total.add(template.getAmount().multiply(BigDecimal.valueOf(count)));
+            }
+        }
+
         return Map.of("total", total);
     }
 
