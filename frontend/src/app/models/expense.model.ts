@@ -16,6 +16,20 @@ export interface FixedExpense {
   category: string;
   notes?: string;
   subcategory?: string;
+  recurrence?: string;   // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
+  paymentDay?: number;   // day-of-month (1-31) or day-of-week (1=Mon..7=Sun)
+  paymentMonth?: number; // 1-12, only for YEARLY
+}
+
+export function monthlyEquivalent(fe: FixedExpense): number {
+  const amount = Number(fe.amount);
+  switch (fe.recurrence) {
+    case 'WEEKLY':    return amount * 52 / 12;
+    case 'BIWEEKLY':  return amount * 26 / 12;
+    case 'QUARTERLY': return amount / 3;
+    case 'YEARLY':    return amount / 12;
+    default:          return amount;
+  }
 }
 
 export interface Subcategory {

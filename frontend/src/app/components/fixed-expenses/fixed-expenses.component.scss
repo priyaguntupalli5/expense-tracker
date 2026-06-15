@@ -129,8 +129,22 @@
   white-space: nowrap;
 }
 
-.amount-col  { text-align: right; }
-.amount-value { font-weight: 600; font-size: 1rem; white-space: nowrap; }
+.amount-col   { text-align: right; }
+.amount-value { font-weight: 600; font-size: 1rem; }
+
+.amount-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.schedule-tag {
+  font-size: 0.72rem;
+  color: #aaa;
+  font-weight: 400;
+  white-space: nowrap;
+}
 .actions-col { text-align: right; white-space: nowrap; width: 96px; }
 
 .empty-state {

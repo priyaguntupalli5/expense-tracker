@@ -15,6 +15,23 @@ import { map, startWith } from 'rxjs/operators';
 import { ExpenseService } from '../../services/expense.service';
 import { Category, FixedExpense } from '../../models/expense.model';
 
+export const RECURRENCE_OPTIONS = [
+  { value: 'WEEKLY',    label: 'Weekly' },
+  { value: 'BIWEEKLY',  label: 'Every 2 weeks' },
+  { value: 'MONTHLY',   label: 'Monthly' },
+  { value: 'QUARTERLY', label: 'Quarterly' },
+  { value: 'YEARLY',    label: 'Yearly' },
+];
+
+export const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+export const MONTHS   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function ordinal(n: number): string {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
+
 @Component({
   selector: 'app-fixed-expense-form',
   imports: [
@@ -38,16 +55,41 @@ export class FixedExpenseFormComponent implements OnInit {
   isEditing = false;
   saving    = false;
 
+  readonly recurrenceOptions = RECURRENCE_OPTIONS;
+  readonly weekdays = WEEKDAYS;
+  readonly months   = MONTHS;
+
+  readonly dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => ({
+    value: i + 1, label: ordinal(i + 1),
+  }));
+  readonly weekdayOptions = WEEKDAYS.map((label, i) => ({ value: i + 1, label }));
+  readonly monthOptions   = MONTHS.map((label, i) => ({ value: i + 1, label }));
+
   private readonly subcategoriesSubject = new BehaviorSubject<string[]>([]);
   filteredSuggestions$!: Observable<string[]>;
 
   form = this.fb.group({
-    category:    ['HOUSING', Validators.required],
-    title:       ['', [Validators.required, Validators.maxLength(100)]],
-    amount:      [null as number | null, [Validators.required, Validators.min(0.01)]],
-    subcategory: ['' as string | null],
-    notes:       [''],
+    category:     ['HOUSING', Validators.required],
+    title:        ['', [Validators.required, Validators.maxLength(100)]],
+    amount:       [null as number | null, [Validators.required, Validators.min(0.01)]],
+    recurrence:   ['MONTHLY', Validators.required],
+    paymentDay:   [null as number | null],
+    paymentMonth: [null as number | null],
+    subcategory:  ['' as string | null],
+    notes:        [''],
   });
+
+  get recurrence(): string { return this.form.get('recurrence')?.value ?? 'MONTHLY'; }
+  get isWeekly(): boolean { return this.recurrence === 'WEEKLY' || this.recurrence === 'BIWEEKLY'; }
+  get isYearly(): boolean { return this.recurrence === 'YEARLY'; }
+
+  get amountLabel(): string {
+    const map: Record<string, string> = {
+      WEEKLY: 'Weekly amount', BIWEEKLY: 'Biweekly amount',
+      MONTHLY: 'Monthly amount', QUARTERLY: 'Quarterly amount', YEARLY: 'Yearly amount',
+    };
+    return map[this.recurrence] ?? 'Amount';
+  }
 
   ngOnInit() {
     this.filteredSuggestions$ = combineLatest([
@@ -76,12 +118,21 @@ export class FixedExpenseFormComponent implements OnInit {
       }
     });
 
+    // Reset day/month pickers when recurrence type changes
+    this.form.get('recurrence')!.valueChanges.subscribe(() => {
+      this.form.patchValue({ paymentDay: null, paymentMonth: null }, { emitEvent: false });
+    });
+
     if (this.data) {
       this.isEditing = true;
-      this.form.patchValue({ ...this.data, subcategory: this.data.subcategory ?? null });
-      if (this.data.category) {
-        this.loadSubcategories(this.data.category);
-      }
+      this.form.patchValue({
+        ...this.data,
+        recurrence:   this.data.recurrence   ?? 'MONTHLY',
+        paymentDay:   this.data.paymentDay   ?? null,
+        paymentMonth: this.data.paymentMonth ?? null,
+        subcategory:  this.data.subcategory  ?? null,
+      });
+      if (this.data.category) this.loadSubcategories(this.data.category);
     }
   }
 
@@ -100,11 +151,14 @@ export class FixedExpenseFormComponent implements OnInit {
     this.saving = true;
     const v = this.form.value;
     const expense: FixedExpense = {
-      title:       v.title!,
-      amount:      v.amount!,
-      category:    v.category!,
-      subcategory: v.subcategory || undefined,
-      notes:       v.notes || undefined,
+      title:        v.title!,
+      amount:       v.amount!,
+      category:     v.category!,
+      recurrence:   v.recurrence!,
+      paymentDay:   v.paymentDay   ?? undefined,
+      paymentMonth: this.isYearly ? (v.paymentMonth ?? undefined) : undefined,
+      subcategory:  v.subcategory  || undefined,
+      notes:        v.notes        || undefined,
     };
 
     const op = this.isEditing
@@ -115,8 +169,7 @@ export class FixedExpenseFormComponent implements OnInit {
       next: () => {
         this.snackBar.open(
           this.isEditing ? 'Fixed expense updated!' : 'Fixed expense added!',
-          'OK',
-          { duration: 3000 },
+          'OK', { duration: 3000 },
         );
         this.dialogRef.close(true);
       },
@@ -127,7 +180,5 @@ export class FixedExpenseFormComponent implements OnInit {
     });
   }
 
-  cancel() {
-    this.dialogRef.close(false);
-  }
+  cancel() { this.dialogRef.close(false); }
 }

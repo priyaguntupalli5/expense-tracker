@@ -44,6 +44,9 @@ public class FixedExpenseController {
             existing.setCategory(updated.getCategory());
             existing.setNotes(updated.getNotes());
             existing.setSubcategory(updated.getSubcategory());
+            existing.setRecurrence(updated.getRecurrence());
+            existing.setPaymentDay(updated.getPaymentDay());
+            existing.setPaymentMonth(updated.getPaymentMonth());
             return ResponseEntity.ok(repository.save(existing));
         }).orElse(ResponseEntity.notFound().build());
     }

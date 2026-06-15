@@ -21,6 +21,12 @@
   min-width: 320px;
 }
 
-.full-width {
-  width: 100%;
+.full-width { width: 100%; }
+
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  mat-form-field { width: 100%; }
 }

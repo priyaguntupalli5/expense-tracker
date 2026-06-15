@@ -13,7 +13,7 @@ import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { SettingsService } from '../../services/settings.service';
-import { FixedExpense, Summary } from '../../models/expense.model';
+import { FixedExpense, Summary, monthlyEquivalent } from '../../models/expense.model';
 
 interface PieSlice {
   path: string;
@@ -175,7 +175,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   get fixedTotal(): number {
     return this.fixedExpenses
       .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
-      .reduce((sum, fe) => sum + Number(fe.amount), 0);
+      .reduce((sum, fe) => sum + monthlyEquivalent(fe), 0);
   }
 
   get creditsTotal(): number {
@@ -185,7 +185,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .reduce((sum, [, amt]) => sum + Number(amt), 0);
     const fixedCredits = this.fixedExpenses
       .filter(fe => this.expenseService.getCategoryByValue(fe.category)?.isIncome)
-      .reduce((sum, fe) => sum + Number(fe.amount), 0);
+      .reduce((sum, fe) => sum + monthlyEquivalent(fe), 0);
     return variableCredits + fixedCredits;
   }
 

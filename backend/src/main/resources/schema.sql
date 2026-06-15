@@ -40,12 +40,15 @@ CREATE TABLE IF NOT EXISTS expenses (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS fixed_expenses (
-    id       BIGINT NOT NULL AUTO_INCREMENT,
-    title    VARCHAR(100) NOT NULL,
-    amount   DECIMAL(12, 2) NOT NULL,
-    category VARCHAR(50)  NOT NULL,
-    notes    VARCHAR(255),
-    group_id BIGINT       NULL,
+    id            BIGINT         NOT NULL AUTO_INCREMENT,
+    title         VARCHAR(100)   NOT NULL,
+    amount        DECIMAL(12, 2) NOT NULL,
+    category      VARCHAR(50)    NOT NULL,
+    notes         VARCHAR(255),
+    group_id      BIGINT         NULL,
+    recurrence    VARCHAR(20)    NOT NULL DEFAULT 'MONTHLY',
+    payment_day   INT            NULL,
+    payment_month INT            NULL,
     PRIMARY KEY (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
@@ -91,8 +94,11 @@ CREATE TABLE IF NOT EXISTS join_requests (
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100) NULL;
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS image_data  MEDIUMTEXT   NULL;
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS group_id    BIGINT       NULL;
-ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100) NULL;
-ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS group_id    BIGINT       NULL;
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS subcategory    VARCHAR(100) NULL;
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS group_id       BIGINT       NULL;
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS recurrence     VARCHAR(20)  NOT NULL DEFAULT 'MONTHLY';
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS payment_day    INT          NULL;
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS payment_month  INT          NULL;
 ALTER TABLE monthly_salaries ADD COLUMN IF NOT EXISTS group_id   BIGINT       NULL;
 ALTER TABLE categories      ADD COLUMN IF NOT EXISTS is_income   BOOLEAN      NOT NULL DEFAULT FALSE;
 ALTER TABLE `groups`        ADD COLUMN IF NOT EXISTS group_code  VARCHAR(6)   NULL;

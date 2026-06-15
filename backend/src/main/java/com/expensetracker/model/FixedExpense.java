@@ -33,6 +33,15 @@ public class FixedExpense {
     @Column(name = "group_id")
     private Long groupId;
 
+    @Column(nullable = false)
+    private String recurrence = "MONTHLY";
+
+    @Column(name = "payment_day")
+    private Integer paymentDay;
+
+    @Column(name = "payment_month")
+    private Integer paymentMonth;
+
     public FixedExpense() {}
 
     public Long getId() { return id; }
@@ -55,4 +64,13 @@ public class FixedExpense {
 
     public Long getGroupId() { return groupId; }
     public void setGroupId(Long groupId) { this.groupId = groupId; }
+
+    public String getRecurrence() { return recurrence; }
+    public void setRecurrence(String recurrence) { this.recurrence = recurrence != null ? recurrence : "MONTHLY"; }
+
+    public Integer getPaymentDay() { return paymentDay; }
+    public void setPaymentDay(Integer paymentDay) { this.paymentDay = paymentDay; }
+
+    public Integer getPaymentMonth() { return paymentMonth; }
+    public void setPaymentMonth(Integer paymentMonth) { this.paymentMonth = paymentMonth; }
 }
