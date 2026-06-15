@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { CurrencyPipe, NgClass } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
@@ -25,7 +25,7 @@ interface PieSlice {
 @Component({
   selector: 'app-dashboard',
   imports: [
-    CurrencyPipe, NgClass, FormsModule, ReactiveFormsModule,
+    CurrencyPipe, FormsModule, ReactiveFormsModule,
     MatCardModule, MatSelectModule, MatFormFieldModule,
     MatInputModule, MatIconModule, MatButtonModule, MatTooltipModule,
   ],
