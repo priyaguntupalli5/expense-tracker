@@ -11,7 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { PushNotificationService } from '../../services/push-notification.service';
-import { Summary } from '../../models/expense.model';
+import { FixedExpense, Summary } from '../../models/expense.model';
 
 interface PieSlice {
   path: string;
@@ -43,6 +43,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedYear  = new Date().getFullYear();
   fixedTotal    = 0;
   pieSlices: PieSlice[] = [];
+  private fixedExpenses: FixedExpense[] = [];
 
   salaryForm = this.fb.group({
     priyaSalary: [0],
@@ -94,15 +95,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
         { priyaSalary: Number(salary.priyaSalary), vamsiSalary: Number(salary.vamsiSalary) },
         { emitEvent: false },
       );
-      this.fixedTotal = fixed.reduce((sum, e) => sum + Number(e.amount), 0);
-      this.summary    = summary;
+      this.fixedExpenses = fixed;
+      this.fixedTotal    = fixed.reduce((sum, e) => sum + Number(e.amount), 0);
+      this.summary       = summary;
       this.buildPieChart();
     });
   }
 
   private buildPieChart() {
-    const breakdown = this.summary?.categoryBreakdown ?? {};
-    const total     = this.summary?.total ?? 0;
+    // Merge variable expenses breakdown + fixed expenses by category
+    const breakdown: Record<string, number> = {};
+
+    for (const [cat, amount] of Object.entries(this.summary?.categoryBreakdown ?? {})) {
+      breakdown[cat] = (breakdown[cat] ?? 0) + Number(amount);
+    }
+    for (const fe of this.fixedExpenses) {
+      breakdown[fe.category] = (breakdown[fe.category] ?? 0) + Number(fe.amount);
+    }
+
+    const total = Object.values(breakdown).reduce((s, a) => s + a, 0);
     if (total === 0) { this.pieSlices = []; return; }
 
     const cx = 100, cy = 100, r = 80;
