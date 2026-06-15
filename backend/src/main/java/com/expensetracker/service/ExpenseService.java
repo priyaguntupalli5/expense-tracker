@@ -21,45 +21,48 @@ public class ExpenseService {
         this.repository = repository;
     }
 
-    public List<Expense> getAll(Integer month, Integer year, LocalDate startDate, LocalDate endDate) {
+    public List<Expense> getAll(Long groupId, Integer month, Integer year, LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null) {
-            return repository.findByDateBetweenOrderByDateDesc(startDate, endDate);
+            return repository.findByGroupIdAndDateBetweenOrderByDateDesc(groupId, startDate, endDate);
         }
         if (month != null && year != null) {
             LocalDate start = LocalDate.of(year, month, 1);
             LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
-            return repository.findByDateBetweenOrderByDateDesc(start, end);
+            return repository.findByGroupIdAndDateBetweenOrderByDateDesc(groupId, start, end);
         }
-        return repository.findAllByOrderByDateDesc();
+        return repository.findByGroupIdOrderByDateDesc(groupId);
     }
 
-    public Optional<Expense> getById(Long id) {
-        return repository.findById(id);
+    public Optional<Expense> getById(Long id, Long groupId) {
+        return repository.findByIdAndGroupId(id, groupId);
     }
 
-    public Expense create(Expense expense) {
+    public Expense create(Expense expense, Long groupId) {
+        expense.setGroupId(groupId);
         return repository.save(expense);
     }
 
-    public Optional<Expense> update(Long id, Expense updated) {
-        return repository.findById(id).map(existing -> {
+    public Optional<Expense> update(Long id, Long groupId, Expense updated) {
+        return repository.findByIdAndGroupId(id, groupId).map(existing -> {
             existing.setTitle(updated.getTitle());
             existing.setAmount(updated.getAmount());
             existing.setCategory(updated.getCategory());
             existing.setDate(updated.getDate());
             existing.setNotes(updated.getNotes());
+            existing.setSubcategory(updated.getSubcategory());
+            existing.setImageData(updated.getImageData());
             return repository.save(existing);
         });
     }
 
-    public boolean delete(Long id) {
-        if (!repository.existsById(id)) return false;
+    public boolean delete(Long id, Long groupId) {
+        if (!repository.existsByIdAndGroupId(id, groupId)) return false;
         repository.deleteById(id);
         return true;
     }
 
-    public SummaryDTO getSummary(Integer month, Integer year) {
-        List<Expense> expenses = getAll(month, year, null, null);
+    public SummaryDTO getSummary(Long groupId, Integer month, Integer year) {
+        List<Expense> expenses = getAll(groupId, month, year, null, null);
         BigDecimal total = expenses.stream()
             .map(Expense::getAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);

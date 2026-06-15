@@ -1,3 +1,12 @@
+-- Seed default group (id=1) for existing data migration
+INSERT IGNORE INTO `groups` (id, name) VALUES (1, 'Priya & Vamsi');
+
+-- Assign all existing data to group 1 (runs safely on every restart; WHERE group_id IS NULL is idempotent)
+UPDATE expenses        SET group_id = 1 WHERE group_id IS NULL;
+UPDATE fixed_expenses  SET group_id = 1 WHERE group_id IS NULL;
+UPDATE monthly_salaries SET group_id = 1 WHERE group_id IS NULL;
+
+-- Default categories (global, shared across all groups)
 INSERT IGNORE INTO categories (value, label, icon, color) VALUES
   ('FOOD',          'Food',          'restaurant',     '#e91e63'),
   ('TRANSPORT',     'Transport',     'directions_car', '#2196f3'),
@@ -10,6 +19,7 @@ INSERT IGNORE INTO categories (value, label, icon, color) VALUES
 INSERT IGNORE INTO categories (value, label, icon, color, is_income) VALUES
   ('REFUND', 'Refunds & Credits', 'payments', '#4caf50', TRUE);
 
+-- Default subcategories
 INSERT IGNORE INTO subcategories (category_value, name) VALUES
   ('FOOD', 'Tim Hortons'),
   ('FOOD', 'McDonald''s'),

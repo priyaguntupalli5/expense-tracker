@@ -8,5 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface MonthlySalaryRepository extends JpaRepository<MonthlySalary, Long> {
-    Optional<MonthlySalary> findByMonthAndYear(int month, int year);
+    Optional<MonthlySalary> findByGroupIdAndMonthAndYear(Long groupId, int month, int year);
 }

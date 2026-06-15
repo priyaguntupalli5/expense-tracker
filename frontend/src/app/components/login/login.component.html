@@ -1,0 +1,57 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="brand">
+      <mat-icon class="brand-icon">account_balance_wallet</mat-icon>
+      <h1 class="brand-name">Expense Tracker</h1>
+      <p class="brand-sub">Track smarter, save better</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab" [class.active]="mode === 'login'" (click)="switchMode('login')">Sign In</button>
+      <button class="tab" [class.active]="mode === 'register'" (click)="switchMode('register')">Register</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+      @if (mode === 'register') {
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Name</mat-label>
+          <mat-icon matPrefix>person</mat-icon>
+          <input matInput formControlName="name" placeholder="Your name or household name">
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline" class="field">
+        <mat-label>Email</mat-label>
+        <mat-icon matPrefix>email</mat-icon>
+        <input matInput type="email" formControlName="email" placeholder="you@example.com" autocomplete="email">
+        @if (form.get('email')?.hasError('email')) {
+          <mat-error>Enter a valid email</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="field">
+        <mat-label>Password</mat-label>
+        <mat-icon matPrefix>lock</mat-icon>
+        <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" autocomplete="current-password">
+        <button type="button" mat-icon-button matSuffix (click)="hidePassword = !hidePassword">
+          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        @if (form.get('password')?.hasError('minlength')) {
+          <mat-error>Minimum 8 characters</mat-error>
+        }
+      </mat-form-field>
+
+      @if (error) {
+        <div class="error-msg">{{ error }}</div>
+      }
+
+      <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="loading || form.invalid">
+        @if (loading) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          {{ mode === 'login' ? 'Sign In' : 'Create Account' }}
+        }
+      </button>
+    </form>
+  </div>
+</div>

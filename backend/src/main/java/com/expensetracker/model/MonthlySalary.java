@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(
     name = "monthly_salaries",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"month", "year"})
+    uniqueConstraints = @UniqueConstraint(columnNames = {"group_id", "month", "year"})
 )
 public class MonthlySalary {
 
@@ -26,6 +26,9 @@ public class MonthlySalary {
     @Column(name = "vamsi_salary", precision = 12, scale = 2, nullable = false)
     private BigDecimal vamsiSalary = BigDecimal.ZERO;
 
+    @Column(name = "group_id")
+    private Long groupId;
+
     public MonthlySalary() {}
 
     public Long getId() { return id; }
@@ -42,4 +45,7 @@ public class MonthlySalary {
 
     public BigDecimal getVamsiSalary() { return vamsiSalary; }
     public void setVamsiSalary(BigDecimal vamsiSalary) { this.vamsiSalary = vamsiSalary; }
+
+    public Long getGroupId() { return groupId; }
+    public void setGroupId(Long groupId) { this.groupId = groupId; }
 }

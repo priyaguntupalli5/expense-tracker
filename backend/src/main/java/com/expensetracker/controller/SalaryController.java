@@ -2,7 +2,9 @@ package com.expensetracker.controller;
 
 import com.expensetracker.model.MonthlySalary;
 import com.expensetracker.model.SalaryRequestDTO;
+import com.expensetracker.model.User;
 import com.expensetracker.repository.MonthlySalaryRepository;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -18,22 +20,27 @@ public class SalaryController {
     }
 
     @GetMapping
-    public MonthlySalary getSalary(@RequestParam int month, @RequestParam int year) {
-        return repository.findByMonthAndYear(month, year).orElseGet(() -> {
-            MonthlySalary empty = new MonthlySalary();
-            empty.setMonth(month);
-            empty.setYear(year);
-            empty.setPriyaSalary(BigDecimal.ZERO);
-            empty.setVamsiSalary(BigDecimal.ZERO);
-            return empty;
-        });
+    public MonthlySalary getSalary(@AuthenticationPrincipal User user,
+                                   @RequestParam int month,
+                                   @RequestParam int year) {
+        return repository.findByGroupIdAndMonthAndYear(user.getGroup().getId(), month, year)
+            .orElseGet(() -> {
+                MonthlySalary empty = new MonthlySalary();
+                empty.setMonth(month);
+                empty.setYear(year);
+                empty.setPriyaSalary(BigDecimal.ZERO);
+                empty.setVamsiSalary(BigDecimal.ZERO);
+                return empty;
+            });
     }
 
     @PostMapping
-    public MonthlySalary saveSalary(@RequestBody SalaryRequestDTO dto) {
-        MonthlySalary salary = repository.findByMonthAndYear(dto.month(), dto.year())
+    public MonthlySalary saveSalary(@AuthenticationPrincipal User user, @RequestBody SalaryRequestDTO dto) {
+        Long groupId = user.getGroup().getId();
+        MonthlySalary salary = repository.findByGroupIdAndMonthAndYear(groupId, dto.month(), dto.year())
             .orElseGet(() -> {
                 MonthlySalary s = new MonthlySalary();
+                s.setGroupId(groupId);
                 s.setMonth(dto.month());
                 s.setYear(dto.year());
                 return s;

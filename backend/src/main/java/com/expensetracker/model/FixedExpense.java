@@ -30,6 +30,9 @@ public class FixedExpense {
     @Size(max = 100)
     private String subcategory;
 
+    @Column(name = "group_id")
+    private Long groupId;
+
     public FixedExpense() {}
 
     public Long getId() { return id; }
@@ -49,4 +52,7 @@ public class FixedExpense {
 
     public String getSubcategory() { return subcategory; }
     public void setSubcategory(String subcategory) { this.subcategory = subcategory; }
+
+    public Long getGroupId() { return groupId; }
+    public void setGroupId(Long groupId) { this.groupId = groupId; }
 }

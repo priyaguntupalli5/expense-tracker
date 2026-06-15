@@ -1,10 +1,12 @@
 package com.expensetracker.controller;
 
 import com.expensetracker.model.FixedExpense;
+import com.expensetracker.model.User;
 import com.expensetracker.repository.FixedExpenseRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,30 +22,37 @@ public class FixedExpenseController {
     }
 
     @GetMapping
-    public List<FixedExpense> getAll() {
-        return repository.findAll();
+    public List<FixedExpense> getAll(@AuthenticationPrincipal User user) {
+        return repository.findByGroupId(user.getGroup().getId());
     }
 
     @PostMapping
-    public ResponseEntity<FixedExpense> create(@Valid @RequestBody FixedExpense expense) {
+    public ResponseEntity<FixedExpense> create(@AuthenticationPrincipal User user,
+                                               @Valid @RequestBody FixedExpense expense) {
         expense.setId(null);
+        expense.setGroupId(user.getGroup().getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(expense));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<FixedExpense> update(@PathVariable Long id, @Valid @RequestBody FixedExpense updated) {
-        return repository.findById(id).map(existing -> {
+    public ResponseEntity<FixedExpense> update(@AuthenticationPrincipal User user,
+                                               @PathVariable Long id,
+                                               @Valid @RequestBody FixedExpense updated) {
+        return repository.findByIdAndGroupId(id, user.getGroup().getId()).map(existing -> {
             existing.setTitle(updated.getTitle());
             existing.setAmount(updated.getAmount());
             existing.setCategory(updated.getCategory());
             existing.setNotes(updated.getNotes());
+            existing.setSubcategory(updated.getSubcategory());
             return ResponseEntity.ok(repository.save(existing));
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!repository.existsById(id)) return ResponseEntity.notFound().build();
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        if (!repository.existsByIdAndGroupId(id, user.getGroup().getId())) {
+            return ResponseEntity.notFound().build();
+        }
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
