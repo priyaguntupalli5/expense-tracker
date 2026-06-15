@@ -34,38 +34,44 @@
   </div>
 
   <!-- Salary Inputs -->
-  <div class="salary-section" [formGroup]="salaryForm">
-    <div class="section-label">Monthly Income</div>
-    <div class="salary-row">
-      <mat-card class="salary-card">
-        <mat-card-content>
-          <div class="salary-person">
-            <mat-icon>person</mat-icon>
-            <span class="person-name">Priya</span>
+  <div class="salary-section">
+    <div class="section-label">
+      <mat-icon class="section-icon">account_balance_wallet</mat-icon>
+      Monthly Income
+    </div>
+    <div class="salary-card" [formGroup]="salaryForm">
+      <div class="salary-inputs">
+        <div class="salary-person-field">
+          <div class="person-label">
+            <span class="person-avatar priya-avatar">P</span>
+            Priya
           </div>
           <mat-form-field appearance="outline" class="salary-field">
-            <mat-label>Salary</mat-label>
             <span matPrefix>$&nbsp;</span>
-            <input matInput type="number" formControlName="priyaSalary" min="0"
-                   (blur)="saveSalary()" placeholder="0">
+            <input matInput type="number" formControlName="priyaSalary" min="0" placeholder="0">
           </mat-form-field>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <mat-card class="salary-card">
-        <mat-card-content>
-          <div class="salary-person">
-            <mat-icon>person</mat-icon>
-            <span class="person-name">Vamsi</span>
+        <div class="salary-divider"></div>
+
+        <div class="salary-person-field">
+          <div class="person-label">
+            <span class="person-avatar vamsi-avatar">V</span>
+            Vamsi
           </div>
           <mat-form-field appearance="outline" class="salary-field">
-            <mat-label>Salary</mat-label>
             <span matPrefix>$&nbsp;</span>
-            <input matInput type="number" formControlName="vamsiSalary" min="0"
-                   (blur)="saveSalary()" placeholder="0">
+            <input matInput type="number" formControlName="vamsiSalary" min="0" placeholder="0">
           </mat-form-field>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
+
+      <button mat-flat-button class="salary-save-btn"
+        [class.saved]="salarySaved"
+        (click)="saveSalary()">
+        <mat-icon>{{ salarySaved ? 'check' : 'save' }}</mat-icon>
+        {{ salarySaved ? 'Saved!' : 'Save Income' }}
+      </button>
     </div>
   </div>
 
@@ -109,7 +115,7 @@
     <mat-card-header>
       <mat-card-title>
         <mat-icon>pie_chart</mat-icon>
-        Actual Expenses by Category
+        Total Spending by Category
       </mat-card-title>
     </mat-card-header>
     <mat-card-content>
@@ -128,7 +134,7 @@
               }
               <circle cx="100" cy="100" r="45" fill="white"/>
               <text x="100" y="96" text-anchor="middle" class="donut-sm">Total</text>
-              <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(actualTotal) }}</text>
+              <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(combinedTotal) }}</text>
             </svg>
           </div>
 

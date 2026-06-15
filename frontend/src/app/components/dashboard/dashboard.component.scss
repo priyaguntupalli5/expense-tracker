@@ -34,42 +34,98 @@
   margin-bottom: 24px;
 
   .section-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     font-weight: 600;
     color: #888;
     margin-bottom: 10px;
-  }
-}
 
-.salary-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 320px));
-  gap: 16px;
+    .section-icon {
+      font-size: 1rem;
+      width: 1rem;
+      height: 1rem;
+    }
+  }
 }
 
 .salary-card {
-  border-radius: 12px !important;
-  border-left: 4px solid #1976d2;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.07);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 20px 24px;
+}
 
-  mat-card-content {
-    padding: 16px 20px !important;
-  }
+.salary-inputs {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 16px;
+}
 
-  .salary-person {
+.salary-divider {
+  width: 1px;
+  background: rgba(0,0,0,0.08);
+  align-self: stretch;
+  margin: 8px 24px;
+}
+
+.salary-person-field {
+  flex: 1;
+
+  .person-label {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #333;
     margin-bottom: 10px;
-    color: #1976d2;
+  }
+}
 
-    mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+.person-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
 
-    .person-name { font-weight: 600; font-size: 1rem; }
+.priya-avatar  { background: linear-gradient(135deg, #e91e63, #c2185b); }
+.vamsi-avatar  { background: linear-gradient(135deg, #1976d2, #1565c0); }
+
+.salary-field {
+  width: 100%;
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+}
+
+.salary-save-btn {
+  width: 100%;
+  border-radius: 10px !important;
+  height: 42px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  background: #1976d2 !important;
+  color: white !important;
+  transition: background 0.25s, transform 0.15s;
+
+  mat-icon { margin-right: 6px; font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+
+  &.saved {
+    background: #2e7d32 !important;
   }
 
-  .salary-field { width: 100%; }
+  &:active { transform: scale(0.98); }
 }
 
 // Summary cards

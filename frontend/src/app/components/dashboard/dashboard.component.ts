@@ -43,6 +43,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedYear  = new Date().getFullYear();
   fixedTotal    = 0;
   pieSlices: PieSlice[] = [];
+  salarySaved   = false;
   private fixedExpenses: FixedExpense[] = [];
 
   salaryForm = this.fb.group({
@@ -82,7 +83,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.expenseService.setSalary(this.selectedMonth, this.selectedYear, {
       priyaSalary: Number(v.priyaSalary) || 0,
       vamsiSalary: Number(v.vamsiSalary) || 0,
-    }).subscribe();
+    }).subscribe({
+      next: () => {
+        this.salarySaved = true;
+        setTimeout(() => this.salarySaved = false, 2000);
+      },
+      error: () => this.snackBar.open('Failed to save income', 'OK', { duration: 3000 }),
+    });
   }
 
   private loadData() {
@@ -162,6 +169,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   get actualTotal(): number {
     return Number(this.summary?.total ?? 0);
+  }
+
+  get combinedTotal(): number {
+    return this.actualTotal + this.fixedTotal;
   }
 
   get savings(): number {
