@@ -12,6 +12,12 @@ export interface GroupSettings {
   members: string[];
 }
 
+export interface JoinRequestItem {
+  id: number;
+  username: string;
+  requestedAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private readonly http = inject(HttpClient);
@@ -29,5 +35,17 @@ export class SettingsService {
     return this.http.put<void>(`${API}/settings/currency`, { currency }).pipe(
       tap(() => localStorage.setItem(this.CURRENCY_KEY, currency)),
     );
+  }
+
+  loadJoinRequests(): Observable<JoinRequestItem[]> {
+    return this.http.get<JoinRequestItem[]>(`${API}/settings/join-requests`);
+  }
+
+  approveRequest(id: number): Observable<void> {
+    return this.http.post<void>(`${API}/settings/join-requests/${id}/approve`, {});
+  }
+
+  rejectRequest(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/settings/join-requests/${id}`);
   }
 }

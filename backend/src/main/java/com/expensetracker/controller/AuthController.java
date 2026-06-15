@@ -4,8 +4,10 @@ import com.expensetracker.dto.AuthResponse;
 import com.expensetracker.dto.LoginRequest;
 import com.expensetracker.dto.RegisterRequest;
 import com.expensetracker.model.Group;
+import com.expensetracker.model.JoinRequest;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.GroupRepository;
+import com.expensetracker.repository.JoinRequestRepository;
 import com.expensetracker.repository.UserRepository;
 import com.expensetracker.security.JwtUtil;
 import org.springframework.http.ResponseEntity;
@@ -21,14 +23,17 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final JoinRequestRepository joinRequestRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final Random random = new Random();
 
     public AuthController(UserRepository userRepository, GroupRepository groupRepository,
+                          JoinRequestRepository joinRequestRepository,
                           PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.joinRequestRepository = joinRequestRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
     }
@@ -49,23 +54,32 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "Provide a group name to create one, or a group code to join one."));
         }
 
-        Group group;
         if (hasCode) {
-            group = groupRepository.findByGroupCode(req.groupCode().trim())
-                .orElse(null);
+            // Join flow — submit a pending request; admin must approve
+            Group group = groupRepository.findByGroupCode(req.groupCode().trim()).orElse(null);
             if (group == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "No group found with that code."));
             }
-        } else {
-            String groupName = req.groupName().trim();
-            if (groupRepository.existsByName(groupName)) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Group name already taken."));
+            if (joinRequestRepository.existsByUsernameAndGroup_Id(req.username().trim(), group.getId())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "A join request for this username is already pending approval."));
             }
-            group = new Group();
-            group.setName(groupName);
-            group.setGroupCode(generateUniqueCode());
-            group = groupRepository.save(group);
+            JoinRequest jr = new JoinRequest();
+            jr.setUsername(req.username().trim());
+            jr.setPasswordHash(passwordEncoder.encode(req.password()));
+            jr.setGroup(group);
+            joinRequestRepository.save(jr);
+            return ResponseEntity.ok(Map.of("pending", true, "groupName", group.getName()));
         }
+
+        // Create flow — new group, user is a member immediately
+        String groupName = req.groupName().trim();
+        if (groupRepository.existsByName(groupName)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Group name already taken."));
+        }
+        Group group = new Group();
+        group.setName(groupName);
+        group.setGroupCode(generateUniqueCode());
+        group = groupRepository.save(group);
 
         User user = new User();
         user.setUsername(req.username().trim());

@@ -76,6 +76,17 @@ CREATE TABLE IF NOT EXISTS subcategories (
     UNIQUE KEY uk_subcategory (category_value, name)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS join_requests (
+    id            BIGINT       NOT NULL AUTO_INCREMENT,
+    username      VARCHAR(100) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    group_id      BIGINT       NOT NULL,
+    requested_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_jr_username_group (username, group_id),
+    FOREIGN KEY (group_id) REFERENCES `groups`(id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 -- Idempotent column additions for existing databases
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100) NULL;
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS image_data  MEDIUMTEXT   NULL;

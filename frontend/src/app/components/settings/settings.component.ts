@@ -5,8 +5,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { SettingsService, GroupSettings } from '../../services/settings.service';
+import { SettingsService, GroupSettings, JoinRequestItem } from '../../services/settings.service';
 import { AuthService } from '../../services/auth.service';
 
 export const CURRENCIES = [
@@ -24,7 +25,7 @@ export const CURRENCIES = [
 
 @Component({
   selector: 'app-settings',
-  imports: [FormsModule, MatIconModule, MatButtonModule, MatSelectModule, MatFormFieldModule],
+  imports: [FormsModule, MatIconModule, MatButtonModule, MatSelectModule, MatFormFieldModule, MatTooltipModule],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -37,6 +38,7 @@ export class SettingsComponent implements OnInit {
   readonly currencies = CURRENCIES;
 
   settings: GroupSettings | null = null;
+  joinRequests: JoinRequestItem[] = [];
   loading = true;
   selectedCurrency = this.settingsService.currency;
   currencySaved = false;
@@ -50,6 +52,35 @@ export class SettingsComponent implements OnInit {
         this.loading = false;
       },
       error: () => { this.loading = false; },
+    });
+    this.loadJoinRequests();
+  }
+
+  private loadJoinRequests() {
+    this.settingsService.loadJoinRequests().subscribe({
+      next: reqs => this.joinRequests = reqs,
+      error: () => {},
+    });
+  }
+
+  approve(id: number) {
+    this.settingsService.approveRequest(id).subscribe({
+      next: () => {
+        this.snackBar.open('Member approved!', 'OK', { duration: 2500 });
+        this.loadJoinRequests();
+        this.settingsService.load().subscribe(s => this.settings = s);
+      },
+      error: err => this.snackBar.open(err.error?.error ?? 'Failed to approve', 'OK', { duration: 3000 }),
+    });
+  }
+
+  reject(id: number) {
+    this.settingsService.rejectRequest(id).subscribe({
+      next: () => {
+        this.snackBar.open('Request rejected.', 'OK', { duration: 2500 });
+        this.loadJoinRequests();
+      },
+      error: () => this.snackBar.open('Failed to reject', 'OK', { duration: 3000 }),
     });
   }
 
@@ -78,4 +109,8 @@ export class SettingsComponent implements OnInit {
   }
 
   initial(name: string): string { return name.charAt(0).toUpperCase(); }
+
+  formatDate(iso: string): string {
+    return new Date(iso).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' });
+  }
 }

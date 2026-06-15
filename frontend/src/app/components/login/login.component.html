@@ -11,7 +11,16 @@
       <button class="tab" [class.active]="mode === 'register'" (click)="switchMode('register')">Register</button>
     </div>
 
-    @if (newGroupCode) {
+    @if (joinPending) {
+      <div class="code-reveal">
+        <mat-icon class="code-reveal-icon">hourglass_top</mat-icon>
+        <p class="code-reveal-title">Request sent!</p>
+        <p class="code-reveal-hint">A group member needs to approve you before you can sign in. Check back soon.</p>
+        <button mat-stroked-button (click)="switchMode('login')" style="margin-top:8px">
+          Back to Sign In
+        </button>
+      </div>
+    } @else if (newGroupCode) {
       <div class="code-reveal">
         <mat-icon class="code-reveal-icon">group</mat-icon>
         <p class="code-reveal-title">Group created!</p>

@@ -26,7 +26,7 @@
             {{ codeCopied ? 'Copied!' : 'Copy' }}
           </button>
         </div>
-        <span class="field-hint">Share this code with others so they can join your group</span>
+        <span class="field-hint">Share this code so others can request to join — you'll approve them here</span>
       </div>
 
       <div class="members-section">
@@ -41,6 +41,35 @@
         </div>
       </div>
     </div>
+
+    <!-- Pending join requests -->
+    @if (joinRequests.length > 0) {
+      <div class="card requests-card">
+        <div class="card-header">
+          <mat-icon class="card-icon warn-icon">person_add</mat-icon>
+          <span class="card-title">Pending Requests</span>
+          <span class="badge">{{ joinRequests.length }}</span>
+        </div>
+
+        @for (req of joinRequests; track req.id) {
+          <div class="request-row">
+            <span class="member-avatar" [style.background]="avatarColor(req.username)">{{ initial(req.username) }}</span>
+            <div class="request-info">
+              <span class="request-name">{{ req.username }}</span>
+              <span class="request-date">Requested {{ formatDate(req.requestedAt) }}</span>
+            </div>
+            <div class="request-actions">
+              <button mat-stroked-button class="approve-btn" (click)="approve(req.id)">
+                <mat-icon>check</mat-icon> Approve
+              </button>
+              <button mat-icon-button class="reject-btn" (click)="reject(req.id)" matTooltip="Reject">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
 
     <!-- Currency card -->
     <div class="card">
@@ -69,7 +98,7 @@
     </div>
 
     <!-- Account card -->
-    <div class="card danger-card">
+    <div class="card">
       <div class="card-header">
         <mat-icon class="card-icon">manage_accounts</mat-icon>
         <span class="card-title">Account</span>

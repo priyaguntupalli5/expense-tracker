@@ -29,6 +29,7 @@ export class LoginComponent {
   error = '';
   hidePassword = true;
   newGroupCode = '';
+  joinPending = false;
 
   form = this.fb.group({
     username:  ['', [Validators.required, Validators.minLength(3)]],
@@ -42,6 +43,7 @@ export class LoginComponent {
     this.registerMode = 'create';
     this.error = '';
     this.newGroupCode = '';
+    this.joinPending = false;
     this.form.reset();
   }
 
@@ -58,32 +60,39 @@ export class LoginComponent {
 
     const { username, password, groupName, groupCode } = this.form.value;
 
-    if (this.mode === 'register') {
-      if (this.registerMode === 'create' && !groupName?.trim()) {
-        this.error = 'Group name is required.';
-        this.loading = false;
-        return;
-      }
-      if (this.registerMode === 'join' && !/^\d{6}$/.test(groupCode ?? '')) {
-        this.error = 'Enter a valid 6-digit group code.';
-        this.loading = false;
-        return;
-      }
+    if (this.mode === 'login') {
+      this.auth.login(username!, password!).subscribe({
+        next: () => { this.loading = false; this.router.navigate(['/dashboard']); },
+        error: (err) => {
+          this.loading = false;
+          this.error = err.error?.error ?? 'Invalid username or password.';
+        },
+      });
+      return;
     }
 
-    const req$ = this.mode === 'login'
-      ? this.auth.login(username!, password!)
-      : this.auth.register(
-          username!,
-          password!,
-          this.registerMode === 'create' ? groupName!.trim() : undefined,
-          this.registerMode === 'join'   ? groupCode!.trim() : undefined,
-        );
+    if (this.registerMode === 'create' && !groupName?.trim()) {
+      this.error = 'Group name is required.';
+      this.loading = false;
+      return;
+    }
+    if (this.registerMode === 'join' && !/^\d{6}$/.test(groupCode ?? '')) {
+      this.error = 'Enter a valid 6-digit group code.';
+      this.loading = false;
+      return;
+    }
 
-    req$.subscribe({
-      next: () => {
+    this.auth.register(
+      username!,
+      password!,
+      this.registerMode === 'create' ? groupName!.trim() : undefined,
+      this.registerMode === 'join'   ? groupCode!.trim() : undefined,
+    ).subscribe({
+      next: (result) => {
         this.loading = false;
-        if (this.mode === 'register' && this.registerMode === 'create' && this.auth.lastCreatedGroupCode) {
+        if (result.pending) {
+          this.joinPending = true;
+        } else if (this.registerMode === 'create' && this.auth.lastCreatedGroupCode) {
           this.newGroupCode = this.auth.lastCreatedGroupCode;
         } else {
           this.router.navigate(['/dashboard']);
@@ -91,7 +100,7 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err.error?.error ?? (this.mode === 'login' ? 'Invalid username or password.' : 'Registration failed.');
+        this.error = err.error?.error ?? 'Registration failed.';
       },
     });
   }

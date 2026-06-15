@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, map } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 const API = environment.apiUrl;
@@ -11,6 +11,15 @@ interface AuthResponse {
   username: string;
   groupName: string;
   groupCode: string;
+}
+
+interface PendingResponse {
+  pending: true;
+  groupName: string;
+}
+
+export interface RegisterResult {
+  pending: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,7 +38,6 @@ export class AuthService {
   get groupCode(): string | null       { return localStorage.getItem(this.GROUP_CODE_KEY); }
   get isLoggedIn(): boolean            { return !!this.token; }
 
-  /** Holds the group code from the most recent register call (create flow only). */
   lastCreatedGroupCode: string | null = null;
 
   login(username: string, password: string): Observable<void> {
@@ -39,13 +47,17 @@ export class AuthService {
     );
   }
 
-  register(username: string, password: string, groupName?: string, groupCode?: string): Observable<void> {
-    return this.http.post<AuthResponse>(`${API}/auth/register`, { username, password, groupName, groupCode }).pipe(
-      tap(res => {
-        this.storeSession(res);
-        this.lastCreatedGroupCode = groupName ? res.groupCode : null;
+  register(username: string, password: string, groupName?: string, groupCode?: string): Observable<RegisterResult> {
+    return this.http.post<AuthResponse | PendingResponse>(`${API}/auth/register`, { username, password, groupName, groupCode }).pipe(
+      map(res => {
+        if ('pending' in res && res.pending) {
+          return { pending: true };
+        }
+        const auth = res as AuthResponse;
+        this.storeSession(auth);
+        this.lastCreatedGroupCode = groupName ? auth.groupCode : null;
+        return { pending: false };
       }),
-      map(() => void 0),
     );
   }
 

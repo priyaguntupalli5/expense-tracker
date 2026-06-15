@@ -156,6 +156,77 @@
   color: #333;
 }
 
+// ── Pending requests ─────────────────────────────────────────────────────────
+
+.requests-card { border-color: rgba(245, 124, 0, 0.25); }
+
+.warn-icon { color: #f57c00 !important; }
+
+.badge {
+  margin-left: 6px;
+  background: #f57c00;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.request-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+
+  &:last-child { border-bottom: none; }
+}
+
+.request-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.request-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.request-date {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.request-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.approve-btn {
+  border-color: #2e7d32 !important;
+  color: #2e7d32 !important;
+  border-radius: 8px !important;
+  height: 34px;
+  font-size: 0.82rem;
+  font-weight: 600;
+
+  mat-icon { font-size: 0.95rem; width: 0.95rem; height: 0.95rem; margin-right: 4px; }
+}
+
+.reject-btn {
+  color: #d32f2f !important;
+  width: 34px;
+  height: 34px;
+
+  mat-icon { font-size: 1.1rem; }
+}
+
 // ── Currency ──────────────────────────────────────────────────────────────────
 
 .currency-row {
