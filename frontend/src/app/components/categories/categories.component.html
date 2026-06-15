@@ -41,7 +41,7 @@
                   matTooltip="Manage subcategories">
                   <mat-icon>{{ expandedCategory === c.value ? 'expand_less' : 'expand_more' }}</mat-icon>
                   <span class="sub-toggle-label">
-                    {{ subcategoriesMap[c.value]?.length ?? '' }}
+                    {{ subcategoriesMap[c.value]?.length || '' }}
                     {{ expandedCategory === c.value ? 'Hide' : 'Subcategories' }}
                   </span>
                 </button>
@@ -61,7 +61,7 @@
                 <div class="sub-panel" [style.border-left-color]="c.color">
 
                   <!-- Existing subcategories -->
-                  @if ((subcategoriesMap[c.value] ?? []).length === 0) {
+                  @if (subcategoriesMap[c.value].length === 0) {
                     <p class="sub-empty">No subcategories yet. Add one below.</p>
                   } @else {
                     <div class="sub-chips">
@@ -87,7 +87,7 @@
                         maxlength="100">
                     </mat-form-field>
                     <button mat-flat-button color="primary" class="sub-add-btn"
-                      [disabled]="!newSubName[c.value]?.trim() || addingSubcategory[c.value]"
+                      [disabled]="!newSubName[c.value]?.trim() || !!addingSubcategory[c.value]"
                       (click)="addSubcategory(c.value)">
                       <mat-icon>add</mat-icon>
                       Add
