@@ -42,72 +42,23 @@
       }
     </div>
 
-    <!-- Recurrence fields (only when recurring) -->
+    <!-- Recurrence fields -->
     @if (isRecurring) {
-      <div class="row-2">
-        <mat-form-field appearance="outline">
-          <mat-label>Repeats</mat-label>
-          <mat-select formControlName="recurrence">
-            @for (r of recurrenceOptions; track r.value) {
-              <mat-option [value]="r.value">{{ r.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Weekly / Biweekly: day of week -->
-        @if (isWeekly) {
-          <mat-form-field appearance="outline">
-            <mat-label>On</mat-label>
-            <mat-select formControlName="paymentDay">
-              @for (d of weekdayOptions; track d.value) {
-                <mat-option [value]="d.value">{{ d.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        }
-
-        <!-- Monthly / Quarterly: day of month -->
-        @if (!isWeekly && !isYearly) {
-          <mat-form-field appearance="outline">
-            <mat-label>On the</mat-label>
-            <mat-select formControlName="paymentDay">
-              @for (d of dayOfMonthOptions; track d.value) {
-                <mat-option [value]="d.value">{{ d.label }}</mat-option>
-              }
-            </mat-select>
-            <mat-hint>Day of month</mat-hint>
-          </mat-form-field>
-        }
-      </div>
-
-      <!-- Yearly: month + day -->
-      @if (isYearly) {
-        <div class="row-2">
-          <mat-form-field appearance="outline">
-            <mat-label>Month</mat-label>
-            <mat-select formControlName="paymentMonth">
-              @for (m of monthOptions; track m.value) {
-                <mat-option [value]="m.value">{{ m.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Day</mat-label>
-            <mat-select formControlName="paymentDay">
-              @for (d of dayOfMonthOptions; track d.value) {
-                <mat-option [value]="d.value">{{ d.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-      }
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Repeats</mat-label>
+        <mat-select formControlName="recurrence">
+          @for (r of recurrenceOptions; track r.value) {
+            <mat-option [value]="r.value">{{ r.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Start Date</mat-label>
+        <mat-label>First Payment Date</mat-label>
         <input matInput [matDatepicker]="startDp" formControlName="startDate">
         <mat-datepicker-toggle matIconSuffix [for]="startDp"></mat-datepicker-toggle>
         <mat-datepicker #startDp></mat-datepicker>
-        <mat-hint>First date to generate income from</mat-hint>
+        <mat-hint>Sets the day (and month for yearly) of recurring payments</mat-hint>
       </mat-form-field>
     }
 
@@ -124,27 +75,15 @@
       }
     </mat-form-field>
 
-    <!-- Month/Year: only shown for one-time (non-recurring) entries -->
+    <!-- Payment date for one-time entries -->
     @if (!isRecurring) {
-      <div class="row-2">
-        <mat-form-field appearance="outline">
-          <mat-label>Month</mat-label>
-          <mat-select formControlName="month">
-            @for (m of months; track m.value) {
-              <mat-option [value]="m.value">{{ m.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Year</mat-label>
-          <mat-select formControlName="year">
-            @for (y of years; track y) {
-              <mat-option [value]="y">{{ y }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Payment Date</mat-label>
+        <input matInput [matDatepicker]="payDp" formControlName="paymentDate">
+        <mat-datepicker-toggle matIconSuffix [for]="payDp"></mat-datepicker-toggle>
+        <mat-datepicker #payDp></mat-datepicker>
+        <mat-hint>Date the income was or will be received</mat-hint>
+      </mat-form-field>
     }
 
     <mat-form-field appearance="outline" class="full-width">

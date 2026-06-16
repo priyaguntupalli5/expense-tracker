@@ -39,17 +39,22 @@ public class IncomeController {
                                @RequestParam(required = false) Integer year) {
         Long groupId = user.getGroup().getId();
         if (month != null && year != null) {
-            return repository.findByGroupIdAndIsTemplateFalseAndMonthAndYearOrderByIdDesc(groupId, month, year);
+            LocalDate start = LocalDate.of(year, month, 1);
+            LocalDate end   = start.withDayOfMonth(start.lengthOfMonth());
+            return repository.findByGroupIdAndIsTemplateFalseAndPaymentDateBetweenOrderByPaymentDateDesc(
+                    groupId, start, end);
         }
-        return repository.findByGroupIdAndIsTemplateFalseOrderByYearDescMonthDescIdDesc(groupId);
+        return repository.findByGroupIdAndIsTemplateFalseOrderByPaymentDateDesc(groupId);
     }
 
     /**
-     * Monthly income total.
+     * Monthly income total for the dashboard.
      *
-     * toDate present  → to-date mode: sum entries where paymentDate ≤ toDate (or no paymentDate).
-     * toDate absent   → end-of-month projection: manual entries + recurring template payments
-     *                   for the full month (works even before auto-generated entries are written).
+     * to-date (toDate present)   → manual entries + template payments up to toDate.
+     * end-of-month (toDate null) → manual entries + template payments for the full month.
+     *
+     * Auto-generated rows (templateId NOT NULL) are excluded from the DB sum and replaced
+     * by template projection so we never double-count regardless of what's been generated.
      */
     @GetMapping("/total")
     public Map<String, BigDecimal> getTotal(@AuthenticationPrincipal User user,
@@ -59,22 +64,18 @@ public class IncomeController {
                                             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         Long groupId = user.getGroup().getId();
 
-        if (toDate != null) {
-            return Map.of("total",
-                repository.sumByGroupIdAndMonthAndYearToDate(groupId, month, year, toDate));
-        }
-
-        // End-of-month: manual entries + projected template payments for the month
-        BigDecimal total = repository.sumManualByGroupIdAndMonthAndYear(groupId, month, year);
-
         LocalDate start = LocalDate.of(year, month, 1);
-        LocalDate end   = start.withDayOfMonth(start.lengthOfMonth());
+        LocalDate end   = (toDate != null) ? toDate : start.withDayOfMonth(start.lengthOfMonth());
 
+        // Manual (non-recurring) entries in the window
+        BigDecimal total = repository.sumManualByGroupIdAndDateRange(groupId, start, end);
+
+        // Project template payments within [start, end]
         for (Income template : repository.findByGroupIdAndIsTemplateTrue(groupId)) {
             if (template.getStartDate() == null || template.getRecurrence() == null) continue;
             long count = recurringJobService
-                .computePaymentDates(template.getRecurrence(), template.getPaymentDay(),
-                                     template.getPaymentMonth(), template.getStartDate(), end)
+                .computePaymentDates(template.getRecurrence(), null, null,
+                                     template.getStartDate(), end)
                 .stream()
                 .filter(d -> !d.isBefore(start))
                 .count();
@@ -89,7 +90,6 @@ public class IncomeController {
     @PostMapping
     public Income create(@AuthenticationPrincipal User user, @RequestBody Income income) {
         income.setGroupId(user.getGroup().getId());
-        // If recurring template, auto-generate past-due entries immediately
         if (income.isTemplate() && income.getStartDate() != null) {
             income = repository.save(income);
             recurringJobService.generateForTemplate(income);
@@ -107,15 +107,11 @@ public class IncomeController {
                 existing.setTitle(income.getTitle());
                 existing.setAmount(income.getAmount());
                 existing.setSourceType(income.getSourceType());
-                existing.setMonth(income.getMonth());
-                existing.setYear(income.getYear());
+                existing.setPaymentDate(income.getPaymentDate());
                 existing.setNotes(income.getNotes());
                 existing.setRecurrence(income.getRecurrence());
-                existing.setPaymentDay(income.getPaymentDay());
-                existing.setPaymentMonth(income.getPaymentMonth());
                 existing.setStartDate(income.getStartDate());
                 Income saved = repository.save(existing);
-                // Re-run generation if this is a template
                 if (saved.isTemplate() && saved.getStartDate() != null) {
                     recurringJobService.generateForTemplate(saved);
                 }

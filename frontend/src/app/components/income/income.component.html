@@ -73,6 +73,20 @@
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let e" class="date-col">
+                @if (displayDate(e)) {
+                  <span class="date-value" [class.start-date]="isTemplateItem(e)">
+                    {{ displayDate(e) | date:'MMM d, y' }}
+                    @if (isTemplateItem(e)) {
+                      <span class="date-hint">from</span>
+                    }
+                  </span>
+                }
+              </td>
+            </ng-container>
+
             <ng-container matColumnDef="amount">
               <th mat-header-cell *matHeaderCellDef class="amount-col">Amount</th>
               <td mat-cell *matCellDef="let e" class="amount-col amount-value">

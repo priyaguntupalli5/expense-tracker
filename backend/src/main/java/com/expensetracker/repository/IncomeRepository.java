@@ -12,14 +12,15 @@ import java.util.Optional;
 
 public interface IncomeRepository extends JpaRepository<Income, Long> {
 
-    // Templates (recurring definitions)
+    // Templates (recurring definitions — not period-filtered)
     List<Income> findByGroupIdAndIsTemplateTrue(Long groupId);
 
-    // Actual entries for a period (non-template)
-    List<Income> findByGroupIdAndIsTemplateFalseAndMonthAndYearOrderByIdDesc(Long groupId, int month, int year);
+    // Actual entries for a date range
+    List<Income> findByGroupIdAndIsTemplateFalseAndPaymentDateBetweenOrderByPaymentDateDesc(
+            Long groupId, LocalDate start, LocalDate end);
 
-    // All non-template entries regardless of period
-    List<Income> findByGroupIdAndIsTemplateFalseOrderByYearDescMonthDescIdDesc(Long groupId);
+    // All non-template entries (no period filter)
+    List<Income> findByGroupIdAndIsTemplateFalseOrderByPaymentDateDesc(Long groupId);
 
     Optional<Income> findByIdAndGroupId(Long id, Long groupId);
 
@@ -28,21 +29,11 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
     // Duplicate-guard for auto-generation
     boolean existsByTemplateIdAndPaymentDate(Long templateId, LocalDate paymentDate);
 
-    // Manual (non-recurring) entries only — used for end-of-month projection base
+    // Manual (non-recurring) entries in a date range — used for dashboard totals
     @Query("SELECT COALESCE(SUM(i.amount), 0) FROM Income i " +
-           "WHERE i.groupId = :groupId AND i.month = :month AND i.year = :year " +
-           "AND i.isTemplate = false AND i.templateId IS NULL")
-    BigDecimal sumManualByGroupIdAndMonthAndYear(@Param("groupId") Long groupId,
-                                                 @Param("month") int month,
-                                                 @Param("year") int year);
-
-    // To-date total: entries with no paymentDate (manual) always count; auto-generated
-    // entries only count if their paymentDate is on or before the cutoff.
-    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM Income i " +
-           "WHERE i.groupId = :groupId AND i.month = :month AND i.year = :year AND i.isTemplate = false " +
-           "AND (i.paymentDate IS NULL OR i.paymentDate <= :toDate)")
-    BigDecimal sumByGroupIdAndMonthAndYearToDate(@Param("groupId") Long groupId,
-                                                 @Param("month") int month,
-                                                 @Param("year") int year,
-                                                 @Param("toDate") LocalDate toDate);
+           "WHERE i.groupId = :groupId AND i.isTemplate = false AND i.templateId IS NULL " +
+           "AND i.paymentDate BETWEEN :start AND :end")
+    BigDecimal sumManualByGroupIdAndDateRange(@Param("groupId") Long groupId,
+                                              @Param("start") LocalDate start,
+                                              @Param("end") LocalDate end);
 }

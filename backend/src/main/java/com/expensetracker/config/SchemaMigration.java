@@ -25,6 +25,7 @@ public class SchemaMigration implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         migrateGroupCodes();
+        migrateIncomePaymentDate();
         dropLegacyTables();
     }
 
@@ -54,6 +55,42 @@ public class SchemaMigration implements ApplicationRunner {
         }
     }
 
+    /**
+     * Consolidates income_entries date storage: removes month, year, payment_day,
+     * payment_month columns and ensures payment_date is set on all non-template rows.
+     */
+    private void migrateIncomePaymentDate() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            // Backfill payment_date from month/year before dropping those columns
+            if (columnExists(meta, conn, "income_entries", "month")) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE income_entries " +
+                        "SET payment_date = STR_TO_DATE(CONCAT(`year`, '-', LPAD(`month`, 2, '0'), '-01'), '%Y-%m-%d') " +
+                        "WHERE payment_date IS NULL AND is_template = false AND template_id IS NULL")) {
+                    ps.executeUpdate();
+                }
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE income_entries DROP COLUMN `month`");
+                    stmt.execute("ALTER TABLE income_entries DROP COLUMN `year`");
+                }
+            }
+
+            if (columnExists(meta, conn, "income_entries", "payment_day")) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE income_entries DROP COLUMN payment_day");
+                }
+            }
+
+            if (columnExists(meta, conn, "income_entries", "payment_month")) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE income_entries DROP COLUMN payment_month");
+                }
+            }
+        }
+    }
+
     // Drop any legacy tables that no longer belong in the schema.
     private void dropLegacyTables() throws SQLException {
         try (Connection conn = dataSource.getConnection();
@@ -77,6 +114,12 @@ public class SchemaMigration implements ApplicationRunner {
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
+        }
+    }
+
+    private boolean columnExists(DatabaseMetaData meta, Connection conn, String table, String column) throws SQLException {
+        try (ResultSet rs = meta.getColumns(conn.getCatalog(), null, table, column)) {
+            return rs.next();
         }
     }
 

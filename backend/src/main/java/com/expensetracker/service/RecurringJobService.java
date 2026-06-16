@@ -76,9 +76,9 @@ public class RecurringJobService implements ApplicationRunner {
     private void generateForTemplate(Income template, LocalDate today) {
         if (template.getStartDate() == null || template.getRecurrence() == null) return;
 
+        // paymentDay/paymentMonth are derived from startDate inside computePaymentDates
         List<LocalDate> dueDates = computePaymentDates(
-            template.getRecurrence(), template.getPaymentDay(),
-            template.getPaymentMonth(), template.getStartDate(), today);
+            template.getRecurrence(), null, null, template.getStartDate(), today);
 
         for (LocalDate due : dueDates) {
             if (!incomeRepository.existsByTemplateIdAndPaymentDate(template.getId(), due)) {
@@ -86,8 +86,6 @@ public class RecurringJobService implements ApplicationRunner {
                 entry.setTitle(template.getTitle());
                 entry.setAmount(template.getAmount());
                 entry.setSourceType(template.getSourceType());
-                entry.setMonth(due.getMonthValue());
-                entry.setYear(due.getYear());
                 entry.setNotes(template.getNotes());
                 entry.setGroupId(template.getGroupId());
                 entry.setTemplate(false);

@@ -39,17 +39,13 @@ export interface Income {
   title: string;
   amount: number;
   sourceType: string; // SALARY | BONUS | INVESTMENT | FREELANCE | RENTAL | OTHER
-  month: number;
-  year: number;
+  paymentDate?: string; // ISO 'YYYY-MM-DD' — actual date for non-template entries
   notes?: string;
-  // recurrence
-  recurrence?: string;   // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
-  paymentDay?: number;
-  paymentMonth?: number;
-  startDate?: string;    // ISO 'YYYY-MM-DD'
+  // recurrence (templates only)
+  recurrence?: string;  // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
+  startDate?: string;   // ISO 'YYYY-MM-DD' — first payment date, anchors the schedule
   isTemplate?: boolean;
   templateId?: number;
-  paymentDate?: string;  // ISO 'YYYY-MM-DD', set on auto-generated entries
 }
 
 export interface Subcategory {

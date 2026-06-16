@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
@@ -24,7 +24,7 @@ const RECURRENCE_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-income',
   imports: [
-    CurrencyPipe, FormsModule,
+    CurrencyPipe, DatePipe, FormsModule,
     MatTableModule, MatIconModule, MatButtonModule,
     MatTooltipModule, MatCardModule, MatSelectModule, MatFormFieldModule,
   ],
@@ -39,7 +39,7 @@ export class IncomeComponent implements OnInit {
 
   templates: Income[] = [];
   entries:   Income[] = [];
-  columns = ['source', 'title', 'amount', 'actions'];
+  columns = ['source', 'title', 'date', 'amount', 'actions'];
 
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
@@ -67,7 +67,13 @@ export class IncomeComponent implements OnInit {
   }
 
   isTemplateItem(item: Income): boolean {
-    return !!(item.isTemplate || (item as any)['template']);
+    return !!(item.isTemplate ?? (item as any)['template']);
+  }
+
+  /** Date to show in the list for an item. */
+  displayDate(item: Income): string | null {
+    const iso = item.paymentDate ?? item.startDate ?? null;
+    return iso;
   }
 
   private load() {
@@ -97,7 +103,6 @@ export class IncomeComponent implements OnInit {
   openAdd() {
     const ref = this.dialog.open(IncomeFormComponent, {
       width: '500px', maxWidth: '95vw',
-      data: { month: this.selectedMonth, year: this.selectedYear },
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }

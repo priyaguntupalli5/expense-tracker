@@ -21,12 +21,9 @@ export const INCOME_RECURRENCE_OPTIONS = [
   { value: 'YEARLY',    label: 'Yearly' },
 ];
 
-const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const MONTHS   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-function ordinal(n: number): string {
-  const s = ['th','st','nd','rd']; const v = n % 100;
-  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+function toIso(d: Date | null | undefined): string | undefined {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return undefined;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 @Component({
@@ -49,19 +46,6 @@ export class IncomeFormComponent implements OnInit {
 
   readonly sourceTypes       = SOURCE_TYPES;
   readonly recurrenceOptions = INCOME_RECURRENCE_OPTIONS;
-  readonly weekdayOptions    = WEEKDAYS.map((label, i) => ({ value: i + 1, label }));
-  readonly dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: ordinal(i + 1) }));
-  readonly monthOptions      = MONTHS.map((label, i) => ({ value: i + 1, label }));
-
-  readonly months = [
-    { value: 1, label: 'January' }, { value: 2, label: 'February' },
-    { value: 3, label: 'March' },   { value: 4, label: 'April' },
-    { value: 5, label: 'May' },     { value: 6, label: 'June' },
-    { value: 7, label: 'July' },    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },{ value: 10, label: 'October' },
-    { value: 11, label: 'November' },{ value: 12, label: 'December' },
-  ];
-  readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   saving = false;
 
@@ -69,28 +53,21 @@ export class IncomeFormComponent implements OnInit {
     sourceType:  ['SALARY', Validators.required],
     title:       ['', Validators.required],
     amount:      [null as number | null, [Validators.required, Validators.min(0.01)]],
-    month:       [new Date().getMonth() + 1, Validators.required],
-    year:        [new Date().getFullYear(), Validators.required],
     notes:       [''],
-    // recurrence
+    paymentDate: [null as Date | null],   // for non-recurring entries
     isRecurring: [false],
     recurrence:  ['MONTHLY'],
-    startDate:   [null as Date | null],
-    paymentDay:  [null as number | null],
-    paymentMonth:[null as number | null],
+    startDate:   [null as Date | null],   // for recurring templates (first payment date)
   });
 
   private get dataIsTemplate(): boolean {
     if (!this.data) return false;
-    // Handle both "isTemplate" (fixed backend with @JsonProperty) and "template" (Jackson default naming)
     return !!(this.data.isTemplate ?? (this.data as any)['template']);
   }
-  get isEditing()   { return !!this.data?.id && !this.dataIsTemplate; }
-  get isEditingTpl(){ return !!this.data?.id && this.dataIsTemplate; }
-  get isRecurring() { return !!this.form.get('isRecurring')?.value; }
-  get recurrence()  { return this.form.get('recurrence')?.value ?? 'MONTHLY'; }
-  get isWeekly()    { return this.recurrence === 'WEEKLY' || this.recurrence === 'BIWEEKLY'; }
-  get isYearly()    { return this.recurrence === 'YEARLY'; }
+  get isEditing()    { return !!this.data?.id && !this.dataIsTemplate; }
+  get isEditingTpl() { return !!this.data?.id && this.dataIsTemplate; }
+  get isRecurring()  { return !!this.form.get('isRecurring')?.value; }
+  get recurrence()   { return this.form.get('recurrence')?.value ?? 'MONTHLY'; }
 
   get amountLabel(): string {
     if (!this.isRecurring) return 'Amount';
@@ -102,24 +79,19 @@ export class IncomeFormComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.form.get('recurrence')!.valueChanges.subscribe(() => {
-      this.form.patchValue({ paymentDay: null, paymentMonth: null }, { emitEvent: false });
-    });
-
     if (!this.data) return;
     const patch: Record<string, unknown> = {};
-    if (this.data.sourceType  !== undefined) patch['sourceType']  = this.data.sourceType;
-    if (this.data.title       !== undefined) patch['title']       = this.data.title;
-    if (this.data.amount      !== undefined) patch['amount']      = this.data.amount;
-    if (this.data.month       !== undefined) patch['month']       = this.data.month;
-    if (this.data.year        !== undefined) patch['year']        = this.data.year;
-    if (this.data.notes       !== undefined) patch['notes']       = this.data.notes ?? '';
+    if (this.data.sourceType !== undefined) patch['sourceType'] = this.data.sourceType;
+    if (this.data.title      !== undefined) patch['title']      = this.data.title;
+    if (this.data.amount     !== undefined) patch['amount']     = this.data.amount;
+    if (this.data.notes      !== undefined) patch['notes']      = this.data.notes ?? '';
+
     if (this.dataIsTemplate) {
-      patch['isRecurring']  = true;
-      patch['recurrence']   = this.data.recurrence  ?? 'MONTHLY';
-      patch['startDate']    = this.data.startDate ? new Date(this.data.startDate + 'T00:00:00') : null;
-      patch['paymentDay']   = this.data.paymentDay  ?? null;
-      patch['paymentMonth'] = this.data.paymentMonth ?? null;
+      patch['isRecurring'] = true;
+      patch['recurrence']  = this.data.recurrence ?? 'MONTHLY';
+      patch['startDate']   = this.data.startDate ? new Date(this.data.startDate + 'T00:00:00') : null;
+    } else if (this.data.paymentDate) {
+      patch['paymentDate'] = new Date(this.data.paymentDate + 'T00:00:00');
     }
     this.form.patchValue(patch);
   }
@@ -128,33 +100,22 @@ export class IncomeFormComponent implements OnInit {
     if (this.form.invalid || this.saving) return;
     this.saving = true;
     const v = this.form.value;
-    const recurring = v.isRecurring;
-
-    const startDateVal = recurring ? (v.startDate as Date | null) : null;
-    const startDateStr = startDateVal instanceof Date
-      ? `${startDateVal.getFullYear()}-${String(startDateVal.getMonth() + 1).padStart(2, '0')}-${String(startDateVal.getDate()).padStart(2, '0')}`
-      : undefined;
+    const recurring = !!v.isRecurring;
 
     const income: Income = {
-      title:      v.title!,
-      amount:     Number(v.amount),
-      sourceType: v.sourceType!,
-      month:      v.month!,
-      year:       v.year!,
-      notes:      v.notes || undefined,
-      isTemplate: recurring || false,
-      recurrence: recurring ? (v.recurrence ?? undefined) : undefined,
-      startDate:  startDateStr,
-      paymentDay: recurring ? (v.paymentDay ?? undefined) : undefined,
-      paymentMonth: (recurring && this.isYearly) ? (v.paymentMonth ?? undefined) : undefined,
+      title:       v.title!,
+      amount:      Number(v.amount),
+      sourceType:  v.sourceType!,
+      notes:       v.notes || undefined,
+      isTemplate:  recurring,
+      recurrence:  recurring ? (v.recurrence ?? undefined) : undefined,
+      startDate:   recurring ? toIso(v.startDate as Date | null) : undefined,
+      paymentDate: !recurring ? toIso(v.paymentDate as Date | null) : undefined,
     };
 
-    let obs$;
-    if (this.isEditingTpl || this.isEditing) {
-      obs$ = this.incomeService.update(this.data!.id!, income);
-    } else {
-      obs$ = this.incomeService.create(income);
-    }
+    const obs$ = (this.isEditingTpl || this.isEditing)
+      ? this.incomeService.update(this.data!.id!, income)
+      : this.incomeService.create(income);
 
     obs$.subscribe({
       next: saved => this.dialogRef.close(saved),

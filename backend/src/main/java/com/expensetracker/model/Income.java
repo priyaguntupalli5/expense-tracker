@@ -22,12 +22,6 @@ public class Income {
     @Column(name = "source_type", nullable = false)
     private String sourceType = "SALARY";
 
-    @Column(nullable = false)
-    private int month;
-
-    @Column(nullable = false)
-    private int year;
-
     @Column
     private String notes;
 
@@ -36,25 +30,19 @@ public class Income {
 
     // ── Recurrence fields ─────────────────────────────────────────────────────
     @Column
-    private String recurrence;          // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
-
-    @Column(name = "payment_day")
-    private Integer paymentDay;         // day-of-week (1–7) or day-of-month (1–31)
-
-    @Column(name = "payment_month")
-    private Integer paymentMonth;       // 1–12, only for YEARLY
+    private String recurrence;       // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
 
     @Column(name = "start_date")
-    private LocalDate startDate;        // first payment date (anchor for recurrence)
+    private LocalDate startDate;     // first payment date; anchors recurring schedule
 
     @Column(name = "is_template", nullable = false)
-    private boolean isTemplate = false; // true = recurring definition; false = actual entry
+    private boolean isTemplate = false;
 
     @Column(name = "template_id")
-    private Long templateId;            // populated on auto-generated entries
+    private Long templateId;
 
     @Column(name = "payment_date")
-    private LocalDate paymentDate;      // exact date the auto-generated entry represents
+    private LocalDate paymentDate;   // actual date for the entry (null on templates)
 
     public Income() {}
 
@@ -70,12 +58,6 @@ public class Income {
     public String getSourceType() { return sourceType; }
     public void setSourceType(String sourceType) { this.sourceType = sourceType; }
 
-    public int getMonth() { return month; }
-    public void setMonth(int month) { this.month = month; }
-
-    public int getYear() { return year; }
-    public void setYear(int year) { this.year = year; }
-
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 
@@ -84,12 +66,6 @@ public class Income {
 
     public String getRecurrence() { return recurrence; }
     public void setRecurrence(String recurrence) { this.recurrence = recurrence; }
-
-    public Integer getPaymentDay() { return paymentDay; }
-    public void setPaymentDay(Integer paymentDay) { this.paymentDay = paymentDay; }
-
-    public Integer getPaymentMonth() { return paymentMonth; }
-    public void setPaymentMonth(Integer paymentMonth) { this.paymentMonth = paymentMonth; }
 
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
