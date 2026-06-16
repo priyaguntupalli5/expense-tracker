@@ -8,6 +8,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
@@ -23,23 +25,20 @@ export const RECURRENCE_OPTIONS = [
   { value: 'YEARLY',    label: 'Yearly' },
 ];
 
-export const WEEKDAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-export const MONTHS   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-function ordinal(n: number): string {
-  const s = ['th','st','nd','rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+function toIso(d: Date | null | undefined): string | undefined {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return undefined;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 @Component({
   selector: 'app-fixed-expense-form',
+  providers: [provideNativeDateAdapter()],
   imports: [
     AsyncPipe,
     ReactiveFormsModule,
     MatDialogModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatAutocompleteModule,
-    MatButtonModule, MatIconModule, MatProgressSpinnerModule,
+    MatButtonModule, MatIconModule, MatDatepickerModule, MatProgressSpinnerModule,
   ],
   templateUrl: './fixed-expense-form.component.html',
   styleUrl: './fixed-expense-form.component.scss',
@@ -56,33 +55,21 @@ export class FixedExpenseFormComponent implements OnInit {
   saving    = false;
 
   readonly recurrenceOptions = RECURRENCE_OPTIONS;
-  readonly weekdays = WEEKDAYS;
-  readonly months   = MONTHS;
-
-  readonly dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => ({
-    value: i + 1, label: ordinal(i + 1),
-  }));
-  readonly weekdayOptions = WEEKDAYS.map((label, i) => ({ value: i + 1, label }));
-  readonly monthOptions   = MONTHS.map((label, i) => ({ value: i + 1, label }));
 
   private readonly subcategoriesSubject = new BehaviorSubject<string[]>([]);
   filteredSuggestions$!: Observable<string[]>;
 
   form = this.fb.group({
-    category:     ['HOUSING', Validators.required],
-    title:        ['', [Validators.required, Validators.maxLength(100)]],
-    amount:       [null as number | null, [Validators.required, Validators.min(0.01)]],
-    recurrence:   ['MONTHLY', Validators.required],
-    paymentDay:   [null as number | null],
-    paymentMonth: [null as number | null],
-    startDate:    ['' as string],
-    subcategory:  ['' as string | null],
-    notes:        [''],
+    category:    ['HOUSING', Validators.required],
+    title:       ['', [Validators.required, Validators.maxLength(100)]],
+    amount:      [null as number | null, [Validators.required, Validators.min(0.01)]],
+    recurrence:  ['MONTHLY', Validators.required],
+    startDate:   [null as Date | null],
+    subcategory: ['' as string | null],
+    notes:       ['' as string | null],
   });
 
   get recurrence(): string { return this.form.get('recurrence')?.value ?? 'MONTHLY'; }
-  get isWeekly(): boolean { return this.recurrence === 'WEEKLY' || this.recurrence === 'BIWEEKLY'; }
-  get isYearly(): boolean { return this.recurrence === 'YEARLY'; }
 
   get amountLabel(): string {
     const map: Record<string, string> = {
@@ -119,20 +106,16 @@ export class FixedExpenseFormComponent implements OnInit {
       }
     });
 
-    // Reset day/month pickers when recurrence type changes
-    this.form.get('recurrence')!.valueChanges.subscribe(() => {
-      this.form.patchValue({ paymentDay: null, paymentMonth: null }, { emitEvent: false });
-    });
-
     if (this.data) {
       this.isEditing = true;
       this.form.patchValue({
-        ...this.data,
-        recurrence:   this.data.recurrence   ?? 'MONTHLY',
-        paymentDay:   this.data.paymentDay   ?? null,
-        paymentMonth: this.data.paymentMonth ?? null,
-        startDate:    this.data.startDate    ?? '',
-        subcategory:  this.data.subcategory  ?? null,
+        category:    this.data.category,
+        title:       this.data.title,
+        amount:      this.data.amount as unknown as number,
+        recurrence:  this.data.recurrence  ?? 'MONTHLY',
+        startDate:   this.data.startDate ? new Date(this.data.startDate + 'T00:00:00') : null,
+        subcategory: this.data.subcategory ?? null,
+        notes:       this.data.notes ?? null,
       });
       if (this.data.category) this.loadSubcategories(this.data.category);
     }
@@ -153,15 +136,13 @@ export class FixedExpenseFormComponent implements OnInit {
     this.saving = true;
     const v = this.form.value;
     const expense: FixedExpense = {
-      title:        v.title!,
-      amount:       v.amount!,
-      category:     v.category!,
-      recurrence:   v.recurrence!,
-      paymentDay:   v.paymentDay   ?? undefined,
-      paymentMonth: this.isYearly ? (v.paymentMonth ?? undefined) : undefined,
-      startDate:    v.startDate    || undefined,
-      subcategory:  v.subcategory  || undefined,
-      notes:        v.notes        || undefined,
+      title:       v.title!,
+      amount:      v.amount!,
+      category:    v.category!,
+      recurrence:  v.recurrence!,
+      startDate:   toIso(v.startDate as Date | null),
+      subcategory: v.subcategory || undefined,
+      notes:       v.notes || undefined,
     };
 
     const op = this.isEditing

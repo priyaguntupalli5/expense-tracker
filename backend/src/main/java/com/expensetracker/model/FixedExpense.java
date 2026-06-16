@@ -37,12 +37,6 @@ public class FixedExpense {
     @Column(nullable = false)
     private String recurrence = "MONTHLY";
 
-    @Column(name = "payment_day")
-    private Integer paymentDay;
-
-    @Column(name = "payment_month")
-    private Integer paymentMonth;
-
     @Column(name = "start_date")
     private LocalDate startDate;
 
@@ -71,12 +65,6 @@ public class FixedExpense {
 
     public String getRecurrence() { return recurrence; }
     public void setRecurrence(String recurrence) { this.recurrence = recurrence != null ? recurrence : "MONTHLY"; }
-
-    public Integer getPaymentDay() { return paymentDay; }
-    public void setPaymentDay(Integer paymentDay) { this.paymentDay = paymentDay; }
-
-    public Integer getPaymentMonth() { return paymentMonth; }
-    public void setPaymentMonth(Integer paymentMonth) { this.paymentMonth = paymentMonth; }
 
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }

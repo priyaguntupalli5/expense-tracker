@@ -76,6 +76,12 @@ export class ExpenseService {
       .pipe(catchError(() => of<FixedExpense[]>([])));
   }
 
+  getFixedEntries(month: number, year: number): Observable<Expense[]> {
+    return this.http.get<Expense[]>(`${API}/expenses/fixed-entries`, {
+      params: { month: String(month), year: String(year) },
+    }).pipe(catchError(() => of<Expense[]>([])));
+  }
+
   createFixedExpense(expense: FixedExpense): Observable<FixedExpense> {
     return this.http.post<FixedExpense>(`${API}/fixed-expenses`, expense);
   }

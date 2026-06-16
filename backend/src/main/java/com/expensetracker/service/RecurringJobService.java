@@ -18,15 +18,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Generates income entries and expense entries for recurring templates.
+ * Generates income entries and fixed-expense entries for recurring templates.
  * Runs at startup (catches up on any missed days) and daily at 6 AM.
  */
 @Service
 public class RecurringJobService implements ApplicationRunner {
 
-    private final IncomeRepository      incomeRepository;
+    private final IncomeRepository       incomeRepository;
     private final FixedExpenseRepository fixedExpenseRepository;
-    private final ExpenseRepository     expenseRepository;
+    private final ExpenseRepository      expenseRepository;
 
     public RecurringJobService(IncomeRepository incomeRepository,
                                FixedExpenseRepository fixedExpenseRepository,
@@ -59,7 +59,7 @@ public class RecurringJobService implements ApplicationRunner {
             .forEach(fe -> generateForFixedExpense(fe, until));
     }
 
-    /** Called immediately when a template is created/updated. */
+    /** Called immediately when an income template is created/updated. */
     public void generateForTemplate(Income template) {
         LocalDate until = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
         generateForTemplate(template, until);
@@ -76,7 +76,6 @@ public class RecurringJobService implements ApplicationRunner {
     private void generateForTemplate(Income template, LocalDate today) {
         if (template.getStartDate() == null || template.getRecurrence() == null) return;
 
-        // paymentDay/paymentMonth are derived from startDate inside computePaymentDates
         List<LocalDate> dueDates = computePaymentDates(
             template.getRecurrence(), null, null, template.getStartDate(), today);
 
@@ -96,25 +95,26 @@ public class RecurringJobService implements ApplicationRunner {
         }
     }
 
-    // ── Fixed expense → actual expense generation ─────────────────────────────
+    // ── Fixed expense → generated expense entries ─────────────────────────────
 
     private void generateForFixedExpense(FixedExpense fe, LocalDate today) {
+        if (fe.getStartDate() == null || fe.getRecurrence() == null) return;
+
         List<LocalDate> dueDates = computePaymentDates(
-            fe.getRecurrence(), fe.getPaymentDay(),
-            fe.getPaymentMonth(), fe.getStartDate(), today);
+            fe.getRecurrence(), null, null, fe.getStartDate(), today);
 
         for (LocalDate due : dueDates) {
             if (!expenseRepository.existsBySourceFixedIdAndDate(fe.getId(), due)) {
-                Expense expense = new Expense();
-                expense.setTitle(fe.getTitle());
-                expense.setAmount(fe.getAmount());
-                expense.setCategory(fe.getCategory());
-                expense.setSubcategory(fe.getSubcategory());
-                expense.setDate(due);
-                expense.setNotes(fe.getNotes());
-                expense.setGroupId(fe.getGroupId());
-                expense.setSourceFixedId(fe.getId());
-                expenseRepository.save(expense);
+                Expense entry = new Expense();
+                entry.setTitle(fe.getTitle());
+                entry.setAmount(fe.getAmount());
+                entry.setCategory(fe.getCategory());
+                entry.setSubcategory(fe.getSubcategory());
+                entry.setDate(due);
+                entry.setNotes(fe.getNotes());
+                entry.setGroupId(fe.getGroupId());
+                entry.setSourceFixedId(fe.getId());
+                expenseRepository.save(entry);
             }
         }
     }
@@ -123,8 +123,7 @@ public class RecurringJobService implements ApplicationRunner {
 
     /**
      * Returns all payment dates in [startDate, until] for the given recurrence pattern.
-     * paymentDay: for WEEKLY/BIWEEKLY = ISO day-of-week (1=Mon…7=Sun);
-     *             for MONTHLY/QUARTERLY = day-of-month (1-31).
+     * paymentDay / paymentMonth are legacy params; pass null to derive from startDate.
      */
     public List<LocalDate> computePaymentDates(String recurrence, Integer paymentDay,
                                                Integer paymentMonth, LocalDate startDate,

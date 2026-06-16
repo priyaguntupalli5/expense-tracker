@@ -17,9 +17,10 @@ import java.util.List;
 public class FixedExpenseController {
 
     private final FixedExpenseRepository repository;
-    private final RecurringJobService recurringJobService;
+    private final RecurringJobService    recurringJobService;
 
-    public FixedExpenseController(FixedExpenseRepository repository, RecurringJobService recurringJobService) {
+    public FixedExpenseController(FixedExpenseRepository repository,
+                                  RecurringJobService recurringJobService) {
         this.repository          = repository;
         this.recurringJobService = recurringJobService;
     }
@@ -50,8 +51,6 @@ public class FixedExpenseController {
             existing.setNotes(updated.getNotes());
             existing.setSubcategory(updated.getSubcategory());
             existing.setRecurrence(updated.getRecurrence());
-            existing.setPaymentDay(updated.getPaymentDay());
-            existing.setPaymentMonth(updated.getPaymentMonth());
             existing.setStartDate(updated.getStartDate());
             FixedExpense saved = repository.save(existing);
             if (saved.getStartDate() != null) recurringJobService.generateForFixedExpense(saved);

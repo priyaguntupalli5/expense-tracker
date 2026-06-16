@@ -26,6 +26,7 @@ public class SchemaMigration implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         migrateGroupCodes();
         migrateIncomePaymentDate();
+        migrateFixedExpenseColumns();
         dropLegacyTables();
     }
 
@@ -86,6 +87,22 @@ public class SchemaMigration implements ApplicationRunner {
             if (columnExists(meta, conn, "income_entries", "payment_month")) {
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute("ALTER TABLE income_entries DROP COLUMN payment_month");
+                }
+            }
+        }
+    }
+
+    private void migrateFixedExpenseColumns() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            DatabaseMetaData meta = conn.getMetaData();
+            if (columnExists(meta, conn, "fixed_expenses", "payment_day")) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE fixed_expenses DROP COLUMN payment_day");
+                }
+            }
+            if (columnExists(meta, conn, "fixed_expenses", "payment_month")) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE fixed_expenses DROP COLUMN payment_month");
                 }
             }
         }

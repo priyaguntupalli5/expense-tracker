@@ -23,14 +23,20 @@ public class ExpenseService {
 
     public List<Expense> getAll(Long groupId, Integer month, Integer year, LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null) {
-            return repository.findByGroupIdAndDateBetweenOrderByDateDesc(groupId, startDate, endDate);
+            return repository.findByGroupIdAndDateBetweenAndSourceFixedIdIsNullOrderByDateDesc(groupId, startDate, endDate);
         }
         if (month != null && year != null) {
             LocalDate start = LocalDate.of(year, month, 1);
             LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
-            return repository.findByGroupIdAndDateBetweenOrderByDateDesc(groupId, start, end);
+            return repository.findByGroupIdAndDateBetweenAndSourceFixedIdIsNullOrderByDateDesc(groupId, start, end);
         }
-        return repository.findByGroupIdOrderByDateDesc(groupId);
+        return repository.findByGroupIdAndSourceFixedIdIsNullOrderByDateDesc(groupId);
+    }
+
+    public List<Expense> getFixedEntries(Long groupId, int month, int year) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end   = start.withDayOfMonth(start.lengthOfMonth());
+        return repository.findByGroupIdAndSourceFixedIdIsNotNullAndDateBetweenOrderByDateDesc(groupId, start, end);
     }
 
     public Optional<Expense> getById(Long id, Long groupId) {
@@ -70,9 +76,7 @@ public class ExpenseService {
             LocalDate end   = (toDate != null) ? toDate : start.withDayOfMonth(start.lengthOfMonth());
             expenses = repository.findByGroupIdAndDateBetweenAndSourceFixedIdIsNullOrderByDateDesc(groupId, start, end);
         } else {
-            expenses = repository.findByGroupIdOrderByDateDesc(groupId).stream()
-                .filter(e -> e.getSourceFixedId() == null)
-                .toList();
+            expenses = repository.findByGroupIdAndSourceFixedIdIsNullOrderByDateDesc(groupId);
         }
 
         BigDecimal total = expenses.stream()

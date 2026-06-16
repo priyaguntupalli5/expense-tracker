@@ -40,15 +40,13 @@ CREATE TABLE IF NOT EXISTS expenses (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS fixed_expenses (
-    id            BIGINT         NOT NULL AUTO_INCREMENT,
-    title         VARCHAR(100)   NOT NULL,
-    amount        DECIMAL(12, 2) NOT NULL,
-    category      VARCHAR(50)    NOT NULL,
-    notes         VARCHAR(255),
-    group_id      BIGINT         NULL,
-    recurrence    VARCHAR(20)    NOT NULL DEFAULT 'MONTHLY',
-    payment_day   INT            NULL,
-    payment_month INT            NULL,
+    id         BIGINT         NOT NULL AUTO_INCREMENT,
+    title      VARCHAR(100)   NOT NULL,
+    amount     DECIMAL(12, 2) NOT NULL,
+    category   VARCHAR(50)    NOT NULL,
+    notes      VARCHAR(255),
+    group_id   BIGINT         NULL,
+    recurrence VARCHAR(20)    NOT NULL DEFAULT 'MONTHLY',
     PRIMARY KEY (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
@@ -96,12 +94,10 @@ ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS subcategory      VARCHAR(10
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS image_data       MEDIUMTEXT   NULL;
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS group_id         BIGINT       NULL;
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS source_fixed_id  BIGINT       NULL;
-ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS subcategory    VARCHAR(100) NULL;
-ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS group_id       BIGINT       NULL;
-ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS recurrence     VARCHAR(20)  NOT NULL DEFAULT 'MONTHLY';
-ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS payment_day    INT          NULL;
-ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS payment_month  INT          NULL;
-ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS start_date     DATE         NULL;
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100) NULL;
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS group_id    BIGINT       NULL;
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS recurrence  VARCHAR(20)  NOT NULL DEFAULT 'MONTHLY';
+ALTER TABLE fixed_expenses  ADD COLUMN IF NOT EXISTS start_date  DATE         NULL;
 ALTER TABLE income_entries  ADD COLUMN IF NOT EXISTS recurrence   VARCHAR(20)  NULL;
 ALTER TABLE income_entries  ADD COLUMN IF NOT EXISTS start_date   DATE         NULL;
 ALTER TABLE income_entries  ADD COLUMN IF NOT EXISTS is_template  BOOLEAN      NOT NULL DEFAULT FALSE;

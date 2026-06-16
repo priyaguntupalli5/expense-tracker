@@ -32,7 +32,7 @@ export class CategoriesComponent implements OnInit {
 
   expandedCategory: string | null = null;
   subcategoriesMap: Record<string, Subcategory[]> = {};
-  newSubName: Record<string, string> = {};
+  newSubName: Record<string, string | undefined> = {};
   addingSubcategory: Record<string, boolean> = {};
 
   ngOnInit() {

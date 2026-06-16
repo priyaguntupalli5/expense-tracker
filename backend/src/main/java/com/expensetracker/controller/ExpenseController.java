@@ -35,6 +35,16 @@ public class ExpenseController {
         return service.getAll(user.getGroup().getId(), month, year, startDate, endDate);
     }
 
+    /** Generated fixed-expense entries for a month (sourceFixedId IS NOT NULL). */
+    @GetMapping("/fixed-entries")
+    public List<Expense> getFixedEntries(
+        @AuthenticationPrincipal User user,
+        @RequestParam int month,
+        @RequestParam int year
+    ) {
+        return service.getFixedEntries(user.getGroup().getId(), month, year);
+    }
+
     @GetMapping("/summary")
     public SummaryDTO getSummary(
         @AuthenticationPrincipal User user,

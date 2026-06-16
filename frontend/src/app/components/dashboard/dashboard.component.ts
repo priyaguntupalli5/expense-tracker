@@ -12,7 +12,7 @@ import { ExpenseService } from '../../services/expense.service';
 import { IncomeService } from '../../services/income.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { SettingsService } from '../../services/settings.service';
-import { FixedExpense, Summary, monthlyEquivalent } from '../../models/expense.model';
+import { FixedExpense, Summary, monthlyEquivalent, monthOccurrences } from '../../models/expense.model';
 
 interface PieSlice {
   path: string;
@@ -151,16 +151,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const recurrence = fe.recurrence ?? 'MONTHLY';
 
     switch (recurrence) {
-      case 'MONTHLY':
-        return (!fe.paymentDay || fe.paymentDay <= todayDay) ? amount : 0;
+      case 'MONTHLY': {
+        const dom = fe.startDate ? new Date(fe.startDate + 'T00:00:00').getDate() : 1;
+        return dom <= todayDay ? amount : 0;
+      }
 
-      case 'YEARLY':
-        if (fe.paymentMonth && fe.paymentMonth !== this.selectedMonth) return 0;
-        return (!fe.paymentDay || fe.paymentDay <= todayDay) ? amount : 0;
+      case 'YEARLY': {
+        if (!fe.startDate) return 0;
+        const sd = new Date(fe.startDate + 'T00:00:00');
+        if ((sd.getMonth() + 1) !== this.selectedMonth) return 0;
+        return sd.getDate() <= todayDay ? amount : 0;
+      }
 
-      case 'QUARTERLY':
-        // paymentDay indicates the day-of-month for whichever quarter payment falls this month
-        return (!fe.paymentDay || fe.paymentDay <= todayDay) ? amount : 0;
+      case 'QUARTERLY': {
+        if (!fe.startDate) return 0;
+        const sd = new Date(fe.startDate + 'T00:00:00');
+        const startMonth = sd.getMonth() + 1;
+        const monthDiff = ((this.selectedMonth - startMonth) % 12 + 12) % 12;
+        if (monthDiff % 3 !== 0) return 0;
+        return sd.getDate() <= todayDay ? amount : 0;
+      }
 
       case 'WEEKLY':
       case 'BIWEEKLY': {
@@ -183,13 +193,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
         return count * amount;
       }
 
-      default:
-        return (!fe.paymentDay || fe.paymentDay <= todayDay) ? amount : 0;
+      default: {
+        const dom = fe.startDate ? new Date(fe.startDate + 'T00:00:00').getDate() : 1;
+        return dom <= todayDay ? amount : 0;
+      }
     }
   }
 
   private fixedAmount(fe: FixedExpense): number {
-    return this.viewMode === 'to-date' ? this.toDateEquivalent(fe) : monthlyEquivalent(fe);
+    if (this.viewMode === 'to-date') return this.toDateEquivalent(fe);
+    const occ = monthOccurrences(fe, this.selectedMonth, this.selectedYear);
+    return occ !== null ? occ * Number(fe.amount) : monthlyEquivalent(fe);
   }
 
   private buildPieChart() {

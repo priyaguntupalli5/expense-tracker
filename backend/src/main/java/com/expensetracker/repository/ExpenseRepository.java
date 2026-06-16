@@ -11,12 +11,12 @@ import java.util.Optional;
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
-    // For expense list (shows everything)
-    List<Expense> findByGroupIdAndDateBetweenOrderByDateDesc(Long groupId, LocalDate start, LocalDate end);
-    List<Expense> findByGroupIdOrderByDateDesc(Long groupId);
-
-    // For dashboard summary (exclude auto-generated; already in Fixed Total)
+    // Manually-entered expenses only (sourceFixedId IS NULL)
     List<Expense> findByGroupIdAndDateBetweenAndSourceFixedIdIsNullOrderByDateDesc(Long groupId, LocalDate start, LocalDate end);
+    List<Expense> findByGroupIdAndSourceFixedIdIsNullOrderByDateDesc(Long groupId);
+
+    // Auto-generated fixed-expense entries (sourceFixedId IS NOT NULL)
+    List<Expense> findByGroupIdAndSourceFixedIdIsNotNullAndDateBetweenOrderByDateDesc(Long groupId, LocalDate start, LocalDate end);
 
     Optional<Expense> findByIdAndGroupId(Long id, Long groupId);
     boolean existsByIdAndGroupId(Long id, Long groupId);
