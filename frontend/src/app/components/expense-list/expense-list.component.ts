@@ -15,6 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, combineLatest, switchMap, takeUntil, merge, startWith, filter } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
+import { SettingsService } from '../../services/settings.service';
 import { Expense } from '../../models/expense.model';
 import { ExpenseFormComponent } from '../expense-form/expense-form.component';
 
@@ -34,6 +35,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   private readonly expenseService = inject(ExpenseService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  readonly settingsService = inject(SettingsService);
   private readonly destroy$ = new Subject<void>();
 
   expenses: Expense[] = [];

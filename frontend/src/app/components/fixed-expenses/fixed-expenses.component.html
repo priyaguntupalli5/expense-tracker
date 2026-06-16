@@ -1,13 +1,18 @@
 <div class="list-container">
+
+  <!-- ── Recurring Templates ────────────────────────────────────────────── -->
   <mat-card class="list-card">
     <div class="card-header">
       <div class="header-left">
         <div class="header-title">
           <mat-icon class="title-icon">repeat</mat-icon>
-          <span>Fixed Monthly Expenses</span>
+          <span>Fixed Expenses</span>
           <span class="count-chip">{{ expenses.length }}</span>
         </div>
-        <div class="header-sub">Total: {{ total | currency:'CAD':'symbol-narrow':'1.0-2' }} / month</div>
+        <div class="header-sub">
+          Est. {{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} in
+          {{ months[selectedMonth - 1].label }}
+        </div>
       </div>
       <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
         <mat-icon>add</mat-icon> Add Fixed Expense
@@ -15,7 +20,6 @@
     </div>
 
     <mat-card-content>
-
       @if (expenses.length === 0) {
         <div class="empty-state">
           <mat-icon>repeat</mat-icon>
@@ -30,7 +34,12 @@
               <th mat-header-cell *matHeaderCellDef>Description</th>
               <td mat-cell *matCellDef="let e">
                 <div class="title-cell">
-                  <span class="title-text">{{ e.title }}</span>
+                  <span class="title-text">
+                    {{ e.title }}
+                    @if (e.startDate) {
+                      <span class="auto-badge" matTooltip="Auto-generates expense entries from {{ e.startDate }}">auto</span>
+                    }
+                  </span>
                   @if (e.notes) {
                     <span class="notes-text">{{ e.notes }}</span>
                   }
@@ -42,8 +51,7 @@
               <th mat-header-cell *matHeaderCellDef>Category</th>
               <td mat-cell *matCellDef="let e">
                 <div class="category-cell">
-                  <span
-                    class="category-badge"
+                  <span class="category-badge"
                     [style.background]="getCategoryColor(e.category) + '1a'"
                     [style.color]="getCategoryColor(e.category)"
                     [style.border-color]="getCategoryColor(e.category) + '40'">
@@ -58,14 +66,17 @@
             </ng-container>
 
             <ng-container matColumnDef="amount">
-              <th mat-header-cell *matHeaderCellDef class="amount-col">Monthly Amount</th>
+              <th mat-header-cell *matHeaderCellDef class="amount-col">Amount</th>
               <td mat-cell *matCellDef="let e" class="amount-col amount-value"
                   [class.credit-amount]="isCredit(e.category)">
-                @if (isCredit(e.category)) {
-                  +{{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
-                } @else {
-                  {{ e.amount | currency:'CAD':'symbol-narrow':'1.0-2' }}
-                }
+                <div class="amount-cell">
+                  @if (isCredit(e.category)) {
+                    <span>+{{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                  } @else {
+                    <span>{{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                  }
+                  <span class="schedule-tag">{{ scheduleLabel(e) }}</span>
+                </div>
               </td>
             </ng-container>
 
@@ -89,4 +100,100 @@
       }
     </mat-card-content>
   </mat-card>
+
+  <!-- ── Generated Payments ─────────────────────────────────────────────── -->
+  <mat-card class="list-card payments-card">
+    <div class="card-header">
+      <div class="header-left">
+        <div class="header-title">
+          <mat-icon class="title-icon">event</mat-icon>
+          <span>Payments</span>
+          <span class="count-chip">{{ entries.length }}</span>
+        </div>
+        <div class="header-sub">
+          {{ entriesTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} total
+        </div>
+      </div>
+      <div class="period-selectors">
+        <mat-form-field appearance="outline" class="period-field">
+          <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
+            @for (m of months; track m.value) {
+              <mat-option [value]="m.value">{{ m.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="period-field year-field">
+          <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
+            @for (y of years; track y) {
+              <mat-option [value]="y">{{ y }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <mat-card-content>
+      @if (entries.length === 0) {
+        <div class="empty-state">
+          <mat-icon>event_busy</mat-icon>
+          <p>No payments for this period</p>
+          <small>Auto-generated entries will appear here once the start date is reached</small>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="entries" class="expense-table">
+
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>Description</th>
+              <td mat-cell *matCellDef="let e">
+                <div class="title-cell">
+                  <span class="title-text">
+                    {{ e.title }}
+                    <span class="auto-badge">auto</span>
+                  </span>
+                  @if (e.notes) {
+                    <span class="notes-text">{{ e.notes }}</span>
+                  }
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let e" class="date-col">
+                <span class="date-value">{{ e.date | date:'MMM d, y' }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef class="amount-col">Amount</th>
+              <td mat-cell *matCellDef="let e" class="amount-col amount-value"
+                  [class.credit-amount]="isCredit(e.category)">
+                @if (isCredit(e.category)) {
+                  <span>+{{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                } @else {
+                  <span>{{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let e" class="actions-col">
+                <button mat-icon-button matTooltip="Delete entry" color="warn"
+                        (click)="confirmDeleteEntry(e)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="entryDisplayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: entryDisplayedColumns;" class="expense-row"
+                [class.credit-row]="isCredit(row.category)"></tr>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
 </div>

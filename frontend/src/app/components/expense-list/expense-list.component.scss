@@ -165,6 +165,22 @@ mat-card-content {
   .title-text {
     font-weight: 500;
     font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .auto-chip {
+    display: inline-block;
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
   }
 
   .notes-text {

@@ -1,22 +1,33 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { forkJoin } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
-import { FixedExpense } from '../../models/expense.model';
+import { SettingsService } from '../../services/settings.service';
+import { Expense, FixedExpense, monthlyEquivalent, monthOccurrences } from '../../models/expense.model';
 import { FixedExpenseFormComponent } from '../fixed-expense-form/fixed-expense-form.component';
+
+function nth(n: number): string {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
 
 @Component({
   selector: 'app-fixed-expenses',
   imports: [
-    CurrencyPipe,
+    CurrencyPipe, DatePipe, FormsModule,
     MatTableModule, MatIconModule, MatButtonModule,
-    MatTooltipModule, MatCardModule,
+    MatTooltipModule, MatCardModule, MatSelectModule, MatFormFieldModule,
   ],
   templateUrl: './fixed-expenses.component.html',
   styleUrl: './fixed-expenses.component.scss',
@@ -25,28 +36,87 @@ export class FixedExpensesComponent implements OnInit {
   private readonly expenseService = inject(ExpenseService);
   private readonly dialog         = inject(MatDialog);
   private readonly snackBar       = inject(MatSnackBar);
+  readonly settingsService        = inject(SettingsService);
 
   expenses: FixedExpense[] = [];
-  displayedColumns = ['title', 'category', 'amount', 'actions'];
+  entries:  Expense[]      = [];
+  displayedColumns      = ['title', 'category', 'amount', 'actions'];
+  entryDisplayedColumns = ['title', 'date', 'amount', 'actions'];
+
+  selectedMonth = new Date().getMonth() + 1;
+  selectedYear  = new Date().getFullYear();
+
+  readonly months = [
+    { value: 1, label: 'January' }, { value: 2, label: 'February' },
+    { value: 3, label: 'March' },   { value: 4, label: 'April' },
+    { value: 5, label: 'May' },     { value: 6, label: 'June' },
+    { value: 7, label: 'July' },    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },{ value: 10,label: 'October' },
+    { value: 11,label: 'November' },{ value: 12,label: 'December' },
+  ];
+  readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   ngOnInit() {
     this.expenseService.loadCategories().subscribe();
     this.load();
   }
 
+  onPeriodChange() { this.loadEntries(); }
+
   private load() {
-    this.expenseService.getFixedExpenses().subscribe(expenses => {
+    forkJoin([
+      this.expenseService.getFixedExpenses(),
+      this.expenseService.getFixedEntries(this.selectedMonth, this.selectedYear),
+    ]).subscribe(([expenses, entries]) => {
       this.expenses = expenses;
+      this.entries  = entries;
     });
+  }
+
+  private loadEntries() {
+    this.expenseService.getFixedEntries(this.selectedMonth, this.selectedYear)
+      .subscribe(entries => { this.entries = entries; });
   }
 
   isCredit(categoryValue: string): boolean {
     return this.expenseService.getCategoryByValue(categoryValue)?.isIncome ?? false;
   }
 
+  /** Actual cost for the selected month. */
   get total(): number {
-    return this.expenses.reduce((sum, e) =>
-      sum + (this.isCredit(e.category) ? -Number(e.amount) : Number(e.amount)), 0);
+    return this.expenses.reduce((sum, e) => {
+      const occ  = monthOccurrences(e, this.selectedMonth, this.selectedYear);
+      const cost = occ !== null ? occ * Number(e.amount) : monthlyEquivalent(e);
+      return sum + (this.isCredit(e.category) ? -cost : cost);
+    }, 0);
+  }
+
+  get entriesTotal(): number {
+    return this.entries.reduce((s, e) => s + Number(e.amount), 0);
+  }
+
+  scheduleLabel(fe: FixedExpense): string {
+    const r  = fe.recurrence ?? 'MONTHLY';
+    const sd = fe.startDate ? new Date(fe.startDate + 'T00:00:00') : null;
+
+    const fallback: Record<string, string> = {
+      WEEKLY: 'weekly', BIWEEKLY: 'every 2 weeks',
+      MONTHLY: 'monthly', QUARTERLY: 'quarterly', YEARLY: 'yearly',
+    };
+    if (!sd) return fallback[r] ?? r.toLowerCase();
+
+    const day       = sd.getDate();
+    const dayName   = sd.toLocaleDateString('en-US', { weekday: 'long' });
+    const monthName = sd.toLocaleDateString('en-US', { month: 'long' });
+
+    switch (r) {
+      case 'WEEKLY':    return `every ${dayName}`;
+      case 'BIWEEKLY':  return `every other ${dayName}`;
+      case 'MONTHLY':   return `${nth(day)} of each month`;
+      case 'QUARTERLY': return `${nth(day)} each quarter`;
+      case 'YEARLY':    return `${monthName} ${nth(day)}`;
+      default:          return r.toLowerCase();
+    }
   }
 
   openAdd() {
@@ -58,9 +128,7 @@ export class FixedExpensesComponent implements OnInit {
 
   openEdit(expense: FixedExpense) {
     const ref = this.dialog.open(FixedExpenseFormComponent, {
-      width: '480px',
-      maxWidth: '95vw',
-      data: expense,
+      width: '480px', maxWidth: '95vw', data: expense,
     });
     ref.afterClosed().subscribe(saved => {
       if (saved) { this.load(); this.expenseService.notifyRefresh(); }
@@ -79,15 +147,19 @@ export class FixedExpensesComponent implements OnInit {
     });
   }
 
-  getCategoryLabel(value: string) {
-    return this.expenseService.getCategoryByValue(value)?.label ?? value;
+  confirmDeleteEntry(entry: Expense) {
+    if (!confirm(`Delete this payment entry for "${entry.title}"?`)) return;
+    this.expenseService.delete(entry.id!).subscribe({
+      next: () => {
+        this.snackBar.open('Entry deleted', 'Dismiss', { duration: 3000 });
+        this.loadEntries();
+        this.expenseService.notifyRefresh();
+      },
+      error: () => this.snackBar.open('Failed to delete', 'Dismiss', { duration: 3000 }),
+    });
   }
 
-  getCategoryIcon(value: string) {
-    return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
-  }
-
-  getCategoryColor(value: string) {
-    return this.expenseService.getCategoryByValue(value)?.color ?? '#607d8b';
-  }
+  getCategoryLabel(value: string) { return this.expenseService.getCategoryByValue(value)?.label ?? value; }
+  getCategoryIcon(value: string)  { return this.expenseService.getCategoryByValue(value)?.icon  ?? 'more_horiz'; }
+  getCategoryColor(value: string) { return this.expenseService.getCategoryByValue(value)?.color ?? '#607d8b'; }
 }

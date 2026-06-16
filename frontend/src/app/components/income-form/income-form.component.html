@@ -1,0 +1,105 @@
+<div class="dialog-titlebar">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ isEditingTpl ? 'edit' : (isEditing ? 'edit' : 'add_circle') }}</mat-icon>
+    {{ isEditingTpl ? 'Edit Recurring Income' : (isEditing ? 'Edit Income' : 'Add Income') }}
+  </h2>
+  <button mat-icon-button (click)="cancel()" matTooltip="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="income-form">
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Source Type</mat-label>
+      <mat-select formControlName="sourceType">
+        @for (s of sourceTypes; track s.value) {
+          <mat-option [value]="s.value">
+            <mat-icon [style.color]="s.color">{{ s.icon }}</mat-icon>
+            {{ s.label }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Title</mat-label>
+      <input matInput formControlName="title" placeholder="e.g. Monthly Salary, TFSA Dividend">
+      <mat-icon matSuffix>label</mat-icon>
+      @if (form.get('title')?.hasError('required')) {
+        <mat-error>Title is required</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Recurring toggle -->
+    <div class="recurring-toggle">
+      <mat-slide-toggle formControlName="isRecurring" color="primary">
+        Recurring income
+      </mat-slide-toggle>
+      @if (isRecurring) {
+        <span class="toggle-hint">Auto-generates entries on each payment date</span>
+      }
+    </div>
+
+    <!-- Recurrence fields -->
+    @if (isRecurring) {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Repeats</mat-label>
+        <mat-select formControlName="recurrence">
+          @for (r of recurrenceOptions; track r.value) {
+            <mat-option [value]="r.value">{{ r.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>First Payment Date</mat-label>
+        <input matInput [matDatepicker]="startDp" formControlName="startDate">
+        <mat-datepicker-toggle matIconSuffix [for]="startDp"></mat-datepicker-toggle>
+        <mat-datepicker #startDp></mat-datepicker>
+        <mat-hint>Sets the day (and month for yearly) of recurring payments</mat-hint>
+      </mat-form-field>
+    }
+
+    <!-- Amount -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ amountLabel }}</mat-label>
+      <span matPrefix>$&nbsp;</span>
+      <input matInput type="number" formControlName="amount" placeholder="0" min="0.01">
+      @if (form.get('amount')?.hasError('required')) {
+        <mat-error>Amount is required</mat-error>
+      }
+      @if (form.get('amount')?.hasError('min')) {
+        <mat-error>Must be greater than 0</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Payment date for one-time entries -->
+    @if (!isRecurring) {
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Payment Date</mat-label>
+        <input matInput [matDatepicker]="payDp" formControlName="paymentDate">
+        <mat-datepicker-toggle matIconSuffix [for]="payDp"></mat-datepicker-toggle>
+        <mat-datepicker #payDp></mat-datepicker>
+        <mat-hint>Date the income was or will be received</mat-hint>
+      </mat-form-field>
+    }
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Notes (optional)</mat-label>
+      <textarea matInput formControlName="notes" rows="2" placeholder="Any details..."></textarea>
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || saving">
+    @if (saving) {
+      <mat-spinner diameter="20" style="display:inline-block; margin-right:8px;"></mat-spinner>
+    }
+    {{ saving ? 'Saving...' : (isEditingTpl || isEditing ? 'Update' : (isRecurring ? 'Save Template' : 'Add Income')) }}
+  </button>
+</mat-dialog-actions>

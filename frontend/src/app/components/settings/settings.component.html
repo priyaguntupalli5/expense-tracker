@@ -1,0 +1,126 @@
+<div class="settings-container">
+  <h1 class="page-title">Settings</h1>
+
+  @if (loading) {
+    <div class="loading">Loading…</div>
+  } @else if (settings) {
+
+    <div class="settings-grid">
+
+      <!-- ── Group card (left) ──────────────────────────────── -->
+      <div class="card group-card">
+        <div class="card-header">
+          <mat-icon class="card-icon">group</mat-icon>
+          <span class="card-title">Group</span>
+        </div>
+
+        <div class="field-row">
+          <span class="field-label">Group name</span>
+          <span class="field-value">{{ settings.groupName }}</span>
+        </div>
+
+        <div class="field-row">
+          <span class="field-label">Invite code</span>
+          <div class="code-row">
+            <span class="group-code">{{ settings.groupCode }}</span>
+            <button mat-stroked-button class="copy-btn" (click)="copyCode()">
+              <mat-icon>{{ codeCopied ? 'check' : 'content_copy' }}</mat-icon>
+              {{ codeCopied ? 'Copied!' : 'Copy' }}
+            </button>
+          </div>
+          <span class="field-hint">Share so others can request to join</span>
+        </div>
+
+        <div class="members-section">
+          <span class="field-label">Members</span>
+          <div class="members-list">
+            @for (member of settings.members; track member) {
+              <div class="member-chip">
+                <span class="member-avatar" [style.background]="avatarColor(member)">{{ initial(member) }}</span>
+                <span class="member-name">{{ member }}</span>
+                @if (settings.isAdmin && member !== auth.currentUsername) {
+                  <button mat-icon-button class="remove-member-btn"
+                    matTooltip="Remove from group"
+                    (click)="removeMember(member)">
+                    <mat-icon>person_remove</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (joinRequests.length > 0) {
+          <div class="requests-section">
+            <div class="field-label warn-label">
+              <mat-icon class="label-icon warn-icon">person_add</mat-icon>
+              Pending Requests
+              <span class="badge">{{ joinRequests.length }}</span>
+            </div>
+            @for (req of joinRequests; track req.id) {
+              <div class="request-row">
+                <span class="member-avatar" [style.background]="avatarColor(req.username)">{{ initial(req.username) }}</span>
+                <div class="request-info">
+                  <span class="request-name">{{ req.username }}</span>
+                  <span class="request-date">{{ formatDate(req.requestedAt) }}</span>
+                </div>
+                <div class="request-actions">
+                  <button mat-stroked-button class="approve-btn" (click)="approve(req.id)">
+                    <mat-icon>check</mat-icon> Approve
+                  </button>
+                  <button mat-icon-button class="reject-btn" (click)="reject(req.id)" matTooltip="Reject">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- ── Right column ───────────────────────────────────── -->
+      <div class="right-col">
+
+        <!-- Currency -->
+        <div class="card">
+          <div class="card-header">
+            <mat-icon class="card-icon">attach_money</mat-icon>
+            <span class="card-title">Currency</span>
+          </div>
+          <p class="card-desc">Applies to all members in your group.</p>
+          <div class="currency-row">
+            <mat-form-field appearance="outline" class="currency-field">
+              <mat-label>Display currency</mat-label>
+              <mat-select [(ngModel)]="selectedCurrency">
+                @for (c of currencies; track c.code) {
+                  <mat-option [value]="c.code">{{ c.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <button mat-flat-button color="primary" class="save-btn" [class.saved]="currencySaved" (click)="saveCurrency()">
+              <mat-icon>{{ currencySaved ? 'check' : 'save' }}</mat-icon>
+              {{ currencySaved ? 'Saved!' : 'Save' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Account -->
+        <div class="card">
+          <div class="card-header">
+            <mat-icon class="card-icon">manage_accounts</mat-icon>
+            <span class="card-title">Account</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Signed in as</span>
+            <span class="field-value">{{ auth.currentUsername }}</span>
+          </div>
+          <button mat-stroked-button class="logout-btn" (click)="auth.logout()">
+            <mat-icon>logout</mat-icon>
+            Sign out
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+</div>

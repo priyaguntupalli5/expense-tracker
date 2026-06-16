@@ -3,13 +3,15 @@ import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/rou
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { SwPush } from '@angular/service-worker';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
   imports: [
     RouterOutlet, RouterLink, RouterLinkActive,
-    MatToolbarModule, MatButtonModule, MatIconModule,
+    MatToolbarModule, MatButtonModule, MatIconModule, MatTooltipModule,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -17,6 +19,7 @@ import { SwPush } from '@angular/service-worker';
 export class AppComponent implements OnInit {
   private readonly swPush = inject(SwPush);
   private readonly router = inject(Router);
+  readonly auth = inject(AuthService);
 
   ngOnInit() {
     if (this.swPush.isEnabled) {

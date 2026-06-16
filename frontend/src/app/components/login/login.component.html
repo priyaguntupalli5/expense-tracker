@@ -1,0 +1,101 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="brand">
+      <mat-icon class="brand-icon">account_balance_wallet</mat-icon>
+      <h1 class="brand-name">Expense Tracker</h1>
+      <p class="brand-sub">Track smarter, save better</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab" [class.active]="mode === 'login'" (click)="switchMode('login')">Sign In</button>
+      <button class="tab" [class.active]="mode === 'register'" (click)="switchMode('register')">Register</button>
+    </div>
+
+    @if (joinPending) {
+      <div class="code-reveal">
+        <mat-icon class="code-reveal-icon">hourglass_top</mat-icon>
+        <p class="code-reveal-title">Request sent!</p>
+        <p class="code-reveal-hint">A group member needs to approve you before you can sign in. Check back soon.</p>
+        <button mat-stroked-button (click)="switchMode('login')" style="margin-top:8px">
+          Back to Sign In
+        </button>
+      </div>
+    } @else if (newGroupCode) {
+      <div class="code-reveal">
+        <mat-icon class="code-reveal-icon">group</mat-icon>
+        <p class="code-reveal-title">Group created!</p>
+        <p class="code-reveal-hint">Share this code with others so they can join your group:</p>
+        <div class="group-code">{{ newGroupCode }}</div>
+        <button mat-flat-button color="primary" class="submit-btn" (click)="router.navigate(['/dashboard'])">
+          Go to Dashboard
+        </button>
+      </div>
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Username</mat-label>
+          <mat-icon matPrefix>person</mat-icon>
+          <input matInput formControlName="username" placeholder="Choose a username" autocomplete="username">
+          @if (form.get('username')?.hasError('minlength')) {
+            <mat-error>At least 3 characters</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Password</mat-label>
+          <mat-icon matPrefix>lock</mat-icon>
+          <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" autocomplete="current-password">
+          <button type="button" mat-icon-button matSuffix (click)="hidePassword = !hidePassword">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (form.get('password')?.hasError('minlength')) {
+            <mat-error>Minimum 8 characters</mat-error>
+          }
+        </mat-form-field>
+
+        @if (mode === 'register') {
+          <div class="register-mode-toggle">
+            <button type="button" class="rtab" [class.active]="registerMode === 'create'" (click)="switchRegisterMode('create')">
+              <mat-icon>add_circle_outline</mat-icon> Create group
+            </button>
+            <button type="button" class="rtab" [class.active]="registerMode === 'join'" (click)="switchRegisterMode('join')">
+              <mat-icon>login</mat-icon> Join group
+            </button>
+          </div>
+
+          @if (registerMode === 'create') {
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>Group Name</mat-label>
+              <mat-icon matPrefix>group</mat-icon>
+              <input matInput formControlName="groupName" placeholder="e.g. Our Household">
+              <mat-hint>A unique name for your household</mat-hint>
+            </mat-form-field>
+          } @else {
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>Group Code</mat-label>
+              <mat-icon matPrefix>tag</mat-icon>
+              <input matInput formControlName="groupCode" placeholder="6-digit code" maxlength="6" inputmode="numeric">
+              <mat-hint>Enter the code shared by your group</mat-hint>
+              @if (form.get('groupCode')?.hasError('pattern')) {
+                <mat-error>Must be exactly 6 digits</mat-error>
+              }
+            </mat-form-field>
+          }
+        }
+
+        @if (error) {
+          <div class="error-msg">{{ error }}</div>
+        }
+
+        <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="loading || form.invalid">
+          @if (loading) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            {{ mode === 'login' ? 'Sign In' : registerMode === 'create' ? 'Create Account' : 'Join Group' }}
+          }
+        </button>
+      </form>
+    }
+  </div>
+</div>

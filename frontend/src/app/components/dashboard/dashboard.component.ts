@@ -1,18 +1,18 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
+import { IncomeService } from '../../services/income.service';
 import { PushNotificationService } from '../../services/push-notification.service';
-import { FixedExpense, Summary } from '../../models/expense.model';
+import { SettingsService } from '../../services/settings.service';
+import { FixedExpense, Summary, monthlyEquivalent, monthOccurrences } from '../../models/expense.model';
 
 interface PieSlice {
   path: string;
@@ -22,34 +22,32 @@ interface PieSlice {
   percentage: number;
 }
 
+type ViewMode = 'to-date' | 'end-of-month';
+
 @Component({
   selector: 'app-dashboard',
   imports: [
-    CurrencyPipe, FormsModule, ReactiveFormsModule,
+    CurrencyPipe, FormsModule,
     MatCardModule, MatSelectModule, MatFormFieldModule,
-    MatInputModule, MatIconModule, MatButtonModule, MatTooltipModule,
+    MatIconModule, MatButtonModule, MatTooltipModule,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private readonly expenseService = inject(ExpenseService);
-  private readonly fb = inject(FormBuilder);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly destroy$ = new Subject<void>();
-  readonly pushService = inject(PushNotificationService);
+  private readonly incomeService  = inject(IncomeService);
+  private readonly destroy$       = new Subject<void>();
+  readonly pushService    = inject(PushNotificationService);
+  readonly settingsService = inject(SettingsService);
 
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
+  viewMode: ViewMode = 'to-date';
   pieSlices: PieSlice[] = [];
-  salarySaved   = false;
+  incomeTotal = 0;
   private fixedExpenses: FixedExpense[] = [];
-
-  salaryForm = this.fb.group({
-    priyaSalary: [0],
-    vamsiSalary: [0],
-  });
 
   readonly months = [
     { value: 1,  label: 'January' },   { value: 2,  label: 'February' },
@@ -77,39 +75,138 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadData();
   }
 
-  saveSalary() {
-    const v = this.salaryForm.value;
-    this.expenseService.setSalary(this.selectedMonth, this.selectedYear, {
-      priyaSalary: Number(v.priyaSalary) || 0,
-      vamsiSalary: Number(v.vamsiSalary) || 0,
-    }).subscribe({
-      next: () => {
-        this.salarySaved = true;
-        setTimeout(() => this.salarySaved = false, 2000);
-      },
-      error: () => this.snackBar.open('Failed to save income', 'OK', { duration: 3000 }),
-    });
+  setViewMode(mode: ViewMode) {
+    if (this.viewMode === mode) return;
+    this.viewMode = mode;
+    this.loadData();
+  }
+
+  // Returns today's ISO date when viewing the current month in to-date mode,
+  // undefined otherwise (backend returns the full-month result).
+  private get toDateParam(): string | undefined {
+    if (this.viewMode !== 'to-date') return undefined;
+    const now = new Date();
+    if (this.selectedYear === now.getFullYear() && this.selectedMonth === now.getMonth() + 1) {
+      return now.toISOString().slice(0, 10);
+    }
+    return undefined;
+  }
+
+  private get isFuturePeriod(): boolean {
+    const now = new Date();
+    return this.selectedYear > now.getFullYear() ||
+      (this.selectedYear === now.getFullYear() && this.selectedMonth > now.getMonth() + 1);
   }
 
   private loadData() {
+    // Future period in to-date mode → nothing has happened yet
+    if (this.viewMode === 'to-date' && this.isFuturePeriod) {
+      this.incomeTotal   = 0;
+      this.fixedExpenses = [];
+      this.summary       = { total: 0, count: 0, categoryBreakdown: {} };
+      this.pieSlices     = [];
+      return;
+    }
+
+    const toDate = this.toDateParam;
     forkJoin({
-      categories: this.expenseService.loadCategories(),
-      salary:     this.expenseService.getSalary(this.selectedMonth, this.selectedYear),
-      fixed:      this.expenseService.getFixedExpenses(),
-      summary:    this.expenseService.getSummary(this.selectedMonth, this.selectedYear),
-    }).pipe(takeUntil(this.destroy$)).subscribe(({ salary, fixed, summary }) => {
-      this.salaryForm.patchValue(
-        { priyaSalary: Number(salary.priyaSalary), vamsiSalary: Number(salary.vamsiSalary) },
-        { emitEvent: false },
-      );
+      categories:  this.expenseService.loadCategories(),
+      incomeTotal: this.incomeService.getMonthlyTotal(this.selectedMonth, this.selectedYear, toDate),
+      fixed:       this.expenseService.getFixedExpenses(),
+      summary:     this.expenseService.getSummary(this.selectedMonth, this.selectedYear, toDate),
+    }).pipe(takeUntil(this.destroy$)).subscribe(({ incomeTotal, fixed, summary }) => {
+      this.incomeTotal   = incomeTotal;
       this.fixedExpenses = fixed;
       this.summary       = summary;
       this.buildPieChart();
     });
   }
 
+  /**
+   * Amount to attribute to a fixed expense in "to-date" mode for the selected month.
+   *
+   * - Past months:   full monthly equivalent (everything already paid).
+   * - Future months: 0.
+   * - Current month:
+   *     MONTHLY/QUARTERLY — full amount if paymentDay has passed, else 0.
+   *     YEARLY            — amount if paymentMonth matches and paymentDay has passed, else 0.
+   *     WEEKLY/BIWEEKLY   — count occurrences from start of month up to today × amount.
+   */
+  private toDateEquivalent(fe: FixedExpense): number {
+    const now = new Date();
+    const thisMonth = now.getMonth() + 1;
+    const thisYear  = now.getFullYear();
+
+    if (this.selectedYear < thisYear ||
+        (this.selectedYear === thisYear && this.selectedMonth < thisMonth)) {
+      return monthlyEquivalent(fe);
+    }
+    if (this.selectedYear > thisYear ||
+        (this.selectedYear === thisYear && this.selectedMonth > thisMonth)) {
+      return 0;
+    }
+
+    const amount    = Number(fe.amount);
+    const todayDay  = now.getDate();
+    const recurrence = fe.recurrence ?? 'MONTHLY';
+
+    switch (recurrence) {
+      case 'MONTHLY': {
+        const dom = fe.startDate ? new Date(fe.startDate + 'T00:00:00').getDate() : 1;
+        return dom <= todayDay ? amount : 0;
+      }
+
+      case 'YEARLY': {
+        if (!fe.startDate) return 0;
+        const sd = new Date(fe.startDate + 'T00:00:00');
+        if ((sd.getMonth() + 1) !== this.selectedMonth) return 0;
+        return sd.getDate() <= todayDay ? amount : 0;
+      }
+
+      case 'QUARTERLY': {
+        if (!fe.startDate) return 0;
+        const sd = new Date(fe.startDate + 'T00:00:00');
+        const startMonth = sd.getMonth() + 1;
+        const monthDiff = ((this.selectedMonth - startMonth) % 12 + 12) % 12;
+        if (monthDiff % 3 !== 0) return 0;
+        return sd.getDate() <= todayDay ? amount : 0;
+      }
+
+      case 'WEEKLY':
+      case 'BIWEEKLY': {
+        const intervalMs = (recurrence === 'WEEKLY' ? 7 : 14) * 86_400_000;
+        const anchor     = fe.startDate
+          ? new Date(fe.startDate + 'T00:00:00')
+          : new Date(thisYear, thisMonth - 1, 1);
+        const monthStart = new Date(thisYear, thisMonth - 1, 1);
+        const today      = new Date(thisYear, thisMonth - 1, todayDay);
+
+        // Advance anchor to first occurrence on or after the start of the month
+        let cursor = new Date(anchor.getTime());
+        while (cursor < monthStart) cursor = new Date(cursor.getTime() + intervalMs);
+
+        let count = 0;
+        while (cursor <= today) {
+          count++;
+          cursor = new Date(cursor.getTime() + intervalMs);
+        }
+        return count * amount;
+      }
+
+      default: {
+        const dom = fe.startDate ? new Date(fe.startDate + 'T00:00:00').getDate() : 1;
+        return dom <= todayDay ? amount : 0;
+      }
+    }
+  }
+
+  private fixedAmount(fe: FixedExpense): number {
+    if (this.viewMode === 'to-date') return this.toDateEquivalent(fe);
+    const occ = monthOccurrences(fe, this.selectedMonth, this.selectedYear);
+    return occ !== null ? occ * Number(fe.amount) : monthlyEquivalent(fe);
+  }
+
   private buildPieChart() {
-    // Merge variable + fixed expenses by category, excluding income/credit categories
     const breakdown: Record<string, number> = {};
 
     for (const [cat, amount] of Object.entries(this.summary?.categoryBreakdown ?? {})) {
@@ -119,7 +216,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     for (const fe of this.fixedExpenses) {
       if (!this.expenseService.getCategoryByValue(fe.category)?.isIncome) {
-        breakdown[fe.category] = (breakdown[fe.category] ?? 0) + Number(fe.amount);
+        breakdown[fe.category] = (breakdown[fe.category] ?? 0) + this.fixedAmount(fe);
       }
     }
 
@@ -165,26 +262,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.pieSlices = slices;
   }
 
-  get totalIncome(): number {
-    const v = this.salaryForm.value;
-    return (Number(v.priyaSalary) || 0) + (Number(v.vamsiSalary) || 0);
-  }
-
   get fixedTotal(): number {
     return this.fixedExpenses
       .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
-      .reduce((sum, fe) => sum + Number(fe.amount), 0);
-  }
-
-  get creditsTotal(): number {
-    const breakdown = this.summary?.categoryBreakdown ?? {};
-    const variableCredits = Object.entries(breakdown)
-      .filter(([cat]) => this.expenseService.getCategoryByValue(cat)?.isIncome)
-      .reduce((sum, [, amt]) => sum + Number(amt), 0);
-    const fixedCredits = this.fixedExpenses
-      .filter(fe => this.expenseService.getCategoryByValue(fe.category)?.isIncome)
-      .reduce((sum, fe) => sum + Number(fe.amount), 0);
-    return variableCredits + fixedCredits;
+      .reduce((sum, fe) => sum + this.fixedAmount(fe), 0);
   }
 
   get actualTotal(): number {
@@ -199,13 +280,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get savings(): number {
-    return this.totalIncome + this.creditsTotal - this.fixedTotal - this.actualTotal;
+    return this.incomeTotal - this.fixedTotal - this.actualTotal;
+  }
+
+  get savingsLabel(): string {
+    if (this.savings < 0) return 'Over Budget';
+    return this.viewMode === 'to-date' ? 'Savings to Date' : 'Estimated Savings';
   }
 
   formatCompact(amount: number): string {
-    if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
-    if (amount >= 1_000)     return `$${(amount / 1_000).toFixed(1)}K`;
-    return `$${amount.toFixed(0)}`;
+    return amount.toLocaleString('en-CA', {
+      style: 'currency',
+      currency: this.settingsService.currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
 
   getCategoryLabel(value: string) {
@@ -217,23 +306,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async testNotification() {
-    this.expenseService.sendTestNotification().subscribe({
-      next: () => this.snackBar.open('Test notification sent!', 'OK', { duration: 3000 }),
-      error: () => this.snackBar.open('Failed to send test notification', 'OK', { duration: 3000 }),
-    });
+    this.expenseService.sendTestNotification().subscribe();
   }
 
   async toggleNotifications() {
     try {
       if (this.pushService.enabled()) {
         await this.pushService.disable();
-        this.snackBar.open('Daily notifications disabled', 'OK', { duration: 3000 });
       } else {
         await this.pushService.enable();
-        this.snackBar.open('Daily notifications enabled — you\'ll hear from us at 8 PM!', 'OK', { duration: 4000 });
       }
-    } catch (err: any) {
-      this.snackBar.open(err.message ?? 'Could not update notification settings', 'OK', { duration: 4000 });
-    }
+    } catch {}
   }
 }

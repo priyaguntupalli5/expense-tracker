@@ -1,43 +1,66 @@
-<mat-toolbar color="primary" class="app-toolbar">
-  <mat-icon class="brand-icon">account_balance_wallet</mat-icon>
-  <span class="brand-name">Expense Tracker</span>
-  <span class="spacer"></span>
-  <a mat-button routerLink="/dashboard" routerLinkActive="nav-active" class="desktop-nav">
-    <mat-icon>grid_view</mat-icon>
-    <span class="nav-label">Dashboard</span>
-  </a>
-  <a mat-button routerLink="/expenses" routerLinkActive="nav-active" class="desktop-nav">
-    <mat-icon>receipt_long</mat-icon>
-    <span class="nav-label">Expenses</span>
-  </a>
-  <a mat-button routerLink="/fixed-expenses" routerLinkActive="nav-active" class="desktop-nav">
-    <mat-icon>repeat</mat-icon>
-    <span class="nav-label">Fixed</span>
-  </a>
-  <a mat-button routerLink="/categories" routerLinkActive="nav-active" class="desktop-nav">
-    <mat-icon>label</mat-icon>
-    <span class="nav-label">Categories</span>
-  </a>
-</mat-toolbar>
+@if (auth.isLoggedIn) {
+  <mat-toolbar color="primary" class="app-toolbar">
+    <mat-icon class="brand-icon">account_balance_wallet</mat-icon>
+    <span class="brand-name">Expense Tracker</span>
+    <span class="spacer"></span>
+    <a mat-button routerLink="/dashboard" routerLinkActive="nav-active" class="desktop-nav">
+      <mat-icon>grid_view</mat-icon>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a mat-button routerLink="/income" routerLinkActive="nav-active" class="desktop-nav">
+      <mat-icon>savings</mat-icon>
+      <span class="nav-label">Income</span>
+    </a>
+    <a mat-button routerLink="/expenses" routerLinkActive="nav-active" class="desktop-nav">
+      <mat-icon>receipt_long</mat-icon>
+      <span class="nav-label">Expenses</span>
+    </a>
+    <a mat-button routerLink="/fixed-expenses" routerLinkActive="nav-active" class="desktop-nav">
+      <mat-icon>repeat</mat-icon>
+      <span class="nav-label">Fixed</span>
+    </a>
+    <a mat-button routerLink="/categories" routerLinkActive="nav-active" class="desktop-nav">
+      <mat-icon>label</mat-icon>
+      <span class="nav-label">Categories</span>
+    </a>
+    <a mat-button routerLink="/settings" routerLinkActive="nav-active" class="desktop-nav">
+      <mat-icon>settings</mat-icon>
+      <span class="nav-label">Settings</span>
+    </a>
+    <button mat-icon-button [matTooltip]="auth.groupName ?? ''" (click)="auth.logout()" class="logout-btn">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </mat-toolbar>
+}
 
 <router-outlet></router-outlet>
 
-<!-- Mobile bottom navigation -->
-<nav class="bottom-nav">
-  <a routerLink="/dashboard" routerLinkActive="bottom-active" class="bottom-item">
-    <mat-icon>grid_view</mat-icon>
-    <span>Dashboard</span>
-  </a>
-  <a routerLink="/expenses" routerLinkActive="bottom-active" class="bottom-item">
-    <mat-icon>receipt_long</mat-icon>
-    <span>Expenses</span>
-  </a>
-  <a routerLink="/fixed-expenses" routerLinkActive="bottom-active" class="bottom-item">
-    <mat-icon>repeat</mat-icon>
-    <span>Fixed</span>
-  </a>
-  <a routerLink="/categories" routerLinkActive="bottom-active" class="bottom-item">
-    <mat-icon>label</mat-icon>
-    <span>Categories</span>
-  </a>
-</nav>
+@if (auth.isLoggedIn) {
+  <!-- Mobile bottom navigation -->
+  <nav class="bottom-nav">
+    <a routerLink="/dashboard" routerLinkActive="bottom-active" class="bottom-item">
+      <mat-icon>grid_view</mat-icon>
+      <span>Dashboard</span>
+    </a>
+    <a routerLink="/income" routerLinkActive="bottom-active" class="bottom-item">
+      <mat-icon>savings</mat-icon>
+      <span>Income</span>
+    </a>
+    <a routerLink="/expenses" routerLinkActive="bottom-active" class="bottom-item">
+      <mat-icon>receipt_long</mat-icon>
+      <span>Expenses</span>
+    </a>
+    <a routerLink="/fixed-expenses" routerLinkActive="bottom-active" class="bottom-item">
+      <mat-icon>repeat</mat-icon>
+      <span>Fixed</span>
+    </a>
+    <a routerLink="/categories" routerLinkActive="bottom-active" class="bottom-item">
+      <mat-icon>label</mat-icon>
+      <span>Categories</span>
+    </a>
+    <a routerLink="/settings" routerLinkActive="bottom-active" class="bottom-item">
+      <mat-icon>settings</mat-icon>
+      <span>Settings</span>
+    </a>
+  </nav>
+}

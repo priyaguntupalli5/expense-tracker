@@ -47,10 +47,15 @@
                 </button>
 
                 <div class="row-actions">
-                  <button mat-icon-button matTooltip="Edit" (click)="openEdit(c)">
+                  <button mat-icon-button
+                    [matTooltip]="c.isShared ? 'Edit (creates your group\'s customisation)' : 'Edit'"
+                    (click)="openEdit(c)">
                     <mat-icon>edit</mat-icon>
                   </button>
-                  <button mat-icon-button matTooltip="Delete" color="warn" (click)="confirmDelete(c)">
+                  <button mat-icon-button color="warn"
+                    [matTooltip]="c.isShared ? 'Default categories cannot be deleted' : 'Delete'"
+                    [disabled]="!!c.isShared"
+                    (click)="confirmDelete(c)">
                     <mat-icon>delete_outline</mat-icon>
                   </button>
                 </div>
@@ -61,16 +66,18 @@
                 <div class="sub-panel" [style.border-left-color]="c.color">
 
                   <!-- Existing subcategories -->
-                  @if (subcategoriesMap[c.value].length === 0) {
+                  @if ((subcategoriesMap[c.value]?.length ?? 0) === 0) {
                     <p class="sub-empty">No subcategories yet. Add one below.</p>
                   } @else {
                     <div class="sub-chips">
                       @for (sub of subcategoriesMap[c.value]; track sub.id) {
                         <span class="sub-chip" [style.border-color]="c.color + '55'" [style.color]="c.color">
                           {{ sub.name }}
-                          <button class="sub-remove" matTooltip="Remove" (click)="removeSubcategory(sub.id, c.value)">
-                            <mat-icon>close</mat-icon>
-                          </button>
+                          @if (!sub.isShared) {
+                            <button class="sub-remove" matTooltip="Remove" (click)="removeSubcategory(sub, c.value)">
+                              <mat-icon>close</mat-icon>
+                            </button>
+                          }
                         </span>
                       }
                     </div>

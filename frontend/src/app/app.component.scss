@@ -33,6 +33,12 @@ a[mat-button] {
   display: none;
 }
 
+.logout-btn {
+  margin-left: 8px;
+  opacity: 0.85;
+  &:hover { opacity: 1; }
+}
+
 .bottom-item {
   display: flex;
   flex-direction: column;
@@ -47,6 +53,9 @@ a[mat-button] {
   letter-spacing: 0.2px;
   border-radius: 8px;
   transition: color 0.18s;
+  background: none;
+  border: none;
+  cursor: pointer;
 
   mat-icon {
     font-size: 1.3rem;
@@ -57,6 +66,10 @@ a[mat-button] {
   &.bottom-active {
     color: #1976d2;
   }
+}
+
+.logout-bottom {
+  color: #d32f2f;
 }
 
 // ── Mobile breakpoint ─────────────────────────────────────────────────────────

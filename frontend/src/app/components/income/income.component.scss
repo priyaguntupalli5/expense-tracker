@@ -1,0 +1,284 @@
+.income-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+// ── Recurring income card ─────────────────────────────────────────────────────
+
+.recurring-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 14px 18px 10px;
+}
+
+.recurring-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.rec-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: #16a34a;
+}
+
+.rec-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #16a34a;
+}
+
+.add-rec-btn {
+  margin-left: auto;
+  width: 30px !important;
+  height: 30px !important;
+  color: #16a34a !important;
+
+  mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+}
+
+.recurring-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rec-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 4px;
+  border-radius: 8px;
+  border-bottom: 1px solid #dcfce7;
+
+  &:last-child { border-bottom: none; }
+}
+
+.rec-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #0f172a;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-freq {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 2px 9px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rec-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #15803d;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 80px;
+  text-align: right;
+}
+
+.rec-actions {
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+
+  button { width: 32px !important; height: 32px !important; }
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+}
+
+// ── Card + header (matches fixed-expenses pattern) ────────────────────────────
+
+.list-card {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.title-icon {
+  color: #2e7d32;
+  font-size: 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+
+}
+
+.count-chip {
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.header-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+  padding-left: 2px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.period-field {
+  width: 120px;
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .mat-mdc-form-field-infix { padding-top: 8px !important; padding-bottom: 8px !important; min-height: unset; }
+    .mat-mdc-text-field-wrapper { height: 40px; }
+  }
+}
+
+.year-field { width: 90px; }
+
+.add-btn {
+  border-radius: 20px !important;
+  font-size: 0.85rem;
+  height: 40px;
+}
+
+// ── Inline tags ───────────────────────────────────────────────────────────────
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+
+.table-wrapper { overflow-x: auto; }
+
+.income-table { width: 100%; }
+
+.income-row {
+  transition: background 0.15s;
+  &:hover { background: rgba(0,0,0,0.025); }
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 7px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  .badge-icon { font-size: 0.95rem; width: 0.95rem; height: 0.95rem; }
+}
+
+.title-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.auto-chip {
+  display: inline-block;
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.date-col   { white-space: nowrap; color: #475569; font-size: 0.88rem; }
+.date-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  &.start-date { color: #7b8ea5; }
+}
+.date-hint {
+  font-size: 0.7rem;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 1px 5px;
+  color: #94a3b8;
+  order: -1;
+}
+
+.amount-col   { text-align: right; }
+.amount-value { font-weight: 700; font-size: 1rem; color: #1b5e20; }
+
+.actions-col { text-align: right; white-space: nowrap; width: 96px; }
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+.empty-state {
+  text-align: center;
+  padding: 56px 16px;
+  opacity: 0.45;
+
+  mat-icon {
+    font-size: 3.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: block;
+    margin: 0 auto 12px;
+  }
+
+  p { font-size: 1.1rem; margin: 0 0 4px; }
+  small { font-size: 0.85rem; }
+}
+
+// ── Mobile ────────────────────────────────────────────────────────────────────
+
+@media (max-width: 640px) {
+  .income-container { padding: 16px 14px 40px; }
+  .card-header { flex-direction: column; align-items: flex-start; }
+  .header-right { width: 100%; }
+}

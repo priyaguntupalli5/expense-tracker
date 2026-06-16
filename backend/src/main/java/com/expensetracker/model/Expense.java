@@ -37,15 +37,13 @@ public class Expense {
     @Column(name = "image_data", columnDefinition = "MEDIUMTEXT")
     private String imageData;
 
-    public Expense() {}
+    @Column(name = "group_id")
+    private Long groupId;
 
-    public Expense(String title, BigDecimal amount, String category, LocalDate date, String notes) {
-        this.title = title;
-        this.amount = amount;
-        this.category = category;
-        this.date = date;
-        this.notes = notes;
-    }
+    @Column(name = "source_fixed_id")
+    private Long sourceFixedId;
+
+    public Expense() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -70,4 +68,10 @@ public class Expense {
 
     public String getImageData() { return imageData; }
     public void setImageData(String imageData) { this.imageData = imageData; }
+
+    public Long getGroupId() { return groupId; }
+    public void setGroupId(Long groupId) { this.groupId = groupId; }
+
+    public Long getSourceFixedId() { return sourceFixedId; }
+    public void setSourceFixedId(Long sourceFixedId) { this.sourceFixedId = sourceFixedId; }
 }

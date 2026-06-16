@@ -1,3 +1,12 @@
+-- Migrate legacy group 1 expense data to group 2 (one-time; idempotent because group_id=1 rows disappear after first run)
+UPDATE expenses       SET group_id = 2 WHERE group_id = 1;
+UPDATE fixed_expenses SET group_id = 2 WHERE group_id = 1;
+
+-- Assign any remaining ungrouped data to group 2
+UPDATE expenses       SET group_id = 2 WHERE group_id IS NULL;
+UPDATE fixed_expenses SET group_id = 2 WHERE group_id IS NULL;
+
+-- Default categories (global, shared across all groups)
 INSERT IGNORE INTO categories (value, label, icon, color) VALUES
   ('FOOD',          'Food',          'restaurant',     '#e91e63'),
   ('TRANSPORT',     'Transport',     'directions_car', '#2196f3'),
@@ -10,6 +19,7 @@ INSERT IGNORE INTO categories (value, label, icon, color) VALUES
 INSERT IGNORE INTO categories (value, label, icon, color, is_income) VALUES
   ('REFUND', 'Refunds & Credits', 'payments', '#4caf50', TRUE);
 
+-- Default subcategories
 INSERT IGNORE INTO subcategories (category_value, name) VALUES
   ('FOOD', 'Tim Hortons'),
   ('FOOD', 'McDonald''s'),

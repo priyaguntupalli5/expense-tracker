@@ -21,45 +21,64 @@ public class ExpenseService {
         this.repository = repository;
     }
 
-    public List<Expense> getAll(Integer month, Integer year, LocalDate startDate, LocalDate endDate) {
+    public List<Expense> getAll(Long groupId, Integer month, Integer year, LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null) {
-            return repository.findByDateBetweenOrderByDateDesc(startDate, endDate);
+            return repository.findByGroupIdAndDateBetweenAndSourceFixedIdIsNullOrderByDateDesc(groupId, startDate, endDate);
         }
         if (month != null && year != null) {
             LocalDate start = LocalDate.of(year, month, 1);
             LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
-            return repository.findByDateBetweenOrderByDateDesc(start, end);
+            return repository.findByGroupIdAndDateBetweenAndSourceFixedIdIsNullOrderByDateDesc(groupId, start, end);
         }
-        return repository.findAllByOrderByDateDesc();
+        return repository.findByGroupIdAndSourceFixedIdIsNullOrderByDateDesc(groupId);
     }
 
-    public Optional<Expense> getById(Long id) {
-        return repository.findById(id);
+    public List<Expense> getFixedEntries(Long groupId, int month, int year) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end   = start.withDayOfMonth(start.lengthOfMonth());
+        return repository.findByGroupIdAndSourceFixedIdIsNotNullAndDateBetweenOrderByDateDesc(groupId, start, end);
     }
 
-    public Expense create(Expense expense) {
+    public Optional<Expense> getById(Long id, Long groupId) {
+        return repository.findByIdAndGroupId(id, groupId);
+    }
+
+    public Expense create(Expense expense, Long groupId) {
+        expense.setGroupId(groupId);
         return repository.save(expense);
     }
 
-    public Optional<Expense> update(Long id, Expense updated) {
-        return repository.findById(id).map(existing -> {
+    public Optional<Expense> update(Long id, Long groupId, Expense updated) {
+        return repository.findByIdAndGroupId(id, groupId).map(existing -> {
             existing.setTitle(updated.getTitle());
             existing.setAmount(updated.getAmount());
             existing.setCategory(updated.getCategory());
             existing.setDate(updated.getDate());
             existing.setNotes(updated.getNotes());
+            existing.setSubcategory(updated.getSubcategory());
+            existing.setImageData(updated.getImageData());
             return repository.save(existing);
         });
     }
 
-    public boolean delete(Long id) {
-        if (!repository.existsById(id)) return false;
+    public boolean delete(Long id, Long groupId) {
+        if (!repository.existsByIdAndGroupId(id, groupId)) return false;
         repository.deleteById(id);
         return true;
     }
 
-    public SummaryDTO getSummary(Integer month, Integer year) {
-        List<Expense> expenses = getAll(month, year, null, null);
+    public SummaryDTO getSummary(Long groupId, Integer month, Integer year, LocalDate toDate) {
+        // Exclude auto-generated expenses (sourceFixedId != null) — they are already
+        // counted in the Fixed Expenses total on the dashboard to avoid double-counting.
+        List<Expense> expenses;
+        if (month != null && year != null) {
+            LocalDate start = LocalDate.of(year, month, 1);
+            LocalDate end   = (toDate != null) ? toDate : start.withDayOfMonth(start.lengthOfMonth());
+            expenses = repository.findByGroupIdAndDateBetweenAndSourceFixedIdIsNullOrderByDateDesc(groupId, start, end);
+        } else {
+            expenses = repository.findByGroupIdAndSourceFixedIdIsNullOrderByDateDesc(groupId);
+        }
+
         BigDecimal total = expenses.stream()
             .map(Expense::getAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);

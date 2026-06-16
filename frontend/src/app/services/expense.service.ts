@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, catchError, map, of, tap } from 'rxjs';
-import { Category, Expense, FixedExpense, MonthlySalary, Subcategory, Summary } from '../models/expense.model';
+import { Category, Expense, FixedExpense, Subcategory, Summary } from '../models/expense.model';
 import { environment } from '../../environments/environment';
 
 const API = environment.apiUrl;
@@ -48,10 +48,11 @@ export class ExpenseService {
       .pipe(catchError(() => of<Expense[]>([])));
   }
 
-  getSummary(month?: number, year?: number): Observable<Summary> {
+  getSummary(month?: number, year?: number, toDate?: string): Observable<Summary> {
     const params: Record<string, string> = {};
-    if (month !== undefined) params['month'] = String(month);
-    if (year  !== undefined) params['year']  = String(year);
+    if (month  !== undefined) params['month']  = String(month);
+    if (year   !== undefined) params['year']   = String(year);
+    if (toDate !== undefined) params['toDate'] = toDate;
     return this.http.get<Summary>(`${API}/expenses/summary`, { params })
       .pipe(catchError(() => of<Summary>({ total: 0, count: 0, categoryBreakdown: {} })));
   }
@@ -75,6 +76,12 @@ export class ExpenseService {
       .pipe(catchError(() => of<FixedExpense[]>([])));
   }
 
+  getFixedEntries(month: number, year: number): Observable<Expense[]> {
+    return this.http.get<Expense[]>(`${API}/expenses/fixed-entries`, {
+      params: { month: String(month), year: String(year) },
+    }).pipe(catchError(() => of<Expense[]>([])));
+  }
+
   createFixedExpense(expense: FixedExpense): Observable<FixedExpense> {
     return this.http.post<FixedExpense>(`${API}/fixed-expenses`, expense);
   }
@@ -85,23 +92,6 @@ export class ExpenseService {
 
   deleteFixedExpense(id: number): Observable<void> {
     return this.http.delete<void>(`${API}/fixed-expenses/${id}`);
-  }
-
-  // ── Monthly Salary ─────────────────────────────────────────────────────────
-
-  getSalary(month: number, year: number): Observable<MonthlySalary> {
-    return this.http
-      .get<MonthlySalary>(`${API}/salaries`, { params: { month: String(month), year: String(year) } })
-      .pipe(catchError(() => of<MonthlySalary>({ priyaSalary: 0, vamsiSalary: 0 })));
-  }
-
-  setSalary(month: number, year: number, salary: MonthlySalary): Observable<MonthlySalary> {
-    return this.http.post<MonthlySalary>(`${API}/salaries`, {
-      month,
-      year,
-      priyaSalary: salary.priyaSalary,
-      vamsiSalary: salary.vamsiSalary,
-    });
   }
 
   // ── Categories ─────────────────────────────────────────────────────────────
@@ -119,14 +109,14 @@ export class ExpenseService {
     );
   }
 
-  updateCategory(id: number, category: Omit<Category, 'id' | 'value'>): Observable<Category> {
-    return this.http.put<Category>(`${API}/categories/${id}`, category).pipe(
+  updateCategory(id: number, isShared: boolean, category: Omit<Category, 'id' | 'value' | 'isShared'>): Observable<Category> {
+    return this.http.put<Category>(`${API}/categories/${id}?shared=${isShared}`, category).pipe(
       tap(() => this.loadCategories().subscribe()),
     );
   }
 
-  deleteCategory(id: number): Observable<void> {
-    return this.http.delete<void>(`${API}/categories/${id}`).pipe(
+  deleteCategory(id: number, isShared: boolean): Observable<void> {
+    return this.http.delete<void>(`${API}/categories/${id}?shared=${isShared}`).pipe(
       tap(() => this.loadCategories().subscribe()),
     );
   }
