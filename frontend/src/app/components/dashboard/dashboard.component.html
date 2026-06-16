@@ -2,35 +2,9 @@
 
   <!-- Header -->
   <div class="dash-header">
-    <h1 class="dash-title">Dashboard</h1>
-    <div class="dash-header-right">
-      <mat-form-field appearance="outline" class="period-field">
-        <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
-          @for (m of months; track m.value) {
-            <mat-option [value]="m.value">{{ m.label }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field appearance="outline" class="period-field year-field">
-        <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
-          @for (y of years; track y) {
-            <mat-option [value]="y">{{ y }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
 
-      <div class="view-toggle" role="group" aria-label="View mode">
-        <button class="toggle-btn" [class.active]="viewMode === 'to-date'"
-                (click)="setViewMode('to-date')"
-                matTooltip="Actual income & expenses up to today">
-          To Date
-        </button>
-        <button class="toggle-btn" [class.active]="viewMode === 'end-of-month'"
-                (click)="setViewMode('end-of-month')"
-                matTooltip="Projected totals for the full month based on recurring schedules">
-          End of Month
-        </button>
-      </div>
+    <div class="dash-title-row">
+      <h1 class="dash-title">Dashboard</h1>
       @if (pushService.swAvailable) {
         <button class="notif-icon-btn" [class.notif-on]="pushService.enabled()"
                 (click)="toggleNotifications()"
@@ -44,6 +18,39 @@
         }
       }
     </div>
+
+    <div class="dash-controls">
+      <div class="period-row">
+        <mat-form-field appearance="outline" class="period-field">
+          <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
+            @for (m of months; track m.value) {
+              <mat-option [value]="m.value">{{ m.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="period-field year-field">
+          <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
+            @for (y of years; track y) {
+              <mat-option [value]="y">{{ y }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="view-toggle" role="group" aria-label="View mode">
+        <button class="toggle-btn" [class.active]="viewMode === 'to-date'"
+                (click)="setViewMode('to-date')"
+                matTooltip="Actual income & expenses up to today">
+          <span class="toggle-icon">▲</span> To Date
+        </button>
+        <button class="toggle-btn" [class.active]="viewMode === 'end-of-month'"
+                (click)="setViewMode('end-of-month')"
+                matTooltip="Projected totals for the full month">
+          <span class="toggle-icon">◎</span> Full Month
+        </button>
+      </div>
+    </div>
+
   </div>
 
   <!-- Hero card -->
