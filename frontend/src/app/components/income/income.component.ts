@@ -58,22 +58,12 @@ export class IncomeComponent implements OnInit {
 
   onPeriodChange() { this.loadEntries(); }
 
-  get allItems(): Income[] {
-    return [...this.templates, ...this.entries];
-  }
-
   get total(): number {
     return this.entries.reduce((s, e) => s + Number(e.amount), 0);
   }
 
-  isTemplateItem(item: Income): boolean {
-    return !!(item.isTemplate ?? (item as any)['template']);
-  }
-
-  /** Date to show in the list for an item. */
   displayDate(item: Income): string | null {
-    const iso = item.paymentDate ?? item.startDate ?? null;
-    return iso;
+    return item.paymentDate ?? item.startDate ?? null;
   }
 
   private load() {
@@ -100,9 +90,10 @@ export class IncomeComponent implements OnInit {
     return recurrence ? (RECURRENCE_LABELS[recurrence] ?? recurrence) : '';
   }
 
-  openAdd() {
+  openAdd(recurring = false) {
+    const data = recurring ? ({ isTemplate: true } as Income) : null;
     const ref = this.dialog.open(IncomeFormComponent, {
-      width: '500px', maxWidth: '95vw',
+      width: '500px', maxWidth: '95vw', data,
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }
@@ -116,7 +107,7 @@ export class IncomeComponent implements OnInit {
   }
 
   confirmDelete(item: Income) {
-    const isTpl = this.isTemplateItem(item);
+    const isTpl = !!(item.isTemplate ?? (item as any)['template']);
     const msg = isTpl
       ? `Delete recurring template "${item.title}"? This will not remove already-generated entries.`
       : `Delete "${item.title}"?`;

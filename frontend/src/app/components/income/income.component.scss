@@ -7,6 +7,105 @@
   gap: 18px;
 }
 
+// ── Recurring income card ─────────────────────────────────────────────────────
+
+.recurring-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 14px 18px 10px;
+}
+
+.recurring-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.rec-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: #16a34a;
+}
+
+.rec-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #16a34a;
+}
+
+.add-rec-btn {
+  margin-left: auto;
+  width: 30px !important;
+  height: 30px !important;
+  color: #16a34a !important;
+
+  mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+}
+
+.recurring-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rec-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 4px;
+  border-radius: 8px;
+  border-bottom: 1px solid #dcfce7;
+
+  &:last-child { border-bottom: none; }
+}
+
+.rec-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #0f172a;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-freq {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 2px 9px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rec-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #15803d;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 80px;
+  text-align: right;
+}
+
+.rec-actions {
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+
+  button { width: 32px !important; height: 32px !important; }
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+}
+
 // ── Card + header (matches fixed-expenses pattern) ────────────────────────────
 
 .list-card {
@@ -89,19 +188,6 @@
 }
 
 // ── Inline tags ───────────────────────────────────────────────────────────────
-
-.recurring-tag {
-  display: inline-block;
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
-  border-radius: 10px;
-  padding: 1px 7px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  flex-shrink: 0;
-}
 
 // ── Table ─────────────────────────────────────────────────────────────────────
 

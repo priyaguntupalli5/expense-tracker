@@ -1,12 +1,51 @@
 <div class="income-container">
 
+  <!-- ── Recurring income schedules ─────────────────────────────────────── -->
+  @if (templates.length > 0) {
+    <div class="recurring-card">
+      <div class="recurring-header">
+        <mat-icon class="rec-icon">repeat</mat-icon>
+        <span class="rec-title">Recurring Income</span>
+        <span class="count-chip">{{ templates.length }}</span>
+        <button mat-icon-button class="add-rec-btn" matTooltip="Add recurring income" (click)="openAdd(true)">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+      <div class="recurring-list">
+        @for (t of templates; track t.id) {
+          <div class="rec-row">
+            <span class="source-badge"
+              [style.background]="sourceInfo(t.sourceType).color + '15'"
+              [style.color]="sourceInfo(t.sourceType).color"
+              [style.border-color]="sourceInfo(t.sourceType).color + '40'">
+              <mat-icon class="badge-icon">{{ sourceInfo(t.sourceType).icon }}</mat-icon>
+              {{ sourceInfo(t.sourceType).label }}
+            </span>
+            <span class="rec-name">{{ t.title }}</span>
+            <span class="rec-freq">{{ recurrenceLabel(t.recurrence) }}</span>
+            <span class="rec-amount">{{ t.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+            <div class="rec-actions">
+              <button mat-icon-button matTooltip="Edit" (click)="openEdit(t)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button matTooltip="Delete" color="warn" (click)="confirmDelete(t)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ── Payments for the period ────────────────────────────────────────── -->
   <mat-card class="list-card">
     <div class="card-header">
       <div class="header-left">
         <div class="header-title">
           <mat-icon class="title-icon">savings</mat-icon>
-          <span>Income</span>
-          <span class="count-chip">{{ allItems.length }}</span>
+          <span>Payments</span>
+          <span class="count-chip">{{ entries.length }}</span>
         </div>
         <div class="header-sub">
           Total: {{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
@@ -27,23 +66,28 @@
             }
           </mat-select>
         </mat-form-field>
-        <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
-          <mat-icon>add</mat-icon> Add Income
-        </button>
+        @if (templates.length === 0) {
+          <button mat-flat-button color="primary" class="add-btn" (click)="openAdd(false)">
+            <mat-icon>add</mat-icon> Add Income
+          </button>
+        } @else {
+          <button mat-stroked-button class="add-btn" (click)="openAdd(false)">
+            <mat-icon>add</mat-icon> One-time
+          </button>
+        }
       </div>
     </div>
 
     <mat-card-content>
-
-      @if (allItems.length === 0) {
+      @if (entries.length === 0) {
         <div class="empty-state">
-          <mat-icon>savings</mat-icon>
-          <p>No income recorded for this period</p>
-          <small>Add salaries, bonuses, investments and more</small>
+          <mat-icon>payments</mat-icon>
+          <p>No payments for this period</p>
+          <small>Recurring income is auto-added when generated</small>
         </div>
       } @else {
         <div class="table-wrapper">
-          <table mat-table [dataSource]="allItems" class="income-table">
+          <table mat-table [dataSource]="entries" class="income-table">
 
             <ng-container matColumnDef="source">
               <th mat-header-cell *matHeaderCellDef>Source</th>
@@ -63,11 +107,8 @@
               <td mat-cell *matCellDef="let e">
                 <div class="title-cell">
                   {{ e.title }}
-                  @if (isTemplateItem(e)) {
-                    <span class="recurring-tag">{{ recurrenceLabel(e.recurrence) || 'recurring' }}</span>
-                  }
                   @if (e.templateId) {
-                    <span class="auto-chip">auto</span>
+                    <span class="auto-chip" matTooltip="Auto-generated from recurring schedule">recurring</span>
                   }
                 </div>
               </td>
@@ -77,12 +118,7 @@
               <th mat-header-cell *matHeaderCellDef>Date</th>
               <td mat-cell *matCellDef="let e" class="date-col">
                 @if (displayDate(e)) {
-                  <span class="date-value" [class.start-date]="isTemplateItem(e)">
-                    {{ displayDate(e) | date:'MMM d, y' }}
-                    @if (isTemplateItem(e)) {
-                      <span class="date-hint">from</span>
-                    }
-                  </span>
+                  <span class="date-value">{{ displayDate(e) | date:'MMM d, y' }}</span>
                 }
               </td>
             </ng-container>
@@ -111,7 +147,6 @@
           </table>
         </div>
       }
-
     </mat-card-content>
   </mat-card>
 
