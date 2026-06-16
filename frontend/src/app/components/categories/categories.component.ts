@@ -31,7 +31,7 @@ export class CategoriesComponent implements OnInit {
   categories: Category[] = [];
 
   expandedCategory: string | null = null;
-  subcategoriesMap: Record<string, Subcategory[]> = {};
+  subcategoriesMap: Record<string, Subcategory[] | undefined> = {};
   newSubName: Record<string, string | undefined> = {};
   addingSubcategory: Record<string, boolean> = {};
 
