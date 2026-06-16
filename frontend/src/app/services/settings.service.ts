@@ -10,6 +10,7 @@ export interface GroupSettings {
   groupCode: string;
   currency: string;
   members: string[];
+  isAdmin: boolean;
 }
 
 export interface JoinRequestItem {
@@ -47,5 +48,9 @@ export class SettingsService {
 
   rejectRequest(id: number): Observable<void> {
     return this.http.delete<void>(`${API}/settings/join-requests/${id}`);
+  }
+
+  removeMember(username: string): Observable<void> {
+    return this.http.delete<void>(`${API}/settings/members/${encodeURIComponent(username)}`);
   }
 }

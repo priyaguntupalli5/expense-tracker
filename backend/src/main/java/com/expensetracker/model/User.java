@@ -26,6 +26,9 @@ public class User implements UserDetails {
     @JoinColumn(name = "group_id", nullable = false)
     private Group group;
 
+    @Column(name = "is_admin", nullable = false)
+    private boolean admin = false;
+
     public User() {}
 
     public Long getId() { return id; }
@@ -40,6 +43,9 @@ public class User implements UserDetails {
 
     public Group getGroup() { return group; }
     public void setGroup(Group group) { this.group = group; }
+
+    public boolean isAdmin() { return admin; }
+    public void setAdmin(boolean admin) { this.admin = admin; }
 
     @Override
     public String getUsername() { return username; }

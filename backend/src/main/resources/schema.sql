@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS join_requests (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Idempotent column additions for existing databases
+ALTER TABLE users           ADD COLUMN IF NOT EXISTS is_admin         BOOLEAN      NOT NULL DEFAULT FALSE;
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS subcategory      VARCHAR(100) NULL;
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS image_data       MEDIUMTEXT   NULL;
 ALTER TABLE expenses        ADD COLUMN IF NOT EXISTS group_id         BIGINT       NULL;

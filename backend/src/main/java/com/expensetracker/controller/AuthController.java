@@ -85,6 +85,7 @@ public class AuthController {
         user.setUsername(req.username().trim());
         user.setPassword(passwordEncoder.encode(req.password()));
         user.setGroup(group);
+        user.setAdmin(true);
         userRepository.save(user);
 
         String token = jwtUtil.generate(user.getUsername(), group.getId());

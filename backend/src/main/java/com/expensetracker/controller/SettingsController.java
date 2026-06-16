@@ -37,8 +37,27 @@ public class SettingsController {
             "groupName", group.getName(),
             "groupCode", group.getGroupCode() != null ? group.getGroupCode() : "",
             "currency",  group.getCurrency() != null ? group.getCurrency() : "CAD",
-            "members",   members
+            "members",   members,
+            "isAdmin",   user.isAdmin()
         ));
+    }
+
+    @DeleteMapping("/members/{username}")
+    public ResponseEntity<?> removeMember(@AuthenticationPrincipal User user,
+                                          @PathVariable String username) {
+        if (!user.isAdmin()) {
+            return ResponseEntity.status(403).body(Map.of("error", "Only the group admin can remove members."));
+        }
+        if (user.getUsername().equals(username)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "You cannot remove yourself."));
+        }
+        User target = userRepository.findByGroup_Id(user.getGroup().getId())
+            .stream().filter(u -> u.getUsername().equals(username)).findFirst().orElse(null);
+        if (target == null) {
+            return ResponseEntity.notFound().build();
+        }
+        userRepository.delete(target);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/currency")

@@ -84,6 +84,17 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  removeMember(username: string) {
+    if (!confirm(`Remove ${username} from the group?`)) return;
+    this.settingsService.removeMember(username).subscribe({
+      next: () => {
+        this.snackBar.open(`${username} removed.`, 'OK', { duration: 2500 });
+        this.settingsService.load().subscribe(s => this.settings = s);
+      },
+      error: err => this.snackBar.open(err.error?.error ?? 'Failed to remove member', 'OK', { duration: 3000 }),
+    });
+  }
+
   copyCode() {
     if (!this.settings?.groupCode) return;
     navigator.clipboard.writeText(this.settings.groupCode).then(() => {
