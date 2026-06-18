@@ -1,6 +1,7 @@
 package com.expensetracker.config;
 
 import com.expensetracker.security.JwtAuthFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +36,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()  // register + login are open
                 .requestMatchers("/api/**").authenticated()   // all other API endpoints need auth
                 .anyRequest().permitAll()                     // static files and SPA routes are public
+            )
+            .exceptionHandling(e -> e
+                .authenticationEntryPoint((req, res, ex) ->
+                    res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
