@@ -273,9 +273,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   get actualTotal(): number {
     const breakdown = this.summary?.categoryBreakdown ?? {};
-    return Object.entries(breakdown)
-      .filter(([cat]) => !this.expenseService.getCategoryByValue(cat)?.isIncome)
-      .reduce((sum, [, amt]) => sum + Number(amt), 0);
+    return Object.entries(breakdown).reduce((sum, [cat, amt]) => {
+      const isCredit = this.expenseService.getCategoryByValue(cat)?.isIncome ?? false;
+      return sum + (isCredit ? -Number(amt) : Number(amt));
+    }, 0);
   }
 
   get combinedTotal(): number {
