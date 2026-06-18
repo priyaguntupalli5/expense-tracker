@@ -54,7 +54,7 @@ export class ExpenseService {
     if (year   !== undefined) params['year']   = String(year);
     if (toDate !== undefined) params['toDate'] = toDate;
     return this.http.get<Summary>(`${API}/expenses/summary`, { params })
-      .pipe(catchError(() => of<Summary>({ total: 0, count: 0, categoryBreakdown: {} })));
+      .pipe(catchError(() => of<Summary>({ total: 0, count: 0, categoryBreakdown: {}, subcategoryBreakdown: {}, titleBreakdown: {} })));
   }
 
   create(expense: Expense): Observable<Expense> {

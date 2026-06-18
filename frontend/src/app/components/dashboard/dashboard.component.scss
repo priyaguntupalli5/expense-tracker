@@ -234,23 +234,73 @@
   }
 }
 
+.pies-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.pie-panel {
+  flex: 65;
+  min-width: 0;
+}
+
+.drill-panel {
+  flex: 35;
+  border-left: 2px solid #e0e0e0;
+  padding-left: 16px;
+  margin-left: 8px;
+}
+
+.drill-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+}
+
+.drill-panel-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
 .chart-layout {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 8px;
   padding-top: 8px;
   flex-wrap: wrap;
 }
 
 .pie-wrapper { flex-shrink: 0; }
 
+.pie-panel .pie-svg {
+  width: 200px;
+  height: 200px;
+}
+
+.drill-panel .pie-svg {
+  width: 150px;
+  height: 150px;
+}
+
 .pie-svg {
   width: 200px;
   height: 200px;
 
   .pie-slice {
-    transition: opacity 0.15s;
-    &:hover { opacity: 0.8; }
+    cursor: pointer;
+    transition: opacity 0.15s, filter 0.15s;
+    &:hover { opacity: 0.82; }
+    &.selected {
+      filter: brightness(1.18) drop-shadow(0 0 4px rgba(0,0,0,0.25));
+      stroke: white;
+      stroke-width: 2;
+    }
+    &.sub-slice { cursor: default; }
   }
 
   .donut-sm { font-size: 11px; fill: #bbb; font-family: inherit; }
@@ -266,10 +316,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 0;
+  padding: 7px 4px;
   border-bottom: 1px solid rgba(0,0,0,0.04);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
 
   &:last-child { border-bottom: none; }
+  &:hover { background: rgba(0,0,0,0.04); }
+  &.selected { background: rgba(25,118,210,0.08); }
 
   .legend-dot {
     width: 8px;
@@ -285,6 +340,9 @@
     font-size: 0.88rem;
     font-weight: 500;
     color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .legend-pct {
@@ -292,6 +350,7 @@
     color: #bbb;
     min-width: 32px;
     text-align: right;
+    flex-shrink: 0;
   }
 
   .legend-amt {
@@ -300,7 +359,38 @@
     min-width: 80px;
     text-align: right;
     color: #0f172a;
+    flex-shrink: 0;
   }
+
+  .legend-drill-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+    color: #ccc;
+    flex-shrink: 0;
+    transition: color 0.12s;
+  }
+
+  &:hover .legend-drill-icon,
+  &.selected .legend-drill-icon { color: #1976d2; }
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: white;
+  color: #555;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+  &:hover { background: #eff6ff; color: #1976d2; }
 }
 
 .empty-state {
@@ -335,6 +425,8 @@
   .hero-stat  { flex: none; width: calc(50% - 12px); }
   .stat-sep   { display: none; }
 
+  .pies-row { flex-direction: column; }
+  .drill-panel { border-left: none; border-top: 2px solid #e0e0e0; padding-left: 0; margin-left: 0; padding-top: 16px; margin-top: 8px; }
   .chart-layout { flex-direction: column; align-items: center; }
   .legend { min-width: unset; width: 100%; }
 }

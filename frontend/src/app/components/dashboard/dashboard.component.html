@@ -113,28 +113,87 @@
           <small>Add expenses to see the breakdown</small>
         </div>
       } @else {
-        <div class="chart-layout">
-          <div class="pie-wrapper">
-            <svg viewBox="0 0 200 200" class="pie-svg">
-              @for (slice of pieSlices; track slice.category) {
-                <path [attr.d]="slice.path" [attr.fill]="slice.color" class="pie-slice"></path>
-              }
-              <circle cx="100" cy="100" r="50" fill="white"/>
-              <text x="100" y="94" text-anchor="middle" class="donut-sm">Total</text>
-              <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(combinedTotal) }}</text>
-            </svg>
-          </div>
-          <div class="legend">
-            @for (slice of pieSlices; track slice.category) {
-              <div class="legend-row">
-                <span class="legend-dot" [style.background]="slice.color"></span>
-                <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
-                <span class="legend-label">{{ getCategoryLabel(slice.category) }}</span>
-                <span class="legend-pct">{{ slice.percentage }}%</span>
-                <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+        <div class="pies-row">
+
+          <!-- Main category pie -->
+          <div class="pie-panel">
+            <div class="chart-layout">
+              <div class="pie-wrapper">
+                <svg viewBox="0 0 200 200" class="pie-svg">
+                  @for (slice of pieSlices; track slice.category) {
+                    <path
+                      [attr.d]="slice.path"
+                      [attr.fill]="slice.color"
+                      [class.selected]="drillDownCategory === slice.category"
+                      class="pie-slice"
+                      (click)="onSliceClick(slice.category)">
+                    </path>
+                  }
+                  <circle cx="100" cy="100" r="50" fill="white"/>
+                  <text x="100" y="94" text-anchor="middle" class="donut-sm">Total</text>
+                  <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(combinedTotal) }}</text>
+                </svg>
               </div>
-            }
+              <div class="legend">
+                @for (slice of pieSlices; track slice.category) {
+                  <div class="legend-row"
+                       [class.selected]="drillDownCategory === slice.category"
+                       (click)="onSliceClick(slice.category)">
+                    <span class="legend-dot" [style.background]="slice.color"></span>
+                    <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
+                    <span class="legend-label">{{ getCategoryLabel(slice.category) }}</span>
+                    <span class="legend-pct">{{ slice.percentage }}%</span>
+                    <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                    <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
+                  </div>
+                }
+              </div>
+            </div>
           </div>
+
+          <!-- Drill-down pie (by title) -->
+          @if (drillDownCategory) {
+            <div class="pie-panel drill-panel"
+                 [style.border-left-color]="getCategoryColor(drillDownCategory)">
+              <div class="drill-panel-header">
+                <button class="back-btn" (click)="clearDrillDown()" matTooltip="Back to categories">
+                  <mat-icon>arrow_back</mat-icon>
+                </button>
+                <mat-icon [style.color]="getCategoryColor(drillDownCategory)">{{ getCategoryIcon(drillDownCategory) }}</mat-icon>
+                <span class="drill-panel-title">{{ getCategoryLabel(drillDownCategory) }}</span>
+              </div>
+              @if (subPieSlices.length === 0) {
+                <div class="empty-state">
+                  <mat-icon>category</mat-icon>
+                  <p>No data</p>
+                </div>
+              } @else {
+                <div class="chart-layout">
+                  <div class="pie-wrapper">
+                    <svg viewBox="0 0 200 200" class="pie-svg">
+                      @for (slice of subPieSlices; track slice.label) {
+                        <path [attr.d]="slice.path" [attr.fill]="slice.color" class="pie-slice sub-slice"></path>
+                      }
+                      <circle cx="100" cy="100" r="50" fill="white"/>
+                      <text x="100" y="94" text-anchor="middle" class="donut-sm">{{ getCategoryLabel(drillDownCategory) }}</text>
+                      <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(subPieTotal) }}</text>
+                    </svg>
+                  </div>
+                  <div class="legend">
+                    @for (slice of subPieSlices; track slice.label) {
+                      <div class="legend-row">
+                        <span class="legend-dot" [style.background]="slice.color"></span>
+                        <span class="legend-label">{{ slice.label }}</span>
+                        <span class="legend-pct">{{ slice.percentage }}%</span>
+                        <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
         </div>
       }
     </mat-card-content>

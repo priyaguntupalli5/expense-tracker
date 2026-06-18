@@ -6,5 +6,7 @@ import java.util.Map;
 public record SummaryDTO(
     BigDecimal total,
     long count,
-    Map<String, BigDecimal> categoryBreakdown
+    Map<String, BigDecimal> categoryBreakdown,
+    Map<String, Map<String, BigDecimal>> subcategoryBreakdown,
+    Map<String, Map<String, BigDecimal>> titleBreakdown
 ) {}

@@ -125,6 +125,8 @@ export interface Summary {
   total: number;
   count: number;
   categoryBreakdown: Record<string, number>;
+  subcategoryBreakdown: Record<string, Record<string, number>>;
+  titleBreakdown: Record<string, Record<string, number>>;
 }
 
 export const CATEGORIES = [

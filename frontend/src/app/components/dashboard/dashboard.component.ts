@@ -12,12 +12,20 @@ import { ExpenseService } from '../../services/expense.service';
 import { IncomeService } from '../../services/income.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { SettingsService } from '../../services/settings.service';
-import { FixedExpense, Summary, monthlyEquivalent, monthOccurrences } from '../../models/expense.model';
+import { Expense, FixedExpense, Summary, monthlyEquivalent, monthOccurrences } from '../../models/expense.model';
 
 interface PieSlice {
   path: string;
   color: string;
   category: string;
+  amount: number;
+  percentage: number;
+}
+
+interface SubPieSlice {
+  path: string;
+  color: string;
+  label: string;
   amount: number;
   percentage: number;
 }
@@ -48,6 +56,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   pieSlices: PieSlice[] = [];
   incomeTotal = 0;
   private fixedExpenses: FixedExpense[] = [];
+  private allExpenses: Expense[] = [];
+
+  drillDownCategory: string | null = null;
+  subPieSlices: SubPieSlice[] = [];
+  subPieTotal = 0;
 
   readonly months = [
     { value: 1,  label: 'January' },   { value: 2,  label: 'February' },
@@ -71,6 +84,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onPeriodChange() {
+    this.clearDrillDown();
     this.expenseService.setPeriod(this.selectedMonth, this.selectedYear);
     this.loadData();
   }
@@ -78,11 +92,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   setViewMode(mode: ViewMode) {
     if (this.viewMode === mode) return;
     this.viewMode = mode;
+    this.clearDrillDown();
     this.loadData();
   }
 
-  // Returns today's ISO date when viewing the current month in to-date mode,
-  // undefined otherwise (backend returns the full-month result).
+  onSliceClick(category: string) {
+    if (this.drillDownCategory === category) {
+      this.clearDrillDown();
+    } else {
+      this.drillDownCategory = category;
+      this.buildSubPieChart(category);
+    }
+  }
+
+  clearDrillDown() {
+    this.drillDownCategory = null;
+    this.subPieSlices = [];
+    this.subPieTotal = 0;
+  }
+
   private get toDateParam(): string | undefined {
     if (this.viewMode !== 'to-date') return undefined;
     const now = new Date();
@@ -102,39 +130,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private loadData() {
-    // Future period in to-date mode → nothing has happened yet
     if (this.viewMode === 'to-date' && this.isFuturePeriod) {
       this.incomeTotal   = 0;
       this.fixedExpenses = [];
-      this.summary       = { total: 0, count: 0, categoryBreakdown: {} };
+      this.summary       = { total: 0, count: 0, categoryBreakdown: {}, subcategoryBreakdown: {}, titleBreakdown: {} };
       this.pieSlices     = [];
+      if (this.drillDownCategory) this.buildSubPieChart(this.drillDownCategory);
       return;
     }
 
     const toDate = this.toDateParam;
+    const m = String(this.selectedMonth).padStart(2, '0');
+    const expensesObs = toDate
+      ? this.expenseService.getByDateRange(`${this.selectedYear}-${m}-01`, toDate)
+      : this.expenseService.getAll(this.selectedMonth, this.selectedYear);
+
     forkJoin({
       categories:  this.expenseService.loadCategories(),
       incomeTotal: this.incomeService.getMonthlyTotal(this.selectedMonth, this.selectedYear, toDate),
       fixed:       this.expenseService.getFixedExpenses(),
       summary:     this.expenseService.getSummary(this.selectedMonth, this.selectedYear, toDate),
-    }).pipe(takeUntil(this.destroy$)).subscribe(({ incomeTotal, fixed, summary }) => {
+      expenses:    expensesObs,
+    }).pipe(takeUntil(this.destroy$)).subscribe(({ incomeTotal, fixed, summary, expenses }) => {
       this.incomeTotal   = incomeTotal;
       this.fixedExpenses = fixed;
       this.summary       = summary;
+      this.allExpenses   = expenses;
       this.buildPieChart();
+      if (this.drillDownCategory) {
+        this.buildSubPieChart(this.drillDownCategory);
+      }
     });
   }
 
-  /**
-   * Amount to attribute to a fixed expense in "to-date" mode for the selected month.
-   *
-   * - Past months:   full monthly equivalent (everything already paid).
-   * - Future months: 0.
-   * - Current month:
-   *     MONTHLY/QUARTERLY — full amount if paymentDay has passed, else 0.
-   *     YEARLY            — amount if paymentMonth matches and paymentDay has passed, else 0.
-   *     WEEKLY/BIWEEKLY   — count occurrences from start of month up to today × amount.
-   */
   private toDateEquivalent(fe: FixedExpense): number {
     const now = new Date();
     const thisMonth = now.getMonth() + 1;
@@ -158,14 +186,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const dom = fe.startDate ? new Date(fe.startDate + 'T00:00:00').getDate() : 1;
         return dom <= todayDay ? amount : 0;
       }
-
       case 'YEARLY': {
         if (!fe.startDate) return 0;
         const sd = new Date(fe.startDate + 'T00:00:00');
         if ((sd.getMonth() + 1) !== this.selectedMonth) return 0;
         return sd.getDate() <= todayDay ? amount : 0;
       }
-
       case 'QUARTERLY': {
         if (!fe.startDate) return 0;
         const sd = new Date(fe.startDate + 'T00:00:00');
@@ -174,7 +200,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (monthDiff % 3 !== 0) return 0;
         return sd.getDate() <= todayDay ? amount : 0;
       }
-
       case 'WEEKLY':
       case 'BIWEEKLY': {
         const intervalMs = (recurrence === 'WEEKLY' ? 7 : 14) * 86_400_000;
@@ -184,7 +209,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const monthStart = new Date(thisYear, thisMonth - 1, 1);
         const today      = new Date(thisYear, thisMonth - 1, todayDay);
 
-        // Advance anchor to first occurrence on or after the start of the month
         let cursor = new Date(anchor.getTime());
         while (cursor < monthStart) cursor = new Date(cursor.getTime() + intervalMs);
 
@@ -195,7 +219,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }
         return count * amount;
       }
-
       default: {
         const dom = fe.startDate ? new Date(fe.startDate + 'T00:00:00').getDate() : 1;
         return dom <= todayDay ? amount : 0;
@@ -265,6 +288,115 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.pieSlices = slices;
   }
 
+  private buildSubPieChart(category: string) {
+    const breakdown: Record<string, number> = {};
+
+    // Actual expenses for this category, grouped by title
+    for (const e of this.allExpenses.filter(e => e.category === category)) {
+      breakdown[e.title] = (breakdown[e.title] ?? 0) + Number(e.amount);
+    }
+
+    // Fixed expenses for this category, grouped by title
+    for (const fe of this.fixedExpenses.filter(f => f.category === category)) {
+      breakdown[fe.title] = (breakdown[fe.title] ?? 0) + this.fixedAmount(fe);
+    }
+
+    this.subPieSlices = this.buildSlices(breakdown, category);
+  }
+
+  private buildSlices(breakdown: Record<string, number>, category: string): SubPieSlice[] {
+    const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
+    if (entries.length === 0) { this.subPieTotal = 0; return []; }
+
+    const baseColor = this.expenseService.getCategoryByValue(category)?.color ?? '#607d8b';
+    const colors = this.generateSubColors(baseColor, entries.length);
+    const total = entries.reduce((s, [, v]) => s + v, 0);
+    this.subPieTotal = total;
+
+    const sorted = entries.sort(([, a], [, b]) => b - a);
+    const cx = 100, cy = 100, r = 80;
+
+    if (sorted.length === 1) {
+      return [{
+        path: `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`,
+        color: colors[0],
+        label: sorted[0][0],
+        amount: sorted[0][1],
+        percentage: 100,
+      }];
+    }
+
+    const slices: SubPieSlice[] = [];
+    let angle = -Math.PI / 2;
+
+    for (let i = 0; i < sorted.length; i++) {
+      const [label, amount] = sorted[i];
+      const sweep    = (amount / total) * 2 * Math.PI;
+      const x1       = cx + r * Math.cos(angle);
+      const y1       = cy + r * Math.sin(angle);
+      const endAngle = angle + sweep;
+      const x2       = cx + r * Math.cos(endAngle);
+      const y2       = cy + r * Math.sin(endAngle);
+
+      slices.push({
+        path: `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`,
+        color: colors[i],
+        label,
+        amount,
+        percentage: Math.round((amount / total) * 100),
+      });
+
+      angle = endAngle;
+    }
+
+    return slices;
+  }
+
+  // Generates N shades of a base hex color by varying lightness in HSL space.
+  private generateSubColors(baseHex: string, count: number): string[] {
+    if (count === 0) return [];
+
+    const r = parseInt(baseHex.slice(1, 3), 16) / 255;
+    const g = parseInt(baseHex.slice(3, 5), 16) / 255;
+    const b = parseInt(baseHex.slice(5, 7), 16) / 255;
+
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    const l0 = (max + min) / 2;
+    const s0 = d === 0 ? 0 : d / (1 - Math.abs(2 * l0 - 1));
+    let h0 = 0;
+    if (d !== 0) {
+      switch (max) {
+        case r: h0 = (((g - b) / d) % 6 + 6) % 6; break;
+        case g: h0 = (b - r) / d + 2; break;
+        case b: h0 = (r - g) / d + 4; break;
+      }
+      h0 /= 6;
+    }
+
+    return Array.from({ length: count }, (_, i) => {
+      const t  = count === 1 ? 0.5 : i / (count - 1);
+      const newH = (h0 + t * (25 / 360)) % 1;
+      const newL = 0.30 + t * 0.38;
+      const newS = Math.min(1, Math.max(0.45, s0));
+      return this.hslToHex(newH, newS, newL);
+    });
+  }
+
+  private hslToHex(h: number, s: number, l: number): string {
+    const c  = (1 - Math.abs(2 * l - 1)) * s;
+    const x  = c * (1 - Math.abs((h * 6) % 2 - 1));
+    const m  = l - c / 2;
+    let r1 = 0, g1 = 0, b1 = 0;
+    if      (h < 1/6) { r1 = c; g1 = x; }
+    else if (h < 2/6) { r1 = x; g1 = c; }
+    else if (h < 3/6) { g1 = c; b1 = x; }
+    else if (h < 4/6) { g1 = x; b1 = c; }
+    else if (h < 5/6) { r1 = x; b1 = c; }
+    else              { r1 = c; b1 = x; }
+    const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r1)}${toHex(g1)}${toHex(b1)}`;
+  }
+
   get fixedTotal(): number {
     return this.fixedExpenses
       .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
@@ -307,6 +439,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getCategoryIcon(value: string) {
     return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
+  }
+
+  getCategoryColor(value: string) {
+    return this.expenseService.getCategoryByValue(value)?.color ?? '#607d8b';
   }
 
   async testNotification() {

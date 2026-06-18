@@ -89,6 +89,25 @@ public class ExpenseService {
                 Collectors.reducing(BigDecimal.ZERO, Expense::getAmount, BigDecimal::add)
             ));
 
-        return new SummaryDTO(total, expenses.size(), breakdown);
+        Map<String, Map<String, BigDecimal>> subcategoryBreakdown = expenses.stream()
+            .collect(Collectors.groupingBy(
+                Expense::getCategory,
+                Collectors.groupingBy(
+                    e -> (e.getSubcategory() != null && !e.getSubcategory().isBlank())
+                         ? e.getSubcategory() : "General",
+                    Collectors.reducing(BigDecimal.ZERO, Expense::getAmount, BigDecimal::add)
+                )
+            ));
+
+        Map<String, Map<String, BigDecimal>> titleBreakdown = expenses.stream()
+            .collect(Collectors.groupingBy(
+                Expense::getCategory,
+                Collectors.groupingBy(
+                    Expense::getTitle,
+                    Collectors.reducing(BigDecimal.ZERO, Expense::getAmount, BigDecimal::add)
+                )
+            ));
+
+        return new SummaryDTO(total, expenses.size(), breakdown, subcategoryBreakdown, titleBreakdown);
     }
 }
