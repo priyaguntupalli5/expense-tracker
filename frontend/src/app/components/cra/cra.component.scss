@@ -1,0 +1,208 @@
+.cra-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+.cra-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px;
+  letter-spacing: -0.3px;
+}
+
+.page-sub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.year-field {
+  width: 110px;
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .mat-mdc-form-field-infix { padding-top: 8px !important; padding-bottom: 8px !important; min-height: unset; }
+    .mat-mdc-text-field-wrapper { height: 40px; }
+  }
+}
+
+.action-btn {
+  border-radius: 8px !important;
+  height: 40px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; margin-right: 4px; }
+}
+
+.add-btn {
+  border-radius: 20px !important;
+  height: 40px;
+  font-size: 0.85rem;
+}
+
+.hidden-input { display: none; }
+
+// ── Summary cards ─────────────────────────────────────────────────────────────
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid;
+
+  mat-icon {
+    font-size: 1.4rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  &.income    { background: #eff6ff; border-color: #bfdbfe; mat-icon { color: #1d4ed8; } }
+  &.tax       { background: #fff7ed; border-color: #fed7aa; mat-icon { color: #c2410c; } }
+  &.rrsp      { background: #f0fdf4; border-color: #bbf7d0; mat-icon { color: #15803d; } }
+  &.donations { background: #fdf2f8; border-color: #fbcfe8; mat-icon { color: #be185d; } }
+}
+
+.summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.summary-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.summary-lbl {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+
+.list-card {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.table-wrapper { overflow-x: auto; }
+
+.cra-table { width: 100%; }
+
+.cra-row {
+  transition: background 0.12s;
+  &:hover { background: rgba(0,0,0,0.02); }
+}
+
+.person-col {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.slip-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  border: 1px solid;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.issuer-col {
+  font-size: 0.9rem;
+  color: #475569;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.num-col { text-align: right; white-space: nowrap; }
+
+.amount-val {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.tax-val {
+  font-size: 0.88rem;
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.none { color: #cbd5e1; }
+
+.notes-col { max-width: 180px; }
+
+.notes-text {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.actions-col { text-align: right; white-space: nowrap; width: 88px; }
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+.empty-state {
+  text-align: center;
+  padding: 60px 16px;
+  opacity: 0.4;
+
+  mat-icon { font-size: 3.5rem; width: 3.5rem; height: 3.5rem; display: block; margin: 0 auto 12px; }
+  p { font-size: 1.05rem; margin: 0 0 4px; }
+  small { font-size: 0.82rem; }
+}
+
+// ── Mobile ────────────────────────────────────────────────────────────────────
+
+@media (max-width: 640px) {
+  .cra-container { padding: 16px 14px 80px; }
+  .cra-header { flex-direction: column; align-items: stretch; }
+  .header-right { justify-content: flex-start; }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+}

@@ -131,5 +131,19 @@ CREATE TABLE IF NOT EXISTS group_subcategories (
     FOREIGN KEY (group_id) REFERENCES `groups`(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS cra_entries (
+    id           BIGINT         NOT NULL AUTO_INCREMENT,
+    tax_year     INT            NOT NULL,
+    person       VARCHAR(100)   NOT NULL,
+    slip_type    VARCHAR(20)    NOT NULL,
+    issuer       VARCHAR(150)   NOT NULL,
+    amount       DECIMAL(12,2)  NOT NULL,
+    tax_deducted DECIMAL(12,2)  NULL,
+    notes        VARCHAR(500)   NULL,
+    group_id     BIGINT         NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (group_id) REFERENCES `groups`(id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 -- Note: group_code unique key + backfill, and migration of old monthly_salaries data
 -- into income_entries, are handled by SchemaMigration.java on startup.

@@ -1,0 +1,143 @@
+<div class="cra-container">
+
+  <!-- Header -->
+  <div class="cra-header">
+    <div class="header-left">
+      <h1 class="page-title">CRA Tax Records</h1>
+      <p class="page-sub">Store slips and deduction info for filing</p>
+    </div>
+    <div class="header-right">
+      <mat-form-field appearance="outline" class="year-field">
+        <mat-label>Tax Year</mat-label>
+        <mat-select [(ngModel)]="selectedYear" (ngModelChange)="load()">
+          @for (y of years; track y) {
+            <mat-option [value]="y">{{ y }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button mat-stroked-button class="action-btn" (click)="triggerImport()" matTooltip="Import from JSON file">
+        <mat-icon>upload</mat-icon> Import
+      </button>
+      <button mat-stroked-button class="action-btn" (click)="exportJson()" matTooltip="Export to JSON file">
+        <mat-icon>download</mat-icon> Export
+      </button>
+      <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
+        <mat-icon>add</mat-icon> Add Entry
+      </button>
+      <input #fileInput type="file" accept=".json" class="hidden-input" (change)="onFileSelected($event)">
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-grid">
+    <div class="summary-card income">
+      <mat-icon>work</mat-icon>
+      <div class="summary-text">
+        <span class="summary-val">{{ totalIncome | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+        <span class="summary-lbl">Total Income (T4/T5…)</span>
+      </div>
+    </div>
+    <div class="summary-card tax">
+      <mat-icon>account_balance</mat-icon>
+      <div class="summary-text">
+        <span class="summary-val">{{ totalTaxDeducted | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+        <span class="summary-lbl">Tax Deducted</span>
+      </div>
+    </div>
+    <div class="summary-card rrsp">
+      <mat-icon>savings</mat-icon>
+      <div class="summary-text">
+        <span class="summary-val">{{ totalRrsp | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+        <span class="summary-lbl">RRSP / FHSA</span>
+      </div>
+    </div>
+    <div class="summary-card donations">
+      <mat-icon>volunteer_activism</mat-icon>
+      <div class="summary-text">
+        <span class="summary-val">{{ totalDonations | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+        <span class="summary-lbl">Donations</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entries table -->
+  <mat-card class="list-card">
+    <mat-card-content>
+      @if (entries.length === 0) {
+        <div class="empty-state">
+          <mat-icon>receipt_long</mat-icon>
+          <p>No entries for {{ selectedYear }}</p>
+          <small>Add T4 slips, RRSP contributions, donations and more</small>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="entries" class="cra-table">
+
+            <ng-container matColumnDef="person">
+              <th mat-header-cell *matHeaderCellDef>Person</th>
+              <td mat-cell *matCellDef="let e" class="person-col">{{ e.person }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="slipType">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let e">
+                <span class="slip-badge"
+                  [style.background]="slipInfo(e.slipType).color + '18'"
+                  [style.color]="slipInfo(e.slipType).color"
+                  [style.border-color]="slipInfo(e.slipType).color + '44'">
+                  {{ e.slipType }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="issuer">
+              <th mat-header-cell *matHeaderCellDef>Issuer</th>
+              <td mat-cell *matCellDef="let e" class="issuer-col">{{ e.issuer }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef class="num-col">Amount</th>
+              <td mat-cell *matCellDef="let e" class="num-col amount-val">
+                {{ e.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="taxDeducted">
+              <th mat-header-cell *matHeaderCellDef class="num-col">Tax Deducted</th>
+              <td mat-cell *matCellDef="let e" class="num-col tax-val">
+                @if (e.taxDeducted) {
+                  {{ e.taxDeducted | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                } @else {
+                  <span class="none">—</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="notes">
+              <th mat-header-cell *matHeaderCellDef>Notes</th>
+              <td mat-cell *matCellDef="let e" class="notes-col">
+                <span class="notes-text" [matTooltip]="e.notes ?? ''">{{ e.notes }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let e" class="actions-col">
+                <button mat-icon-button matTooltip="Edit" (click)="openEdit(e)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button matTooltip="Delete" color="warn" (click)="confirmDelete(e)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="columns"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns;" class="cra-row"></tr>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+</div>

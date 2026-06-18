@@ -1,0 +1,36 @@
+.dialog-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 0;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #0f172a;
+    mat-icon { color: #1976d2; font-size: 1.2rem; width: 1.2rem; height: 1.2rem; }
+  }
+}
+
+.cra-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+}
+
+.full-width { width: 100%; }
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  .half-field { flex: 1; }
+}
+
+::ng-deep .mat-mdc-form-field-subscript-wrapper:has(mat-hint) {
+  // keep hint visible
+}

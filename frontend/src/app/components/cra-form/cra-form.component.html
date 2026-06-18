@@ -1,0 +1,86 @@
+<div class="dialog-titlebar">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ isEditing ? 'edit' : 'add_circle' }}</mat-icon>
+    {{ isEditing ? 'Edit Entry' : 'Add CRA Entry' }}
+  </h2>
+  <button mat-icon-button (click)="cancel()" matTooltip="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="cra-form">
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="half-field">
+        <mat-label>Tax Year</mat-label>
+        <mat-select formControlName="taxYear">
+          @for (y of years; track y) {
+            <mat-option [value]="y">{{ y }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half-field">
+        <mat-label>Person</mat-label>
+        <input matInput formControlName="person" placeholder="e.g. Priya">
+        @if (form.get('person')?.hasError('required')) {
+          <mat-error>Required</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Slip / Entry Type</mat-label>
+      <mat-select formControlName="slipType">
+        @for (s of slipTypes; track s.value) {
+          <mat-option [value]="s.value">{{ s.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Issuer / Employer</mat-label>
+      <input matInput formControlName="issuer" placeholder="e.g. Acme Corp, TD Bank">
+      <mat-icon matSuffix>business</mat-icon>
+      @if (form.get('issuer')?.hasError('required')) {
+        <mat-error>Required</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="half-field">
+        <mat-label>Amount</mat-label>
+        <span matPrefix>$&nbsp;</span>
+        <input matInput type="number" formControlName="amount" placeholder="0.00" min="0">
+        @if (form.get('amount')?.hasError('required')) {
+          <mat-error>Required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half-field">
+        <mat-label>Tax Deducted</mat-label>
+        <span matPrefix>$&nbsp;</span>
+        <input matInput type="number" formControlName="taxDeducted" placeholder="0.00" min="0">
+        <mat-hint>Optional</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Notes</mat-label>
+      <textarea matInput formControlName="notes" rows="2"
+        placeholder="e.g. Box 14: $xx, Box 22: $xx"></textarea>
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || saving">
+    @if (saving) {
+      <mat-spinner diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+    }
+    {{ saving ? 'Saving…' : (isEditing ? 'Update' : 'Add Entry') }}
+  </button>
+</mat-dialog-actions>
