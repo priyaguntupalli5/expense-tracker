@@ -1,6 +1,8 @@
 package com.expensetracker.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,8 +23,15 @@ public class JoinRequest {
     @JoinColumn(name = "group_id", nullable = false)
     private Group group;
 
-    @Column(name = "requested_at", nullable = false)
-    private LocalDateTime requestedAt = LocalDateTime.now();
+    @Column(name = "requested_at", nullable = false, updatable = false,
+            columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    @CreationTimestamp
+    private LocalDateTime requestedAt;
+
+    @Column(name = "updated_at", nullable = false,
+            columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
     public JoinRequest() {}
 
@@ -38,4 +47,5 @@ public class JoinRequest {
     public void setGroup(Group group) { this.group = group; }
 
     public LocalDateTime getRequestedAt() { return requestedAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

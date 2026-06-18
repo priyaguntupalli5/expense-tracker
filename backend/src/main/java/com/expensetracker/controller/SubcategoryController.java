@@ -5,7 +5,6 @@ import com.expensetracker.model.GroupSubcategory;
 import com.expensetracker.model.Subcategory;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.GroupSubcategoryRepository;
-import com.expensetracker.repository.SubcategoryRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -16,36 +15,22 @@ import java.util.*;
 @RequestMapping("/api/subcategories")
 public class SubcategoryController {
 
-    private final SubcategoryRepository      subcategoryRepo;
     private final GroupSubcategoryRepository groupSubcategoryRepo;
 
-    public SubcategoryController(SubcategoryRepository subcategoryRepo,
-                                 GroupSubcategoryRepository groupSubcategoryRepo) {
-        this.subcategoryRepo      = subcategoryRepo;
+    public SubcategoryController(GroupSubcategoryRepository groupSubcategoryRepo) {
         this.groupSubcategoryRepo = groupSubcategoryRepo;
     }
 
-    /**
-     * Returns shared subcategories for the given category followed by this group's own,
-     * all sorted alphabetically.
-     */
     @GetMapping
     public List<SubcategoryDTO> getByCategory(@AuthenticationPrincipal User user,
                                               @RequestParam String category) {
         Long groupId = user.getGroup().getId();
-        List<SubcategoryDTO> result = new ArrayList<>();
-
-        for (Subcategory s : subcategoryRepo.findByCategoryValueOrderByNameAsc(category)) {
-            result.add(new SubcategoryDTO(s.getId(), s.getCategoryValue(), s.getName(), true));
-        }
-        for (GroupSubcategory gs : groupSubcategoryRepo.findByGroupIdAndCategoryValueOrderByNameAsc(groupId, category)) {
-            result.add(new SubcategoryDTO(gs.getId(), gs.getCategoryValue(), gs.getName(), false));
-        }
-        result.sort(Comparator.comparing(SubcategoryDTO::getName, String.CASE_INSENSITIVE_ORDER));
-        return result;
+        return groupSubcategoryRepo.findByGroupIdAndCategoryValueOrderByNameAsc(groupId, category)
+                .stream()
+                .map(gs -> new SubcategoryDTO(gs.getId(), gs.getCategoryValue(), gs.getName(), false))
+                .toList();
     }
 
-    /** Adds a subcategory scoped to the requesting group. */
     @PostMapping
     public ResponseEntity<?> create(@AuthenticationPrincipal User user, @RequestBody Subcategory body) {
         Long groupId = user.getGroup().getId();
@@ -58,14 +43,11 @@ public class SubcategoryController {
             return ResponseEntity.badRequest().body(Map.of("error", "Name must be 100 characters or fewer."));
         }
 
-        // Duplicate check across shared and group-own subcategories
-        boolean existsShared = subcategoryRepo.findByCategoryValueOrderByNameAsc(body.getCategoryValue())
-                .stream().anyMatch(s -> s.getName().equalsIgnoreCase(name));
-        boolean existsGroup  = groupSubcategoryRepo
+        boolean exists = groupSubcategoryRepo
                 .findByGroupIdAndCategoryValueOrderByNameAsc(groupId, body.getCategoryValue())
                 .stream().anyMatch(s -> s.getName().equalsIgnoreCase(name));
 
-        if (existsShared || existsGroup) {
+        if (exists) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "\"" + name + "\" already exists in this category."));
         }

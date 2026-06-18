@@ -10,6 +10,7 @@ import com.expensetracker.repository.GroupRepository;
 import com.expensetracker.repository.JoinRequestRepository;
 import com.expensetracker.repository.UserRepository;
 import com.expensetracker.security.JwtUtil;
+import com.expensetracker.service.CategorySeederService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -21,21 +22,24 @@ import java.util.Random;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final GroupRepository groupRepository;
+    private final UserRepository       userRepository;
+    private final GroupRepository      groupRepository;
     private final JoinRequestRepository joinRequestRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+    private final PasswordEncoder      passwordEncoder;
+    private final JwtUtil              jwtUtil;
+    private final CategorySeederService categorySeeder;
     private final Random random = new Random();
 
     public AuthController(UserRepository userRepository, GroupRepository groupRepository,
                           JoinRequestRepository joinRequestRepository,
-                          PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
-        this.groupRepository = groupRepository;
+                          PasswordEncoder passwordEncoder, JwtUtil jwtUtil,
+                          CategorySeederService categorySeeder) {
+        this.userRepository       = userRepository;
+        this.groupRepository      = groupRepository;
         this.joinRequestRepository = joinRequestRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
+        this.passwordEncoder      = passwordEncoder;
+        this.jwtUtil              = jwtUtil;
+        this.categorySeeder       = categorySeeder;
     }
 
     @PostMapping("/register")
@@ -80,6 +84,7 @@ public class AuthController {
         group.setName(groupName);
         group.setGroupCode(generateUniqueCode());
         group = groupRepository.save(group);
+        categorySeeder.seedForGroup(group.getId());
 
         User user = new User();
         user.setUsername(req.username().trim());

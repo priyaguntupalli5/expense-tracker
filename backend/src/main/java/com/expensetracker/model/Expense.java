@@ -2,8 +2,11 @@ package com.expensetracker.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "expenses")
@@ -43,6 +46,16 @@ public class Expense {
     @Column(name = "source_fixed_id")
     private Long sourceFixedId;
 
+    @Column(name = "created_at", nullable = false, updatable = false,
+            columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false,
+            columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
     public Expense() {}
 
     public Long getId() { return id; }
@@ -74,4 +87,7 @@ public class Expense {
 
     public Long getSourceFixedId() { return sourceFixedId; }
     public void setSourceFixedId(Long sourceFixedId) { this.sourceFixedId = sourceFixedId; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

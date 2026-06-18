@@ -88,7 +88,7 @@ export class CategoryFormComponent implements OnInit {
     const payload = { label: v.label!, icon: v.icon!, color: v.color! };
 
     const op = this.isEditing
-      ? this.expenseService.updateCategory(this.data!.id!, this.data!.isShared ?? false, payload)
+      ? this.expenseService.updateCategory(this.data!.id!, payload)
       : this.expenseService.createCategory(payload);
 
     op.subscribe({

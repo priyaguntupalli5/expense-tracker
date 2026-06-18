@@ -104,12 +104,8 @@ export class CategoriesComponent implements OnInit {
   }
 
   confirmDelete(category: Category) {
-    if (category.isShared) {
-      this.snackBar.open('Default categories cannot be deleted. Edit to customise for your group.', 'OK', { duration: 4000 });
-      return;
-    }
     if (!confirm(`Delete category "${category.label}"?`)) return;
-    this.expenseService.deleteCategory(category.id!, false).subscribe({
+    this.expenseService.deleteCategory(category.id!).subscribe({
       next: () => {
         this.snackBar.open('Category deleted', 'Dismiss', { duration: 3000 });
         this.load();
