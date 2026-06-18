@@ -131,6 +131,14 @@ CREATE TABLE IF NOT EXISTS group_subcategories (
     FOREIGN KEY (group_id) REFERENCES `groups`(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS sub_categories (
+    id             BIGINT       NOT NULL AUTO_INCREMENT,
+    category_value VARCHAR(50)  NOT NULL,
+    name           VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_sub_category (category_value, name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 -- Timestamps
 ALTER TABLE `groups`            ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE `groups`            ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
@@ -153,6 +161,67 @@ ALTER TABLE group_categories    ADD COLUMN IF NOT EXISTS created_at DATETIME NOT
 ALTER TABLE group_categories    ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 ALTER TABLE group_subcategories ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE group_subcategories ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE sub_categories      ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE sub_categories      ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+-- Default categories (INSERT IGNORE skips rows that already exist)
+INSERT IGNORE INTO categories (value, label, icon, color, is_income) VALUES
+    ('FOOD',          'Food',          'restaurant',     '#e91e63', FALSE),
+    ('TRANSPORT',     'Transport',     'directions_car', '#2196f3', FALSE),
+    ('HOUSING',       'Housing',       'home',           '#ff9800', FALSE),
+    ('ENTERTAINMENT', 'Entertainment', 'movie',          '#9c27b0', FALSE),
+    ('HEALTH',        'Health',        'local_hospital', '#4caf50', FALSE),
+    ('SHOPPING',      'Shopping',      'shopping_cart',  '#00bcd4', FALSE),
+    ('EDUCATION',     'Education',     'school',         '#ff5722', FALSE),
+    ('OTHER',         'Other',         'more_horiz',     '#607d8b', FALSE);
+
+-- Default subcategories (source of truth for group seeding)
+INSERT IGNORE INTO sub_categories (category_value, name) VALUES
+    ('FOOD', 'Groceries'),
+    ('FOOD', 'Restaurants'),
+    ('FOOD', 'Coffee & Drinks'),
+    ('FOOD', 'Fast Food'),
+    ('FOOD', 'Takeout / Delivery'),
+    ('TRANSPORT', 'Gas / Fuel'),
+    ('TRANSPORT', 'Public Transit'),
+    ('TRANSPORT', 'Parking'),
+    ('TRANSPORT', 'Car Maintenance'),
+    ('TRANSPORT', 'Car Insurance'),
+    ('TRANSPORT', 'Rideshare'),
+    ('HOUSING', 'Rent / Mortgage'),
+    ('HOUSING', 'Electricity'),
+    ('HOUSING', 'Water & Gas'),
+    ('HOUSING', 'Internet'),
+    ('HOUSING', 'Home Insurance'),
+    ('HOUSING', 'Maintenance'),
+    ('ENTERTAINMENT', 'Streaming Services'),
+    ('ENTERTAINMENT', 'Movies & Shows'),
+    ('ENTERTAINMENT', 'Games'),
+    ('ENTERTAINMENT', 'Events & Concerts'),
+    ('ENTERTAINMENT', 'Hobbies'),
+    ('HEALTH', 'Doctor / Clinic'),
+    ('HEALTH', 'Dentist'),
+    ('HEALTH', 'Pharmacy'),
+    ('HEALTH', 'Gym & Fitness'),
+    ('HEALTH', 'Health Insurance'),
+    ('SHOPPING', 'Clothing'),
+    ('SHOPPING', 'Electronics'),
+    ('SHOPPING', 'Home & Decor'),
+    ('SHOPPING', 'Personal Care'),
+    ('SHOPPING', 'Gifts'),
+    ('EDUCATION', 'Tuition'),
+    ('EDUCATION', 'Books & Supplies'),
+    ('EDUCATION', 'Online Courses'),
+    ('EDUCATION', 'Software & Tools'),
+    ('OTHER', 'Miscellaneous');
+
+CREATE TABLE IF NOT EXISTS applied_migrations (
+    id             BIGINT       NOT NULL AUTO_INCREMENT,
+    migration_name VARCHAR(100) NOT NULL,
+    applied_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_migration_name (migration_name)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- Note: group_code unique key + backfill, and migration of old monthly_salaries data
 -- into income_entries, are handled by SchemaMigration.java on startup.

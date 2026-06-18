@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GroupSubcategoryRepository extends JpaRepository<GroupSubcategory, Long> {
+    List<GroupSubcategory> findByGroupId(Long groupId);
     List<GroupSubcategory> findByGroupIdAndCategoryValueOrderByNameAsc(Long groupId, String categoryValue);
     Optional<GroupSubcategory> findByGroupIdAndId(Long groupId, Long id);
 }

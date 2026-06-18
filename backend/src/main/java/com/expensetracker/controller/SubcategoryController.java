@@ -2,7 +2,6 @@ package com.expensetracker.controller;
 
 import com.expensetracker.dto.SubcategoryDTO;
 import com.expensetracker.model.GroupSubcategory;
-import com.expensetracker.model.Subcategory;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.GroupSubcategoryRepository;
 import org.springframework.http.ResponseEntity;
@@ -32,9 +31,11 @@ public class SubcategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@AuthenticationPrincipal User user, @RequestBody Subcategory body) {
-        Long groupId = user.getGroup().getId();
-        String name = body.getName() == null ? "" : body.getName().trim();
+    public ResponseEntity<?> create(@AuthenticationPrincipal User user,
+                                    @RequestBody Map<String, String> body) {
+        Long groupId      = user.getGroup().getId();
+        String name       = body.getOrDefault("name", "").trim();
+        String catValue   = body.get("categoryValue");
 
         if (name.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Name is required."));
@@ -44,7 +45,7 @@ public class SubcategoryController {
         }
 
         boolean exists = groupSubcategoryRepo
-                .findByGroupIdAndCategoryValueOrderByNameAsc(groupId, body.getCategoryValue())
+                .findByGroupIdAndCategoryValueOrderByNameAsc(groupId, catValue)
                 .stream().anyMatch(s -> s.getName().equalsIgnoreCase(name));
 
         if (exists) {
@@ -54,7 +55,7 @@ public class SubcategoryController {
 
         GroupSubcategory gs = new GroupSubcategory();
         gs.setGroupId(groupId);
-        gs.setCategoryValue(body.getCategoryValue());
+        gs.setCategoryValue(catValue);
         gs.setName(name);
         GroupSubcategory saved = groupSubcategoryRepo.save(gs);
         return ResponseEntity.ok(new SubcategoryDTO(saved.getId(), saved.getCategoryValue(), saved.getName(), false));

@@ -28,6 +28,7 @@ public class SchemaMigration implements ApplicationRunner {
         migrateIncomePaymentDate();
         migrateFixedExpenseColumns();
         dropLegacyTables();
+        resetGroups1And3ToDefaults();
     }
 
     private void migrateGroupCodes() throws SQLException {
@@ -113,6 +114,34 @@ public class SchemaMigration implements ApplicationRunner {
         try (Connection conn = dataSource.getConnection();
              Statement stmt  = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS monthly_salaries");
+        }
+    }
+
+    // One-time reset: clear group 1 and 3 category data so the seeder
+    // re-populates them from the standard defaults (not group 2's custom data).
+    private void resetGroups1And3ToDefaults() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            if (migrationApplied(conn, "reset_groups_1_3_to_defaults")) return;
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("DELETE FROM group_subcategories WHERE group_id IN (1, 3)");
+                stmt.execute("DELETE FROM group_categories WHERE group_id IN (1, 3)");
+                stmt.execute(
+                    "INSERT IGNORE INTO applied_migrations (migration_name) " +
+                    "VALUES ('reset_groups_1_3_to_defaults')");
+            }
+        }
+    }
+
+    private boolean migrationApplied(Connection conn, String name) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT 1 FROM applied_migrations WHERE migration_name = ?")) {
+            ps.setString(1, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false; // table doesn't exist yet
         }
     }
 
