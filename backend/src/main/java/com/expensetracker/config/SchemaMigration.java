@@ -24,6 +24,7 @@ public class SchemaMigration implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        migrateExistingColumns();
         migrateGroupCodes();
         migrateIncomePaymentDate();
         migrateFixedExpenseColumns();
@@ -105,6 +106,71 @@ public class SchemaMigration implements ApplicationRunner {
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute("ALTER TABLE fixed_expenses DROP COLUMN payment_month");
                 }
+            }
+        }
+    }
+
+    // Adds any columns that are missing from existing databases (local dev upgrade path).
+    // For fresh databases all columns are already included in the CREATE TABLE definitions.
+    private void migrateExistingColumns() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            // groups
+            addColumnIfAbsent(conn, "groups", "group_code", "VARCHAR(6) NULL");
+            addColumnIfAbsent(conn, "groups", "currency",   "VARCHAR(10) NOT NULL DEFAULT 'CAD'");
+            addColumnIfAbsent(conn, "groups", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "groups", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // users
+            addColumnIfAbsent(conn, "users", "is_admin",   "BOOLEAN NOT NULL DEFAULT FALSE");
+            addColumnIfAbsent(conn, "users", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "users", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // categories
+            addColumnIfAbsent(conn, "categories", "is_income",  "BOOLEAN NOT NULL DEFAULT FALSE");
+            addColumnIfAbsent(conn, "categories", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "categories", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // expenses
+            addColumnIfAbsent(conn, "expenses", "subcategory",     "VARCHAR(100) NULL");
+            addColumnIfAbsent(conn, "expenses", "image_data",      "MEDIUMTEXT NULL");
+            addColumnIfAbsent(conn, "expenses", "group_id",        "BIGINT NULL");
+            addColumnIfAbsent(conn, "expenses", "source_fixed_id", "BIGINT NULL");
+            addColumnIfAbsent(conn, "expenses", "created_at",      "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "expenses", "updated_at",      "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // fixed_expenses
+            addColumnIfAbsent(conn, "fixed_expenses", "subcategory", "VARCHAR(100) NULL");
+            addColumnIfAbsent(conn, "fixed_expenses", "group_id",    "BIGINT NULL");
+            addColumnIfAbsent(conn, "fixed_expenses", "recurrence",  "VARCHAR(20) NOT NULL DEFAULT 'MONTHLY'");
+            addColumnIfAbsent(conn, "fixed_expenses", "start_date",  "DATE NULL");
+            addColumnIfAbsent(conn, "fixed_expenses", "created_at",  "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "fixed_expenses", "updated_at",  "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // income_entries
+            addColumnIfAbsent(conn, "income_entries", "recurrence",   "VARCHAR(20) NULL");
+            addColumnIfAbsent(conn, "income_entries", "start_date",   "DATE NULL");
+            addColumnIfAbsent(conn, "income_entries", "is_template",  "BOOLEAN NOT NULL DEFAULT FALSE");
+            addColumnIfAbsent(conn, "income_entries", "template_id",  "BIGINT NULL");
+            addColumnIfAbsent(conn, "income_entries", "payment_date", "DATE NULL");
+            addColumnIfAbsent(conn, "income_entries", "created_at",   "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "income_entries", "updated_at",   "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // push_subscriptions
+            addColumnIfAbsent(conn, "push_subscriptions", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "push_subscriptions", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // subcategories
+            addColumnIfAbsent(conn, "subcategories", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "subcategories", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // join_requests
+            addColumnIfAbsent(conn, "join_requests", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // group_categories
+            addColumnIfAbsent(conn, "group_categories", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "group_categories", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            // group_subcategories
+            addColumnIfAbsent(conn, "group_subcategories", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfAbsent(conn, "group_subcategories", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+        }
+    }
+
+    private void addColumnIfAbsent(Connection conn, String table, String column, String definition) throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
+        if (!columnExists(meta, conn, table, column)) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
             }
         }
     }
