@@ -81,7 +81,7 @@
             <ng-container matColumnDef="date">
               <th mat-header-cell *matHeaderCellDef>Date</th>
               <td mat-cell *matCellDef="let e" class="date-cell">
-                {{ e.date | date:'MMM d, y' }}
+                {{ (e.date + 'T00:00:00') | date:'MMM d, y' }}
               </td>
             </ng-container>
 

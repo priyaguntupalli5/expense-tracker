@@ -63,7 +63,8 @@ export class IncomeComponent implements OnInit {
   }
 
   displayDate(item: Income): string | null {
-    return item.paymentDate ?? item.startDate ?? null;
+    const d = item.paymentDate ?? item.startDate ?? null;
+    return d ? d + 'T00:00:00' : null;
   }
 
   private load() {

@@ -85,7 +85,7 @@ export class ExpenseFormComponent implements OnInit {
       this.isEditing = true;
       this.form.patchValue({
         ...this.data,
-        date: new Date(this.data.date),
+        date: new Date(this.data.date + 'T00:00:00'),
         subcategory: this.data.subcategory ?? null,
         imageData: this.data.imageData ?? null,
       });
