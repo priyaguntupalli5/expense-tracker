@@ -11,6 +11,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -28,6 +30,7 @@ import { ExpenseFormComponent } from '../expense-form/expense-form.component';
     MatTableModule, MatIconModule, MatButtonModule,
     MatTooltipModule, MatCardModule,
     MatFormFieldModule, MatInputModule, MatSelectModule, MatDatepickerModule,
+    MatCheckboxModule, MatAutocompleteModule,
   ],
   templateUrl: './expense-list.component.html',
   styleUrl: './expense-list.component.scss',
@@ -43,8 +46,32 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   expenses: Expense[] = [];
   viewingImage: string | null = null;
   titleFilter = '';
+  tagFilter = '';
   highlightId: number | null = null;
-  displayedColumns = ['date', 'title', 'category', 'amount', 'actions'];
+
+  // Selection & tag state
+  selectionMode = false;
+  selectedIds = new Set<number>();
+  availableTags: string[] = [];
+  readonly tagCtrl = new FormControl<string>('');
+
+  get displayedColumns(): string[] {
+    return this.selectionMode
+      ? ['select', 'date', 'title', 'category', 'amount', 'actions']
+      : ['date', 'title', 'category', 'amount', 'actions'];
+  }
+
+  get allSelected(): boolean {
+    const ids = this.filteredExpenses.map(e => e.id!);
+    return ids.length > 0 && ids.every(id => this.selectedIds.has(id));
+  }
+
+  get someSelected(): boolean { return this.selectedIds.size > 0; }
+
+  get filteredTags(): string[] {
+    const v = (this.tagCtrl.value ?? '').toLowerCase();
+    return v ? this.availableTags.filter(t => t.toLowerCase().includes(v)) : this.availableTags;
+  }
 
   readonly startCtrl    = new FormControl<Date | null>(null);
   readonly endCtrl      = new FormControl<Date | null>(null);
@@ -58,13 +85,14 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     return this.expenses.filter(e => {
       if (cat && e.category !== cat) return false;
       if (title && !e.title.toLowerCase().includes(title)) return false;
+      if (this.tagFilter && e.tag !== this.tagFilter) return false;
       return true;
     });
   }
 
-  clearTitleFilter() {
-    this.titleFilter = '';
-  }
+  clearTitleFilter() { this.titleFilter = ''; }
+  clearTagFilter()   { this.tagFilter = ''; }
+  filterByTag(tag: string) { this.tagFilter = tag; }
 
   isCredit(categoryValue: string, subcategory?: string): boolean {
     if (this.expenseService.getCategoryByValue(categoryValue)?.isIncome) return true;
@@ -133,6 +161,67 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  toggleSelectionMode() {
+    this.selectionMode = !this.selectionMode;
+    if (this.selectionMode) {
+      this.expenseService.getTags().subscribe(tags => { this.availableTags = tags.sort(); });
+    } else {
+      this.selectedIds.clear();
+      this.tagCtrl.setValue('');
+    }
+  }
+
+  toggleSelect(id: number) {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  isSelected(id: number): boolean { return this.selectedIds.has(id); }
+
+  selectAll() {
+    const ids = this.filteredExpenses.map(e => e.id!);
+    if (this.allSelected) ids.forEach(id => this.selectedIds.delete(id));
+    else ids.forEach(id => this.selectedIds.add(id));
+  }
+
+  applyTag() {
+    const tag = this.tagCtrl.value?.trim() ?? '';
+    const ids = [...this.selectedIds];
+    if (!ids.length || !tag) return;
+    this.expenseService.bulkTag(ids, tag).subscribe({
+      next: () => {
+        this.expenses.forEach(e => { if (e.id && this.selectedIds.has(e.id)) e.tag = tag; });
+        if (!this.availableTags.includes(tag)) this.availableTags = [...this.availableTags, tag].sort();
+        this.snackBar.open(`Label "${tag}" applied to ${ids.length} item(s)`, 'OK', { duration: 3000 });
+        this.selectedIds.clear();
+        this.tagCtrl.setValue('');
+        this.selectionMode = false;
+      },
+      error: () => this.snackBar.open('Failed to apply label', 'Dismiss', { duration: 3000 }),
+    });
+  }
+
+  clearSelectedTag() {
+    const ids = [...this.selectedIds];
+    if (!ids.length) return;
+    this.expenseService.bulkTag(ids, null).subscribe({
+      next: () => {
+        this.expenses.forEach(e => { if (e.id && this.selectedIds.has(e.id)) e.tag = undefined; });
+        this.snackBar.open('Label removed', 'OK', { duration: 3000 });
+        this.selectedIds.clear();
+        this.tagCtrl.setValue('');
+        this.selectionMode = false;
+      },
+      error: () => this.snackBar.open('Failed to remove label', 'Dismiss', { duration: 3000 }),
+    });
+  }
+
+  cancelSelection() {
+    this.selectionMode = false;
+    this.selectedIds.clear();
+    this.tagCtrl.setValue('');
   }
 
   openAdd() {

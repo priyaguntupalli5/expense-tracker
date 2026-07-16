@@ -17,8 +17,14 @@
           <span>Expenses</span>
           <span class="count-chip">{{ filteredExpenses.length }}</span>
         </div>
-        <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
-          <mat-icon>add</mat-icon> Add Expense
+        @if (!selectionMode) {
+          <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
+            <mat-icon>add</mat-icon> Add Expense
+          </button>
+        }
+        <button mat-stroked-button class="select-btn" [class.active]="selectionMode" (click)="toggleSelectionMode()">
+          <mat-icon>{{ selectionMode ? 'close' : 'checklist' }}</mat-icon>
+          {{ selectionMode ? 'Cancel' : 'Select' }}
         </button>
       </div>
 
@@ -55,15 +61,26 @@
         </div>
       </div>
 
-      @if (titleFilter) {
+      @if (titleFilter || tagFilter) {
         <div class="active-filter-row">
-          <span class="active-filter-chip">
-            <mat-icon>filter_list</mat-icon>
-            {{ titleFilter }}
-            <button mat-icon-button class="clear-filter-btn" (click)="clearTitleFilter()">
-              <mat-icon>close</mat-icon>
-            </button>
-          </span>
+          @if (titleFilter) {
+            <span class="active-filter-chip">
+              <mat-icon>filter_list</mat-icon>
+              {{ titleFilter }}
+              <button mat-icon-button class="clear-filter-btn" (click)="clearTitleFilter()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </span>
+          }
+          @if (tagFilter) {
+            <span class="active-filter-chip tag-filter-chip">
+              <mat-icon>label</mat-icon>
+              {{ tagFilter }}
+              <button mat-icon-button class="clear-filter-btn" (click)="clearTagFilter()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </span>
+          }
         </div>
       }
     </div>
@@ -77,6 +94,17 @@
       } @else {
         <div class="table-wrapper">
           <table mat-table [dataSource]="filteredExpenses" class="expense-table">
+
+            <ng-container matColumnDef="select">
+              <th mat-header-cell *matHeaderCellDef class="select-col">
+                <mat-checkbox [checked]="allSelected" [indeterminate]="someSelected && !allSelected"
+                              (change)="selectAll()"></mat-checkbox>
+              </th>
+              <td mat-cell *matCellDef="let e" class="select-col">
+                <mat-checkbox [checked]="isSelected(e.id)" (change)="toggleSelect(e.id)"
+                              (click)="$event.stopPropagation()"></mat-checkbox>
+              </td>
+            </ng-container>
 
             <ng-container matColumnDef="date">
               <th mat-header-cell *matHeaderCellDef>Date</th>
@@ -93,6 +121,11 @@
                     {{ e.title }}
                     @if (e.sourceFixedId) {
                       <span class="auto-chip">auto</span>
+                    }
+                    @if (e.tag) {
+                      <span class="tag-chip" (click)="filterByTag(e.tag); $event.stopPropagation()">
+                        <mat-icon class="tag-icon">label</mat-icon>{{ e.tag }}
+                      </span>
                     }
                   </span>
                   @if (e.notes) {
@@ -159,3 +192,30 @@
     </mat-card-content>
   </mat-card>
 </div>
+
+@if (selectionMode) {
+  <div class="tag-action-bar">
+    <span class="selection-count">
+      {{ selectedIds.size }} selected
+    </span>
+    <mat-form-field appearance="outline" class="tag-input-field">
+      <mat-label>Label</mat-label>
+      <input matInput [formControl]="tagCtrl" [matAutocomplete]="tagAuto" placeholder="e.g. Trip, School…">
+      <mat-autocomplete #tagAuto>
+        @for (tag of filteredTags; track tag) {
+          <mat-option [value]="tag">{{ tag }}</mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="applyTag()"
+            [disabled]="!someSelected || !tagCtrl.value?.trim()">
+      Apply
+    </button>
+    <button mat-stroked-button (click)="clearSelectedTag()" [disabled]="!someSelected">
+      Remove Label
+    </button>
+    <button mat-icon-button matTooltip="Cancel selection" (click)="cancelSelection()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}

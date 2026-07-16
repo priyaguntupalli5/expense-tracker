@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     subcategory     VARCHAR(100)   NULL,
     image_data      MEDIUMTEXT     NULL,
     source_fixed_id BIGINT         NULL,
+    tag             VARCHAR(50)    NULL,
     created_at      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)

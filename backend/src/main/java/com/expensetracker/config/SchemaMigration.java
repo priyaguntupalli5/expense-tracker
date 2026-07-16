@@ -132,6 +132,7 @@ public class SchemaMigration implements ApplicationRunner {
             addColumnIfAbsent(conn, "expenses", "image_data",      "MEDIUMTEXT NULL");
             addColumnIfAbsent(conn, "expenses", "group_id",        "BIGINT NULL");
             addColumnIfAbsent(conn, "expenses", "source_fixed_id", "BIGINT NULL");
+            addColumnIfAbsent(conn, "expenses", "tag",             "VARCHAR(50) NULL");
             addColumnIfAbsent(conn, "expenses", "created_at",      "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
             addColumnIfAbsent(conn, "expenses", "updated_at",      "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             // fixed_expenses

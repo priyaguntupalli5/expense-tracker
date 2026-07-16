@@ -1,5 +1,6 @@
 package com.expensetracker.controller;
 
+import com.expensetracker.dto.BulkTagRequest;
 import com.expensetracker.model.Expense;
 import com.expensetracker.model.SummaryDTO;
 import com.expensetracker.model.User;
@@ -81,5 +82,17 @@ public class ExpenseController {
         return service.delete(id, user.getGroup().getId())
             ? ResponseEntity.noContent().build()
             : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/tags")
+    public List<String> getTags(@AuthenticationPrincipal User user) {
+        return service.getTags(user.getGroup().getId());
+    }
+
+    @PatchMapping("/bulk-tag")
+    public ResponseEntity<Void> bulkTag(@AuthenticationPrincipal User user,
+                                        @RequestBody BulkTagRequest request) {
+        service.bulkTag(request.getIds(), request.getTag(), user.getGroup().getId());
+        return ResponseEntity.noContent().build();
     }
 }

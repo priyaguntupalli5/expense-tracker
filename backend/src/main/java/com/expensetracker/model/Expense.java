@@ -46,6 +46,9 @@ public class Expense {
     @Column(name = "source_fixed_id")
     private Long sourceFixedId;
 
+    @Size(max = 50)
+    private String tag;
+
     @Column(name = "created_at", nullable = false, updatable = false,
             columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     @CreationTimestamp
@@ -87,6 +90,9 @@ public class Expense {
 
     public Long getSourceFixedId() { return sourceFixedId; }
     public void setSourceFixedId(Long sourceFixedId) { this.sourceFixedId = sourceFixedId; }
+
+    public String getTag() { return tag; }
+    public void setTag(String tag) { this.tag = tag; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

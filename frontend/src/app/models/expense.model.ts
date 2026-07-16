@@ -8,6 +8,7 @@ export interface Expense {
   subcategory?: string;
   imageData?: string;
   sourceFixedId?: number; // set on auto-generated entries from fixed expenses
+  tag?: string;
 }
 
 export interface FixedExpense {

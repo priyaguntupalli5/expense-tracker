@@ -61,6 +61,16 @@ public class ExpenseService {
         });
     }
 
+    public void bulkTag(List<Long> ids, String tag, Long groupId) {
+        if (ids == null || ids.isEmpty()) return;
+        String normalizedTag = (tag != null && !tag.isBlank()) ? tag.trim() : null;
+        repository.bulkUpdateTag(ids, normalizedTag, groupId);
+    }
+
+    public List<String> getTags(Long groupId) {
+        return repository.findDistinctTagsByGroupId(groupId);
+    }
+
     public boolean delete(Long id, Long groupId) {
         if (!repository.existsByIdAndGroupId(id, groupId)) return false;
         repository.deleteById(id);

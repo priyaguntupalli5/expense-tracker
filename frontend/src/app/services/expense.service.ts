@@ -69,6 +69,16 @@ export class ExpenseService {
     return this.http.delete<void>(`${API}/expenses/${id}`);
   }
 
+  bulkTag(ids: number[], tag: string | null): Observable<void> {
+    return this.http.patch<void>(`${API}/expenses/bulk-tag`, { ids, tag });
+  }
+
+  getTags(): Observable<string[]> {
+    return this.http.get<string[]>(`${API}/expenses/tags`).pipe(
+      catchError(() => of<string[]>([])),
+    );
+  }
+
   // ── Fixed Expenses ─────────────────────────────────────────────────────────
 
   getFixedExpenses(): Observable<FixedExpense[]> {

@@ -325,7 +325,112 @@ mat-card-content {
   .filter-total .total-value { font-size: 1rem; }
 }
 
+// ── Select button ─────────────────────────────────────────────────────────────
+
+.select-btn {
+  margin-left: 8px;
+  border-radius: 20px !important;
+  font-size: 0.85rem;
+  height: 34px;
+  border-color: rgba(0, 0, 0, 0.18) !important;
+
+  &.active {
+    background: rgba(25, 118, 210, 0.08);
+    border-color: #1976d2 !important;
+    color: #1976d2;
+  }
+}
+
+// ── Select column ─────────────────────────────────────────────────────────────
+
+.select-col {
+  width: 48px;
+  padding-right: 0 !important;
+}
+
+// ── Tag chip (on expense rows) ────────────────────────────────────────────────
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  border-radius: 12px;
+  padding: 1px 8px 1px 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+
+  &:hover { background: #c8e6c9; }
+
+  .tag-icon {
+    font-size: 0.78rem;
+    width: 0.78rem;
+    height: 0.78rem;
+  }
+}
+
+// ── Tag filter chip (active filter row) ───────────────────────────────────────
+
+.tag-filter-chip {
+  background: rgba(46, 125, 50, 0.1) !important;
+  color: #2e7d32 !important;
+  border: 1px solid rgba(46, 125, 50, 0.3);
+}
+
+// ── Floating tag action bar ───────────────────────────────────────────────────
+
+.tag-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+}
+
+.selection-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1976d2;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.tag-input-field {
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+
+  .mat-mdc-form-field-subscript-wrapper { display: none; }
+}
+
+::ng-deep .tag-input-field .mat-mdc-form-field-infix {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  min-height: unset;
+}
+
+::ng-deep .tag-input-field .mat-mdc-text-field-wrapper {
+  height: 42px;
+}
+
 .active-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   padding: 6px 0 2px;
 }
 
@@ -347,5 +452,16 @@ mat-card-content {
     height: 24px;
     line-height: 24px;
     mat-icon { font-size: 0.9rem; width: 0.9rem; height: 0.9rem; }
+  }
+}
+
+@media (max-width: 600px) {
+  .tag-action-bar {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .tag-input-field {
+    max-width: 200px;
   }
 }
