@@ -132,13 +132,15 @@
                 <div class="pie-wrapper">
                   <svg viewBox="0 0 200 200" class="pie-svg">
                     @for (slice of pieSlices; track slice.category) {
-                      <path
-                        [attr.d]="slice.path"
-                        [attr.fill]="slice.color"
-                        [class.selected]="drillDownCategory === slice.category"
-                        class="pie-slice"
-                        (click)="onSliceClick(slice.category)">
-                      </path>
+                      @if (slice.path) {
+                        <path
+                          [attr.d]="slice.path"
+                          [attr.fill]="slice.color"
+                          [class.selected]="drillDownCategory === slice.category"
+                          class="pie-slice"
+                          (click)="onSliceClick(slice.category)">
+                        </path>
+                      }
                     }
                     <circle cx="100" cy="100" r="50" fill="white"/>
                     <text x="100" y="94" text-anchor="middle" class="donut-sm">Total</text>
@@ -253,13 +255,15 @@
                   <div class="pie-wrapper">
                     <svg viewBox="0 0 200 200" class="pie-svg">
                       @for (slice of labelCategorySlices; track slice.category) {
-                        <path
-                          [attr.d]="slice.path"
-                          [attr.fill]="slice.color"
-                          [class.selected]="labelDrillCategory === slice.category"
-                          class="pie-slice"
-                          (click)="onLabelCategorySliceClick(slice.category)">
-                        </path>
+                        @if (slice.path) {
+                          <path
+                            [attr.d]="slice.path"
+                            [attr.fill]="slice.color"
+                            [class.selected]="labelDrillCategory === slice.category"
+                            class="pie-slice"
+                            (click)="onLabelCategorySliceClick(slice.category)">
+                          </path>
+                        }
                       }
                       <circle cx="100" cy="100" r="50" fill="white"/>
                       <text x="100" y="94" text-anchor="middle" class="donut-sm">{{ selectedLabel }}</text>

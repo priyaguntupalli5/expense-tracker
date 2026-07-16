@@ -412,44 +412,52 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   // Builds a top-level pie (by category or by tag) from a { key: amount } breakdown.
+  // Entries with no net positive amount (e.g. a category that's pure refunds) still
+  // get a legend row — just without a visible arc — so they stay browsable instead
+  // of vanishing entirely.
   private buildCategoryPieSlices(breakdown: Record<string, number>): PieSlice[] {
-    const total = Object.values(breakdown).reduce((s, a) => s + a, 0);
-    if (total === 0) return [];
+    const entries = Object.entries(breakdown).filter(([, v]) => v !== 0);
+    if (entries.length === 0) return [];
+
+    const positive = entries.filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a);
+    const nonPositive = entries.filter(([, v]) => v <= 0).sort(([, a], [, b]) => b - a);
+    const positiveTotal = positive.reduce((s, [, v]) => s + v, 0);
 
     const cx = 100, cy = 100, r = 80;
-    const sorted = Object.entries(breakdown).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a);
-    if (sorted.length === 0) return [];
+    const slices: PieSlice[] = [];
 
-    if (sorted.length === 1) {
-      return [{
+    if (positiveTotal > 0 && positive.length === 1) {
+      slices.push({
         path: `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`,
-        color: this.getCategoryColor(sorted[0][0]),
-        category: sorted[0][0],
-        amount: sorted[0][1],
+        color: this.getCategoryColor(positive[0][0]),
+        category: positive[0][0],
+        amount: positive[0][1],
         percentage: 100,
-      }];
+      });
+    } else if (positiveTotal > 0) {
+      let angle = -Math.PI / 2;
+      for (const [category, amount] of positive) {
+        const sweep    = (amount / positiveTotal) * 2 * Math.PI;
+        const x1       = cx + r * Math.cos(angle);
+        const y1       = cy + r * Math.sin(angle);
+        const endAngle = angle + sweep;
+        const x2       = cx + r * Math.cos(endAngle);
+        const y2       = cy + r * Math.sin(endAngle);
+
+        slices.push({
+          path: `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`,
+          color: this.getCategoryColor(category),
+          category,
+          amount,
+          percentage: Math.round((amount / positiveTotal) * 100),
+        });
+
+        angle = endAngle;
+      }
     }
 
-    const slices: PieSlice[] = [];
-    let angle = -Math.PI / 2;
-
-    for (const [category, amount] of sorted) {
-      const sweep    = (amount / total) * 2 * Math.PI;
-      const x1       = cx + r * Math.cos(angle);
-      const y1       = cy + r * Math.sin(angle);
-      const endAngle = angle + sweep;
-      const x2       = cx + r * Math.cos(endAngle);
-      const y2       = cy + r * Math.sin(endAngle);
-
-      slices.push({
-        path: `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`,
-        color: this.getCategoryColor(category),
-        category,
-        amount,
-        percentage: Math.round((amount / total) * 100),
-      });
-
-      angle = endAngle;
+    for (const [category, amount] of nonPositive) {
+      slices.push({ path: '', color: this.getCategoryColor(category), category, amount, percentage: 0 });
     }
 
     return slices;
