@@ -39,7 +39,8 @@ interface ExpenseItem {
   isFixed: boolean;
 }
 
-type ViewMode = 'to-date' | 'end-of-month';
+type ViewMode   = 'to-date' | 'end-of-month';
+type ChartView  = 'category' | 'label';
 
 @Component({
   selector: 'app-dashboard',
@@ -68,9 +69,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private fixedExpenses: FixedExpense[] = [];
   private allExpenses: Expense[] = [];
 
+  chartView: ChartView = 'category';
+
   drillDownCategory: string | null = null;
   subPieSlices: SubPieSlice[] = [];
   subPieTotal = 0;
+
+  availableLabels: string[] = [];
+  selectedLabel: string | null = null;
+  labelCategorySlices: PieSlice[] = [];
+  labelDrillCategory: string | null = null;
+  labelCategorySubSlices: SubPieSlice[] = [];
+  labelCategorySubTotal = 0;
 
   itemsPopupOpen = false;
   popupSubcategory = '';
@@ -119,10 +129,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  setChartView(view: ChartView) {
+    if (this.chartView === view) return;
+    this.chartView = view;
+    this.clearDrillDown();
+    if (view === 'label') this.computeAvailableLabels();
+  }
+
   clearDrillDown() {
     this.drillDownCategory = null;
     this.subPieSlices = [];
     this.subPieTotal = 0;
+    this.selectedLabel = null;
+    this.labelCategorySlices = [];
+    this.labelDrillCategory = null;
+    this.labelCategorySubSlices = [];
+    this.labelCategorySubTotal = 0;
+  }
+
+  get labelCategoryTotal(): number {
+    return this.labelCategorySlices.reduce((s, sl) => s + sl.amount, 0);
   }
 
   onSubSliceClick(subcategory: string) {
@@ -139,6 +165,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
         items.push({ id: fe.id!, title: fe.title, amount: this.fixedAmount(fe), isFixed: true });
       }
     }
+
+    if (items.length === 1) {
+      this.navigateToItem(items[0]);
+    } else {
+      this.popupSubcategory = subcategory;
+      this.popupItems = items;
+      this.itemsPopupOpen = true;
+    }
+  }
+
+  onLabelSelect(tag: string | null) {
+    this.selectedLabel = tag;
+    this.labelDrillCategory = null;
+    this.labelCategorySubSlices = [];
+    this.labelCategorySubTotal = 0;
+    if (tag) this.buildLabelCategoryChart(tag);
+    else this.labelCategorySlices = [];
+  }
+
+  onLabelCategorySliceClick(category: string) {
+    if (this.labelDrillCategory === category) {
+      this.labelDrillCategory = null;
+      this.labelCategorySubSlices = [];
+      this.labelCategorySubTotal = 0;
+    } else {
+      this.labelDrillCategory = category;
+      this.buildLabelCategorySubChart(this.selectedLabel!, category);
+    }
+  }
+
+  onLabelCategorySubSliceClick(subcategory: string) {
+    const tag      = this.selectedLabel!;
+    const category = this.labelDrillCategory!;
+    const items: ExpenseItem[] = this.allExpenses
+      .filter(e => e.tag === tag && e.category === category && (e.subcategory || 'Other') === subcategory)
+      .map(e => ({ id: e.id!, title: e.title, amount: Number(e.amount), isFixed: false }));
 
     if (items.length === 1) {
       this.navigateToItem(items[0]);
@@ -197,7 +259,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.fixedExpenses = [];
       this.summary       = { total: 0, count: 0, categoryBreakdown: {}, subcategoryBreakdown: {}, titleBreakdown: {} };
       this.pieSlices     = [];
+      this.availableLabels = [];
       if (this.drillDownCategory) this.buildSubPieChart(this.drillDownCategory);
+      if (this.selectedLabel) this.buildLabelCategoryChart(this.selectedLabel);
       return;
     }
 
@@ -219,9 +283,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.summary       = summary;
       this.allExpenses   = expenses;
       this.buildPieChart();
-      if (this.drillDownCategory) {
-        this.buildSubPieChart(this.drillDownCategory);
-      }
+      this.computeAvailableLabels();
+      if (this.drillDownCategory) this.buildSubPieChart(this.drillDownCategory);
+      if (this.selectedLabel) this.buildLabelCategoryChart(this.selectedLabel);
+      if (this.labelDrillCategory) this.buildLabelCategorySubChart(this.selectedLabel!, this.labelDrillCategory);
     });
   }
 
@@ -298,6 +363,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return (subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
   }
 
+  private computeAvailableLabels() {
+    const tags = new Set<string>();
+    for (const e of this.allExpenses) if (e.tag) tags.add(e.tag);
+    this.availableLabels = [...tags].sort();
+    if (this.selectedLabel && !tags.has(this.selectedLabel)) this.onLabelSelect(null);
+    if (!this.selectedLabel && this.availableLabels.length === 1) this.onLabelSelect(this.availableLabels[0]);
+  }
+
+  private buildLabelCategoryChart(tag: string) {
+    const breakdown: Record<string, number> = {};
+    for (const e of this.allExpenses) {
+      if (e.tag !== tag) continue;
+      if (this.expenseService.getCategoryByValue(e.category)?.isIncome) continue;
+      breakdown[e.category] = (breakdown[e.category] ?? 0) +
+        (this.isRefund(e.subcategory) ? -Number(e.amount) : Number(e.amount));
+    }
+    this.labelCategorySlices = this.buildCategoryPieSlices(breakdown);
+  }
+
+  private buildLabelCategorySubChart(tag: string, category: string) {
+    const breakdown: Record<string, number> = {};
+    for (const e of this.allExpenses) {
+      if (e.tag !== tag || e.category !== category) continue;
+      const sub = e.subcategory || 'Other';
+      breakdown[sub] = (breakdown[sub] ?? 0) + Number(e.amount);
+    }
+    const { slices, total } = this.buildSlices(breakdown, category);
+    this.labelCategorySubSlices = slices;
+    this.labelCategorySubTotal  = total;
+  }
+
   private buildPieChart() {
     const breakdown: Record<string, number> = {};
 
@@ -312,21 +408,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
         (this.isRefund(fe.subcategory) ? -this.fixedAmount(fe) : this.fixedAmount(fe));
     }
 
+    this.pieSlices = this.buildCategoryPieSlices(breakdown);
+  }
+
+  // Builds a top-level pie (by category or by tag) from a { key: amount } breakdown.
+  private buildCategoryPieSlices(breakdown: Record<string, number>): PieSlice[] {
     const total = Object.values(breakdown).reduce((s, a) => s + a, 0);
-    if (total === 0) { this.pieSlices = []; return; }
+    if (total === 0) return [];
 
     const cx = 100, cy = 100, r = 80;
     const sorted = Object.entries(breakdown).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a);
+    if (sorted.length === 0) return [];
 
     if (sorted.length === 1) {
-      this.pieSlices = [{
+      return [{
         path: `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`,
-        color: this.expenseService.getCategoryByValue(sorted[0][0])?.color ?? '#607d8b',
+        color: this.getCategoryColor(sorted[0][0]),
         category: sorted[0][0],
         amount: sorted[0][1],
         percentage: 100,
       }];
-      return;
     }
 
     const slices: PieSlice[] = [];
@@ -342,7 +443,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       slices.push({
         path: `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`,
-        color: this.expenseService.getCategoryByValue(category)?.color ?? '#607d8b',
+        color: this.getCategoryColor(category),
         category,
         amount,
         percentage: Math.round((amount / total) * 100),
@@ -351,7 +452,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       angle = endAngle;
     }
 
-    this.pieSlices = slices;
+    return slices;
   }
 
   private buildSubPieChart(category: string) {
@@ -366,12 +467,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       breakdown[sub] = (breakdown[sub] ?? 0) + this.fixedAmount(fe);
     }
 
-    this.subPieSlices = this.buildSlices(breakdown, category);
+    const { slices, total } = this.buildSlices(breakdown, category);
+    this.subPieSlices = slices;
+    this.subPieTotal  = total;
   }
 
-  private buildSlices(breakdown: Record<string, number>, category: string): SubPieSlice[] {
+  private buildSlices(breakdown: Record<string, number>, category: string): { slices: SubPieSlice[]; total: number } {
     const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
-    if (entries.length === 0) { this.subPieTotal = 0; return []; }
+    if (entries.length === 0) return { slices: [], total: 0 };
 
     const CREDIT_COLOR = '#2e7d32';
     const nonCreditEntries = entries.filter(([label]) => !this.isRefund(label));
@@ -379,7 +482,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const colors = this.generateSubColors(baseColor, nonCreditEntries.length);
 
     const total = entries.reduce((s, [, v]) => s + v, 0);
-    this.subPieTotal = total;
 
     // credit slices sorted last so they appear at the end of the pie
     const sorted = [
@@ -390,14 +492,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     if (sorted.length === 1) {
       const isCredit = this.isRefund(sorted[0][0]);
-      return [{
+      return { total, slices: [{
         path: `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`,
         color: isCredit ? CREDIT_COLOR : colors[0],
         label: sorted[0][0],
         amount: sorted[0][1],
         percentage: 100,
         isCredit,
-      }];
+      }] };
     }
 
     const slices: SubPieSlice[] = [];
@@ -425,7 +527,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       angle = endAngle;
     }
 
-    return slices;
+    return { slices, total };
   }
 
   // Generates N shades of a base hex color by varying lightness in HSL space.
