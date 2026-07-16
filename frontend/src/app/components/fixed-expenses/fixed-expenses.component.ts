@@ -106,8 +106,9 @@ export class FixedExpensesComponent implements OnInit {
       .subscribe(entries => { this.entries = entries; });
   }
 
-  isCredit(categoryValue: string): boolean {
-    return this.expenseService.getCategoryByValue(categoryValue)?.isIncome ?? false;
+  isCredit(categoryValue: string, subcategory?: string): boolean {
+    if (this.expenseService.getCategoryByValue(categoryValue)?.isIncome) return true;
+    return (subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
   }
 
   /** Actual cost for the selected month. */
@@ -115,12 +116,13 @@ export class FixedExpensesComponent implements OnInit {
     return this.expenses.reduce((sum, e) => {
       const occ  = monthOccurrences(e, this.selectedMonth, this.selectedYear);
       const cost = occ !== null ? occ * Number(e.amount) : monthlyEquivalent(e);
-      return sum + (this.isCredit(e.category) ? -cost : cost);
+      return sum + (this.isCredit(e.category, e.subcategory) ? -cost : cost);
     }, 0);
   }
 
   get entriesTotal(): number {
-    return this.entries.reduce((s, e) => s + Number(e.amount), 0);
+    return this.entries.reduce((s, e) =>
+      s + (this.isCredit(e.category, e.subcategory) ? -Number(e.amount) : Number(e.amount)), 0);
   }
 
   scheduleLabel(fe: FixedExpense): string {

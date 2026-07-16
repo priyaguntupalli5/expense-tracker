@@ -455,7 +455,8 @@
 }
 
 .items-popup {
-  background: #fff;
+  background: #fff !important;
+  color: #111 !important;
   border-radius: 16px 16px 0 0;
   width: 100%;
   max-width: 480px;
@@ -464,8 +465,6 @@
   padding-bottom: env(safe-area-inset-bottom, 12px);
 
   @media (min-width: 600px) { border-radius: 16px; }
-
-  @media (prefers-color-scheme: dark) { background: #1e1e1e; }
 
   &-header {
     display: flex;
@@ -478,12 +477,16 @@
   &-title {
     font-size: 1rem;
     font-weight: 600;
+    color: #111;
   }
+
+  // Force close button icon to dark regardless of device theme
+  button mat-icon, button .mat-icon { color: #444 !important; }
 
   &-empty {
     padding: 24px;
     text-align: center;
-    color: #999;
+    color: #666;
   }
 
   &-row {
@@ -500,7 +503,7 @@
   }
 
   &-type {
-    color: #999;
+    color: #888;
     font-size: 1.1rem;
     width: 1.1rem;
     height: 1.1rem;
@@ -511,15 +514,14 @@
     flex: 1;
     font-size: 0.95rem;
     font-weight: 500;
+    color: #111;
   }
 
   &-amount {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #333;
+    color: #222;
     flex-shrink: 0;
-
-    @media (prefers-color-scheme: dark) { color: #eee; }
   }
 
   &-nav {

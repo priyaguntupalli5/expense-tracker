@@ -66,13 +66,14 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     this.titleFilter = '';
   }
 
-  isCredit(categoryValue: string): boolean {
-    return this.expenseService.getCategoryByValue(categoryValue)?.isIncome ?? false;
+  isCredit(categoryValue: string, subcategory?: string): boolean {
+    if (this.expenseService.getCategoryByValue(categoryValue)?.isIncome) return true;
+    return (subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
   }
 
   get total(): number {
     return this.filteredExpenses.reduce((sum, e) =>
-      sum + (this.isCredit(e.category) ? -Number(e.amount) : Number(e.amount)), 0);
+      sum + (this.isCredit(e.category, e.subcategory) ? -Number(e.amount) : Number(e.amount)), 0);
   }
 
   constructor() {

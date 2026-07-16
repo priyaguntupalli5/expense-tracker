@@ -293,6 +293,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return occ !== null ? occ * Number(fe.amount) : monthlyEquivalent(fe);
   }
 
+  private isRefund(subcategory?: string): boolean {
+    return (subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
+  }
+
+  private get refundTotal(): number {
+    return this.allExpenses
+      .filter(e => this.isRefund(e.subcategory))
+      .reduce((s, e) => s + Number(e.amount), 0);
+  }
+
   private buildPieChart() {
     const breakdown: Record<string, number> = {};
 
@@ -306,12 +316,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
         breakdown[fe.category] = (breakdown[fe.category] ?? 0) + this.fixedAmount(fe);
       }
     }
+    // Refunds & Credits reduce the category total, not inflate it
+    for (const e of this.allExpenses) {
+      if (this.isRefund(e.subcategory) && !this.expenseService.getCategoryByValue(e.category)?.isIncome) {
+        breakdown[e.category] = (breakdown[e.category] ?? 0) - Number(e.amount);
+      }
+    }
 
     const total = Object.values(breakdown).reduce((s, a) => s + a, 0);
     if (total === 0) { this.pieSlices = []; return; }
 
     const cx = 100, cy = 100, r = 80;
-    const sorted = Object.entries(breakdown).sort(([, a], [, b]) => b - a);
+    const sorted = Object.entries(breakdown).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a);
 
     if (sorted.length === 1) {
       this.pieSlices = [{
@@ -353,10 +369,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const breakdown: Record<string, number> = {};
 
     for (const e of this.allExpenses.filter(e => e.category === category)) {
+      if (this.isRefund(e.subcategory)) continue;
       const sub = e.subcategory || 'Other';
       breakdown[sub] = (breakdown[sub] ?? 0) + Number(e.amount);
     }
     for (const fe of this.fixedExpenses.filter(f => f.category === category)) {
+      if (this.isRefund(fe.subcategory)) continue;
       const sub = fe.subcategory || 'Other';
       breakdown[sub] = (breakdown[sub] ?? 0) + this.fixedAmount(fe);
     }
@@ -465,10 +483,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   get actualTotal(): number {
     const breakdown = this.summary?.categoryBreakdown ?? {};
-    return Object.entries(breakdown).reduce((sum, [cat, amt]) => {
+    const gross = Object.entries(breakdown).reduce((sum, [cat, amt]) => {
       const isCredit = this.expenseService.getCategoryByValue(cat)?.isIncome ?? false;
       return sum + (isCredit ? -Number(amt) : Number(amt));
     }, 0);
+    return gross - this.refundTotal;
   }
 
   get combinedTotal(): number {
