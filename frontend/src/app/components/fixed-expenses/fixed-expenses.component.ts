@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -36,10 +37,21 @@ export class FixedExpensesComponent implements OnInit {
   private readonly expenseService = inject(ExpenseService);
   private readonly dialog         = inject(MatDialog);
   private readonly snackBar       = inject(MatSnackBar);
+  private readonly route          = inject(ActivatedRoute);
   readonly settingsService        = inject(SettingsService);
 
   expenses: FixedExpense[] = [];
   entries:  Expense[]      = [];
+  titleFilter = '';
+  highlightId: number | null = null;
+
+  get filteredExpenses(): FixedExpense[] {
+    if (!this.titleFilter) return this.expenses;
+    const t = this.titleFilter.toLowerCase();
+    return this.expenses.filter(e => e.title.toLowerCase().includes(t));
+  }
+
+  clearTitleFilter() { this.titleFilter = ''; }
   displayedColumns      = ['title', 'category', 'amount', 'actions'];
   entryDisplayedColumns = ['title', 'date', 'amount', 'actions'];
 
@@ -58,7 +70,22 @@ export class FixedExpensesComponent implements OnInit {
 
   ngOnInit() {
     this.expenseService.loadCategories().subscribe();
+    this.route.queryParams.subscribe(params => {
+      if (params['title'])      this.titleFilter = params['title'];
+      if (params['highlightId']) this.highlightId = Number(params['highlightId']);
+    });
     this.load();
+  }
+
+  private scrollToRow(id: number) {
+    setTimeout(() => {
+      const el = document.getElementById(`fixed-row-${id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('row--highlighted');
+        setTimeout(() => el.classList.remove('row--highlighted'), 3000);
+      }
+    }, 150);
   }
 
   onPeriodChange() { this.loadEntries(); }
@@ -70,6 +97,7 @@ export class FixedExpensesComponent implements OnInit {
     ]).subscribe(([expenses, entries]) => {
       this.expenses = expenses;
       this.entries  = entries;
+      if (this.highlightId) this.scrollToRow(this.highlightId);
     });
   }
 

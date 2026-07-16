@@ -54,6 +54,18 @@
           <span class="total-value">{{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
         </div>
       </div>
+
+      @if (titleFilter) {
+        <div class="active-filter-row">
+          <span class="active-filter-chip">
+            <mat-icon>filter_list</mat-icon>
+            {{ titleFilter }}
+            <button mat-icon-button class="clear-filter-btn" (click)="clearTitleFilter()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </span>
+        </div>
+      }
     </div>
 
     <mat-card-content>
@@ -139,6 +151,7 @@
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="expense-row"
+                [id]="'expense-row-' + row.id"
                 [class.credit-row]="isCredit(row.category)"></tr>
           </table>
         </div>

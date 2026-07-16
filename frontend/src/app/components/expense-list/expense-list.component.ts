@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -33,13 +34,16 @@ import { ExpenseFormComponent } from '../expense-form/expense-form.component';
 })
 export class ExpenseListComponent implements OnInit, OnDestroy {
   private readonly expenseService = inject(ExpenseService);
-  private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
-  readonly settingsService = inject(SettingsService);
-  private readonly destroy$ = new Subject<void>();
+  private readonly dialog         = inject(MatDialog);
+  private readonly snackBar       = inject(MatSnackBar);
+  private readonly route          = inject(ActivatedRoute);
+  readonly settingsService        = inject(SettingsService);
+  private readonly destroy$       = new Subject<void>();
 
   expenses: Expense[] = [];
   viewingImage: string | null = null;
+  titleFilter = '';
+  highlightId: number | null = null;
   displayedColumns = ['date', 'title', 'category', 'amount', 'actions'];
 
   readonly startCtrl    = new FormControl<Date | null>(null);
@@ -49,9 +53,17 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   get categories() { return this.expenseService.categories; }
 
   get filteredExpenses(): Expense[] {
-    const cat = this.categoryCtrl.value;
-    if (!cat) return this.expenses;
-    return this.expenses.filter(e => e.category === cat);
+    const cat   = this.categoryCtrl.value;
+    const title = this.titleFilter.toLowerCase();
+    return this.expenses.filter(e => {
+      if (cat && e.category !== cat) return false;
+      if (title && !e.title.toLowerCase().includes(title)) return false;
+      return true;
+    });
+  }
+
+  clearTitleFilter() {
+    this.titleFilter = '';
   }
 
   isCredit(categoryValue: string): boolean {
@@ -73,6 +85,13 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     this.expenseService.loadCategories().subscribe();
     this.categoryCtrl.valueChanges.pipe(takeUntil(this.destroy$)).subscribe();
 
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      if (params['title'])      this.titleFilter = params['title'];
+      if (params['highlightId']) this.highlightId = Number(params['highlightId']);
+      if (params['startDate']) this.startCtrl.setValue(new Date(params['startDate'] + 'T00:00:00'));
+      if (params['endDate'])   this.endCtrl.setValue(new Date(params['endDate']   + 'T00:00:00'));
+    });
+
     combineLatest([
       this.startCtrl.valueChanges.pipe(startWith(this.startCtrl.value)),
       this.endCtrl.valueChanges.pipe(startWith(this.endCtrl.value)),
@@ -86,7 +105,21 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
         )
       ),
       takeUntil(this.destroy$),
-    ).subscribe(expenses => this.expenses = expenses);
+    ).subscribe(expenses => {
+      this.expenses = expenses;
+      if (this.highlightId) this.scrollToRow(this.highlightId);
+    });
+  }
+
+  private scrollToRow(id: number) {
+    setTimeout(() => {
+      const el = document.getElementById(`expense-row-${id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('row--highlighted');
+        setTimeout(() => el.classList.remove('row--highlighted'), 3000);
+      }
+    }, 150);
   }
 
   ngOnDestroy() {

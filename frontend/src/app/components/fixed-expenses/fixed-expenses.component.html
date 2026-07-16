@@ -20,7 +20,18 @@
     </div>
 
     <mat-card-content>
-      @if (expenses.length === 0) {
+      @if (titleFilter) {
+        <div class="active-filter-row">
+          <span class="active-filter-chip">
+            <mat-icon>filter_list</mat-icon>
+            {{ titleFilter }}
+            <button mat-icon-button class="clear-filter-btn" (click)="clearTitleFilter()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </span>
+        </div>
+      }
+      @if (filteredExpenses.length === 0) {
         <div class="empty-state">
           <mat-icon>repeat</mat-icon>
           <p>No fixed expenses yet</p>
@@ -28,7 +39,7 @@
         </div>
       } @else {
         <div class="table-wrapper">
-          <table mat-table [dataSource]="expenses" class="expense-table">
+          <table mat-table [dataSource]="filteredExpenses" class="expense-table">
 
             <ng-container matColumnDef="title">
               <th mat-header-cell *matHeaderCellDef>Description</th>
@@ -94,6 +105,7 @@
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="expense-row"
+                [id]="'fixed-row-' + row.id"
                 [class.credit-row]="isCredit(row.category)"></tr>
           </table>
         </div>

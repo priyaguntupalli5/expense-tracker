@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -30,6 +31,13 @@ interface SubPieSlice {
   percentage: number;
 }
 
+interface ExpenseItem {
+  id: number;
+  title: string;
+  amount: number;
+  isFixed: boolean;
+}
+
 type ViewMode = 'to-date' | 'end-of-month';
 
 @Component({
@@ -43,9 +51,10 @@ type ViewMode = 'to-date' | 'end-of-month';
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  private readonly expenseService = inject(ExpenseService);
-  private readonly incomeService  = inject(IncomeService);
-  private readonly destroy$       = new Subject<void>();
+  private readonly expenseService  = inject(ExpenseService);
+  private readonly incomeService   = inject(IncomeService);
+  private readonly router          = inject(Router);
+  private readonly destroy$        = new Subject<void>();
   readonly pushService    = inject(PushNotificationService);
   readonly settingsService = inject(SettingsService);
 
@@ -61,6 +70,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   drillDownCategory: string | null = null;
   subPieSlices: SubPieSlice[] = [];
   subPieTotal = 0;
+
+  itemsPopupOpen = false;
+  popupSubcategory = '';
+  popupItems: ExpenseItem[] = [];
 
   readonly months = [
     { value: 1,  label: 'January' },   { value: 2,  label: 'February' },
@@ -109,6 +122,54 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.drillDownCategory = null;
     this.subPieSlices = [];
     this.subPieTotal = 0;
+  }
+
+  onSubSliceClick(subcategory: string) {
+    const cat = this.drillDownCategory!;
+    const items: ExpenseItem[] = [];
+
+    for (const e of this.allExpenses.filter(e => e.category === cat)) {
+      if ((e.subcategory || 'Other') === subcategory) {
+        items.push({ id: e.id!, title: e.title, amount: Number(e.amount), isFixed: false });
+      }
+    }
+    for (const fe of this.fixedExpenses.filter(fe => fe.category === cat)) {
+      if ((fe.subcategory || 'Other') === subcategory) {
+        items.push({ id: fe.id!, title: fe.title, amount: this.fixedAmount(fe), isFixed: true });
+      }
+    }
+
+    if (items.length === 1) {
+      this.navigateToItem(items[0]);
+    } else {
+      this.popupSubcategory = subcategory;
+      this.popupItems = items;
+      this.itemsPopupOpen = true;
+    }
+  }
+
+  onItemClick(item: ExpenseItem) {
+    this.itemsPopupOpen = false;
+    this.navigateToItem(item);
+  }
+
+  private navigateToItem(item: ExpenseItem) {
+    const m = String(this.selectedMonth).padStart(2, '0');
+
+    if (item.isFixed) {
+      this.router.navigate(['/fixed-expenses'], {
+        queryParams: { highlightId: item.id },
+      });
+    } else {
+      const lastDay = new Date(this.selectedYear, this.selectedMonth, 0).getDate();
+      this.router.navigate(['/expenses'], {
+        queryParams: {
+          highlightId: item.id,
+          startDate:   `${this.selectedYear}-${m}-01`,
+          endDate:     `${this.selectedYear}-${m}-${String(lastDay).padStart(2, '0')}`,
+        },
+      });
+    }
   }
 
   private get toDateParam(): string | undefined {
@@ -291,14 +352,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private buildSubPieChart(category: string) {
     const breakdown: Record<string, number> = {};
 
-    // Actual expenses for this category, grouped by title
     for (const e of this.allExpenses.filter(e => e.category === category)) {
-      breakdown[e.title] = (breakdown[e.title] ?? 0) + Number(e.amount);
+      const sub = e.subcategory || 'Other';
+      breakdown[sub] = (breakdown[sub] ?? 0) + Number(e.amount);
     }
-
-    // Fixed expenses for this category, grouped by title
     for (const fe of this.fixedExpenses.filter(f => f.category === category)) {
-      breakdown[fe.title] = (breakdown[fe.title] ?? 0) + this.fixedAmount(fe);
+      const sub = fe.subcategory || 'Other';
+      breakdown[sub] = (breakdown[sub] ?? 0) + this.fixedAmount(fe);
     }
 
     this.subPieSlices = this.buildSlices(breakdown, category);
