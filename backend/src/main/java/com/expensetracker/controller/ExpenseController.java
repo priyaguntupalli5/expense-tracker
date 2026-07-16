@@ -92,7 +92,14 @@ public class ExpenseController {
     @PatchMapping("/bulk-tag")
     public ResponseEntity<Void> bulkTag(@AuthenticationPrincipal User user,
                                         @RequestBody BulkTagRequest request) {
-        service.bulkTag(request.getIds(), request.getTag(), user.getGroup().getId());
+        service.addTag(request.getIds(), request.getTag(), user.getGroup().getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/bulk-untag")
+    public ResponseEntity<Void> bulkUntag(@AuthenticationPrincipal User user,
+                                          @RequestBody BulkTagRequest request) {
+        service.removeTag(request.getIds(), request.getTag(), user.getGroup().getId());
         return ResponseEntity.noContent().build();
     }
 }

@@ -69,8 +69,12 @@ export class ExpenseService {
     return this.http.delete<void>(`${API}/expenses/${id}`);
   }
 
-  bulkTag(ids: number[], tag: string | null): Observable<void> {
+  addTag(ids: number[], tag: string): Observable<void> {
     return this.http.patch<void>(`${API}/expenses/bulk-tag`, { ids, tag });
+  }
+
+  removeTag(ids: number[], tag: string): Observable<void> {
+    return this.http.patch<void>(`${API}/expenses/bulk-untag`, { ids, tag });
   }
 
   getTags(): Observable<string[]> {

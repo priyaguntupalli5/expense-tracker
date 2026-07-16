@@ -199,7 +199,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const tag      = this.selectedLabel!;
     const category = this.labelDrillCategory!;
     const items: ExpenseItem[] = this.allExpenses
-      .filter(e => e.tag === tag && e.category === category && (e.subcategory || 'Other') === subcategory)
+      .filter(e => (e.tags ?? []).includes(tag) && e.category === category && (e.subcategory || 'Other') === subcategory)
       .map(e => ({ id: e.id!, title: e.title, amount: Number(e.amount), isFixed: false }));
 
     if (items.length === 1) {
@@ -365,7 +365,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private computeAvailableLabels() {
     const tags = new Set<string>();
-    for (const e of this.allExpenses) if (e.tag) tags.add(e.tag);
+    for (const e of this.allExpenses) for (const t of (e.tags ?? [])) tags.add(t);
     this.availableLabels = [...tags].sort();
     if (this.selectedLabel && !tags.has(this.selectedLabel)) this.onLabelSelect(null);
     if (!this.selectedLabel && this.availableLabels.length === 1) this.onLabelSelect(this.availableLabels[0]);
@@ -374,7 +374,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private buildLabelCategoryChart(tag: string) {
     const breakdown: Record<string, number> = {};
     for (const e of this.allExpenses) {
-      if (e.tag !== tag) continue;
+      if (!(e.tags ?? []).includes(tag)) continue;
       if (this.expenseService.getCategoryByValue(e.category)?.isIncome) continue;
       breakdown[e.category] = (breakdown[e.category] ?? 0) +
         (this.isRefund(e.subcategory) ? -Number(e.amount) : Number(e.amount));
@@ -385,7 +385,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private buildLabelCategorySubChart(tag: string, category: string) {
     const breakdown: Record<string, number> = {};
     for (const e of this.allExpenses) {
-      if (e.tag !== tag || e.category !== category) continue;
+      if (!(e.tags ?? []).includes(tag) || e.category !== category) continue;
       const sub = e.subcategory || 'Other';
       breakdown[sub] = (breakdown[sub] ?? 0) + Number(e.amount);
     }

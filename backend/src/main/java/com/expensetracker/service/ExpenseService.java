@@ -61,10 +61,23 @@ public class ExpenseService {
         });
     }
 
-    public void bulkTag(List<Long> ids, String tag, Long groupId) {
-        if (ids == null || ids.isEmpty()) return;
-        String normalizedTag = (tag != null && !tag.isBlank()) ? tag.trim() : null;
-        repository.bulkUpdateTag(ids, normalizedTag, groupId);
+    public void addTag(List<Long> ids, String tag, Long groupId) {
+        if (ids == null || ids.isEmpty() || tag == null || tag.isBlank()) return;
+        String normalized = tag.trim();
+        List<Expense> expenses = repository.findByIdInAndGroupId(ids, groupId);
+        for (Expense e : expenses) {
+            e.getTags().add(normalized);
+        }
+        repository.saveAll(expenses);
+    }
+
+    public void removeTag(List<Long> ids, String tag, Long groupId) {
+        if (ids == null || ids.isEmpty() || tag == null || tag.isBlank()) return;
+        List<Expense> expenses = repository.findByIdInAndGroupId(ids, groupId);
+        for (Expense e : expenses) {
+            e.getTags().remove(tag);
+        }
+        repository.saveAll(expenses);
     }
 
     public List<String> getTags(Long groupId) {

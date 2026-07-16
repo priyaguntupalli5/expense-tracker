@@ -47,10 +47,17 @@ CREATE TABLE IF NOT EXISTS expenses (
     subcategory     VARCHAR(100)   NULL,
     image_data      MEDIUMTEXT     NULL,
     source_fixed_id BIGINT         NULL,
-    tag             VARCHAR(50)    NULL,
     created_at      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- Multiple labels per expense (many-to-many: an expense can carry several tags)
+CREATE TABLE IF NOT EXISTS expense_tags (
+    expense_id BIGINT      NOT NULL,
+    tag        VARCHAR(50) NOT NULL,
+    PRIMARY KEY (expense_id, tag),
+    CONSTRAINT fk_expense_tags_expense FOREIGN KEY (expense_id) REFERENCES expenses (id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS fixed_expenses (

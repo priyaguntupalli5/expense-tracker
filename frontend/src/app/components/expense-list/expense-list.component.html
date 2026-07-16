@@ -122,14 +122,22 @@
                     @if (e.sourceFixedId) {
                       <span class="auto-chip">auto</span>
                     }
-                    @if (e.tag) {
-                      <span class="tag-chip" (click)="filterByTag(e.tag); $event.stopPropagation()">
-                        <mat-icon class="tag-icon">label</mat-icon>{{ e.tag }}
-                      </span>
-                    }
                   </span>
                   @if (e.notes) {
                     <span class="notes-text">{{ e.notes }}</span>
+                  }
+                  @if (e.tags?.length) {
+                    <span class="tag-chips-row" (click)="$event.stopPropagation()">
+                      @for (tag of e.tags; track tag) {
+                        <span class="tag-chip">
+                          <mat-icon class="tag-icon" (click)="filterByTag(tag)">label</mat-icon>
+                          <span (click)="filterByTag(tag)">{{ tag }}</span>
+                          <button class="tag-remove-btn" (click)="removeTag(e, tag)" matTooltip="Remove label">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </span>
+                      }
+                    </span>
                   }
                 </div>
               </td>
@@ -210,9 +218,6 @@
     <button mat-flat-button color="primary" (click)="applyTag()"
             [disabled]="!someSelected || !tagCtrl.value?.trim()">
       Apply
-    </button>
-    <button mat-stroked-button (click)="clearSelectedTag()" [disabled]="!someSelected">
-      Remove Label
     </button>
     <button mat-icon-button matTooltip="Cancel selection" (click)="cancelSelection()">
       <mat-icon>close</mat-icon>

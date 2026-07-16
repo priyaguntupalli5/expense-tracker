@@ -7,6 +7,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "expenses")
@@ -46,8 +48,10 @@ public class Expense {
     @Column(name = "source_fixed_id")
     private Long sourceFixedId;
 
-    @Size(max = 50)
-    private String tag;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "expense_tags", joinColumns = @JoinColumn(name = "expense_id"))
+    @Column(name = "tag", length = 50)
+    private Set<String> tags = new LinkedHashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false,
             columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
@@ -91,8 +95,8 @@ public class Expense {
     public Long getSourceFixedId() { return sourceFixedId; }
     public void setSourceFixedId(Long sourceFixedId) { this.sourceFixedId = sourceFixedId; }
 
-    public String getTag() { return tag; }
-    public void setTag(String tag) { this.tag = tag; }
+    public Set<String> getTags() { return tags; }
+    public void setTags(Set<String> tags) { this.tags = tags != null ? tags : new LinkedHashSet<>(); }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

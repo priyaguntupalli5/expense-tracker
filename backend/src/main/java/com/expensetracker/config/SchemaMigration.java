@@ -28,6 +28,7 @@ public class SchemaMigration implements ApplicationRunner {
         migrateGroupCodes();
         migrateIncomePaymentDate();
         migrateFixedExpenseColumns();
+        migrateExpenseTagsToJoinTable();
         dropLegacyTables();
         resetGroups1And3ToDefaults();
     }
@@ -110,6 +111,25 @@ public class SchemaMigration implements ApplicationRunner {
         }
     }
 
+    // Moves single-value expenses.tag data into the expense_tags join table (which
+    // supports multiple labels per expense), then drops the now-unused column.
+    private void migrateExpenseTagsToJoinTable() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            DatabaseMetaData meta = conn.getMetaData();
+            if (!columnExists(meta, conn, "expenses", "tag")) return;
+
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "INSERT IGNORE INTO expense_tags (expense_id, tag) " +
+                    "SELECT id, tag FROM expenses WHERE tag IS NOT NULL AND tag <> ''")) {
+                ps.executeUpdate();
+            }
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE expenses DROP COLUMN tag");
+            }
+        }
+    }
+
     // Adds any columns that are missing from existing databases (local dev upgrade path).
     // For fresh databases all columns are already included in the CREATE TABLE definitions.
     private void migrateExistingColumns() throws SQLException {
@@ -132,7 +152,6 @@ public class SchemaMigration implements ApplicationRunner {
             addColumnIfAbsent(conn, "expenses", "image_data",      "MEDIUMTEXT NULL");
             addColumnIfAbsent(conn, "expenses", "group_id",        "BIGINT NULL");
             addColumnIfAbsent(conn, "expenses", "source_fixed_id", "BIGINT NULL");
-            addColumnIfAbsent(conn, "expenses", "tag",             "VARCHAR(50) NULL");
             addColumnIfAbsent(conn, "expenses", "created_at",      "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
             addColumnIfAbsent(conn, "expenses", "updated_at",      "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             // fixed_expenses

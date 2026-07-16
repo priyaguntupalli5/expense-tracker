@@ -325,6 +325,62 @@ mat-card-content {
   .filter-total .total-value { font-size: 1rem; }
 }
 
+// ── Tag chips row (on expense rows) ───────────────────────────────────────────
+
+.tag-chips-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  border-radius: 12px;
+  padding: 1px 2px 1px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+
+  &:hover { background: #c8e6c9; }
+
+  .tag-icon {
+    font-size: 0.78rem;
+    width: 0.78rem;
+    height: 0.78rem;
+    cursor: pointer;
+  }
+
+  > span { cursor: pointer; }
+}
+
+.tag-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+
+  mat-icon { font-size: 0.7rem; width: 0.7rem; height: 0.7rem; }
+
+  &:hover { opacity: 1; background: rgba(0, 0, 0, 0.08); }
+}
+
 // ── Select button ─────────────────────────────────────────────────────────────
 
 .select-btn {
@@ -346,41 +402,6 @@ mat-card-content {
 .select-col {
   width: 48px;
   padding-right: 0 !important;
-}
-
-// ── Tag chip (on expense rows) ────────────────────────────────────────────────
-
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
-  border-radius: 12px;
-  padding: 1px 8px 1px 4px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-  flex-shrink: 0;
-
-  &:hover { background: #c8e6c9; }
-
-  .tag-icon {
-    font-size: 0.78rem;
-    width: 0.78rem;
-    height: 0.78rem;
-  }
-}
-
-// ── Tag filter chip (active filter row) ───────────────────────────────────────
-
-.tag-filter-chip {
-  background: rgba(46, 125, 50, 0.1) !important;
-  color: #2e7d32 !important;
-  border: 1px solid rgba(46, 125, 50, 0.3);
 }
 
 // ── Floating tag action bar ───────────────────────────────────────────────────
@@ -425,6 +446,14 @@ mat-card-content {
 
 ::ng-deep .tag-input-field .mat-mdc-text-field-wrapper {
   height: 42px;
+}
+
+// ── Tag filter chip (active filter row) ───────────────────────────────────────
+
+.tag-filter-chip {
+  background: rgba(46, 125, 50, 0.1) !important;
+  color: #2e7d32 !important;
+  border: 1px solid rgba(46, 125, 50, 0.3);
 }
 
 .active-filter-row {

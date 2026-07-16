@@ -49,7 +49,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   tagFilter = '';
   highlightId: number | null = null;
 
-  // Selection & tag state
+  // Selection & bulk label-apply state
   selectionMode = false;
   selectedIds = new Set<number>();
   availableTags: string[] = [];
@@ -85,7 +85,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     return this.expenses.filter(e => {
       if (cat && e.category !== cat) return false;
       if (title && !e.title.toLowerCase().includes(title)) return false;
-      if (this.tagFilter && e.tag !== this.tagFilter) return false;
+      if (this.tagFilter && !(e.tags ?? []).includes(this.tagFilter)) return false;
       return true;
     });
   }
@@ -190,9 +190,11 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     const tag = this.tagCtrl.value?.trim() ?? '';
     const ids = [...this.selectedIds];
     if (!ids.length || !tag) return;
-    this.expenseService.bulkTag(ids, tag).subscribe({
+    this.expenseService.addTag(ids, tag).subscribe({
       next: () => {
-        this.expenses.forEach(e => { if (e.id && this.selectedIds.has(e.id)) e.tag = tag; });
+        this.expenses.forEach(e => {
+          if (e.id && this.selectedIds.has(e.id)) e.tags = [...new Set([...(e.tags ?? []), tag])];
+        });
         if (!this.availableTags.includes(tag)) this.availableTags = [...this.availableTags, tag].sort();
         this.snackBar.open(`Label "${tag}" applied to ${ids.length} item(s)`, 'OK', { duration: 3000 });
         this.selectedIds.clear();
@@ -203,25 +205,20 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     });
   }
 
-  clearSelectedTag() {
-    const ids = [...this.selectedIds];
-    if (!ids.length) return;
-    this.expenseService.bulkTag(ids, null).subscribe({
-      next: () => {
-        this.expenses.forEach(e => { if (e.id && this.selectedIds.has(e.id)) e.tag = undefined; });
-        this.snackBar.open('Label removed', 'OK', { duration: 3000 });
-        this.selectedIds.clear();
-        this.tagCtrl.setValue('');
-        this.selectionMode = false;
-      },
-      error: () => this.snackBar.open('Failed to remove label', 'Dismiss', { duration: 3000 }),
-    });
-  }
-
   cancelSelection() {
     this.selectionMode = false;
     this.selectedIds.clear();
     this.tagCtrl.setValue('');
+  }
+
+  removeTag(expense: Expense, tag: string) {
+    this.expenseService.removeTag([expense.id!], tag).subscribe({
+      next: () => {
+        expense.tags = (expense.tags ?? []).filter(t => t !== tag);
+        if (this.tagFilter === tag) this.tagFilter = '';
+      },
+      error: () => this.snackBar.open('Failed to remove label', 'Dismiss', { duration: 3000 }),
+    });
   }
 
   openAdd() {
