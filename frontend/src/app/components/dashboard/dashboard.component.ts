@@ -29,6 +29,7 @@ interface SubPieSlice {
   label: string;
   amount: number;
   percentage: number;
+  isCredit: boolean;
 }
 
 interface ExpenseItem {
@@ -297,30 +298,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return (subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
   }
 
-  private get refundTotal(): number {
-    return this.allExpenses
-      .filter(e => this.isRefund(e.subcategory))
-      .reduce((s, e) => s + Number(e.amount), 0);
-  }
-
   private buildPieChart() {
     const breakdown: Record<string, number> = {};
 
-    for (const [cat, amount] of Object.entries(this.summary?.categoryBreakdown ?? {})) {
-      if (!this.expenseService.getCategoryByValue(cat)?.isIncome) {
-        breakdown[cat] = (breakdown[cat] ?? 0) + Number(amount);
-      }
+    for (const e of this.allExpenses) {
+      if (this.expenseService.getCategoryByValue(e.category)?.isIncome) continue;
+      breakdown[e.category] = (breakdown[e.category] ?? 0) +
+        (this.isRefund(e.subcategory) ? -Number(e.amount) : Number(e.amount));
     }
     for (const fe of this.fixedExpenses) {
-      if (!this.expenseService.getCategoryByValue(fe.category)?.isIncome) {
-        breakdown[fe.category] = (breakdown[fe.category] ?? 0) + this.fixedAmount(fe);
-      }
-    }
-    // Refunds & Credits reduce the category total, not inflate it
-    for (const e of this.allExpenses) {
-      if (this.isRefund(e.subcategory) && !this.expenseService.getCategoryByValue(e.category)?.isIncome) {
-        breakdown[e.category] = (breakdown[e.category] ?? 0) - Number(e.amount);
-      }
+      if (this.expenseService.getCategoryByValue(fe.category)?.isIncome) continue;
+      breakdown[fe.category] = (breakdown[fe.category] ?? 0) +
+        (this.isRefund(fe.subcategory) ? -this.fixedAmount(fe) : this.fixedAmount(fe));
     }
 
     const total = Object.values(breakdown).reduce((s, a) => s + a, 0);
@@ -369,12 +358,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const breakdown: Record<string, number> = {};
 
     for (const e of this.allExpenses.filter(e => e.category === category)) {
-      if (this.isRefund(e.subcategory)) continue;
       const sub = e.subcategory || 'Other';
       breakdown[sub] = (breakdown[sub] ?? 0) + Number(e.amount);
     }
     for (const fe of this.fixedExpenses.filter(f => f.category === category)) {
-      if (this.isRefund(fe.subcategory)) continue;
       const sub = fe.subcategory || 'Other';
       breakdown[sub] = (breakdown[sub] ?? 0) + this.fixedAmount(fe);
     }
@@ -386,29 +373,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
     if (entries.length === 0) { this.subPieTotal = 0; return []; }
 
+    const CREDIT_COLOR = '#2e7d32';
+    const nonCreditEntries = entries.filter(([label]) => !this.isRefund(label));
     const baseColor = this.expenseService.getCategoryByValue(category)?.color ?? '#607d8b';
-    const colors = this.generateSubColors(baseColor, entries.length);
+    const colors = this.generateSubColors(baseColor, nonCreditEntries.length);
+
     const total = entries.reduce((s, [, v]) => s + v, 0);
     this.subPieTotal = total;
 
-    const sorted = entries.sort(([, a], [, b]) => b - a);
+    // credit slices sorted last so they appear at the end of the pie
+    const sorted = [
+      ...nonCreditEntries.sort(([, a], [, b]) => b - a),
+      ...entries.filter(([label]) => this.isRefund(label)),
+    ];
     const cx = 100, cy = 100, r = 80;
 
     if (sorted.length === 1) {
+      const isCredit = this.isRefund(sorted[0][0]);
       return [{
         path: `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`,
-        color: colors[0],
+        color: isCredit ? CREDIT_COLOR : colors[0],
         label: sorted[0][0],
         amount: sorted[0][1],
         percentage: 100,
+        isCredit,
       }];
     }
 
     const slices: SubPieSlice[] = [];
     let angle = -Math.PI / 2;
+    let colorIdx = 0;
 
-    for (let i = 0; i < sorted.length; i++) {
-      const [label, amount] = sorted[i];
+    for (const [label, amount] of sorted) {
+      const isCredit = this.isRefund(label);
       const sweep    = (amount / total) * 2 * Math.PI;
       const x1       = cx + r * Math.cos(angle);
       const y1       = cy + r * Math.sin(angle);
@@ -418,10 +415,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       slices.push({
         path: `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`,
-        color: colors[i],
+        color: isCredit ? CREDIT_COLOR : colors[colorIdx++],
         label,
         amount,
         percentage: Math.round((amount / total) * 100),
+        isCredit,
       });
 
       angle = endAngle;
@@ -482,12 +480,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get actualTotal(): number {
-    const breakdown = this.summary?.categoryBreakdown ?? {};
-    const gross = Object.entries(breakdown).reduce((sum, [cat, amt]) => {
-      const isCredit = this.expenseService.getCategoryByValue(cat)?.isIncome ?? false;
-      return sum + (isCredit ? -Number(amt) : Number(amt));
+    return this.allExpenses.reduce((sum, e) => {
+      if (this.expenseService.getCategoryByValue(e.category)?.isIncome) return sum - Number(e.amount);
+      if (this.isRefund(e.subcategory)) return sum - Number(e.amount);
+      return sum + Number(e.amount);
     }, 0);
-    return gross - this.refundTotal;
   }
 
   get combinedTotal(): number {

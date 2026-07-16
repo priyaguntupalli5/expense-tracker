@@ -182,11 +182,15 @@
                   </div>
                   <div class="legend">
                     @for (slice of subPieSlices; track slice.label) {
-                      <div class="legend-row legend-row--clickable" (click)="onSubSliceClick(slice.label)">
+                      <div class="legend-row legend-row--clickable"
+                           [class.legend-row--credit]="slice.isCredit"
+                           (click)="onSubSliceClick(slice.label)">
                         <span class="legend-dot" [style.background]="slice.color"></span>
                         <span class="legend-label">{{ slice.label }}</span>
-                        <span class="legend-pct">{{ slice.percentage }}%</span>
-                        <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                        <span class="legend-pct" [class.credit-pct]="slice.isCredit">{{ slice.percentage }}%</span>
+                        <span class="legend-amt" [class.credit-amt]="slice.isCredit">
+                          {{ slice.isCredit ? '+' : '' }}{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                        </span>
                         <mat-icon class="legend-nav-icon">chevron_right</mat-icon>
                       </div>
                     }

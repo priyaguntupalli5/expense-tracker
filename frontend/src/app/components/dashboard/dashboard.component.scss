@@ -345,6 +345,11 @@
 
   &--clickable:hover .legend-nav-icon { opacity: 1; }
 
+  &--credit {
+    background: rgba(46, 125, 50, 0.05);
+    &:hover { background: rgba(46, 125, 50, 0.1); }
+  }
+
   .legend-label {
     flex: 1;
     font-size: 0.88rem;
@@ -361,6 +366,7 @@
     min-width: 32px;
     text-align: right;
     flex-shrink: 0;
+    &.credit-pct { color: #2e7d32; }
   }
 
   .legend-amt {
@@ -370,6 +376,7 @@
     text-align: right;
     color: #0f172a;
     flex-shrink: 0;
+    &.credit-amt { color: #2e7d32; }
   }
 
   .legend-drill-icon {
