@@ -40,5 +40,20 @@ docker run -d \
     -e JWT_SECRET="$JWT_SECRET" \
     expense-tracker
 
-echo "==> Container started. Tailing logs (Ctrl-C to exit)..."
-docker logs -f expense-tracker
+if [ "$1" = "--non-interactive" ] || [ ! -t 1 ]; then
+    echo "==> Waiting for container to become healthy..."
+    for i in $(seq 1 30); do
+        if curl -fs http://localhost:8080/ >/dev/null 2>&1; then
+            echo "==> App is up and responding."
+            docker logs --tail 50 expense-tracker
+            exit 0
+        fi
+        sleep 2
+    done
+    echo "==> App did not respond after 60s. Recent logs:"
+    docker logs --tail 100 expense-tracker
+    exit 1
+else
+    echo "==> Container started. Tailing logs (Ctrl-C to exit)..."
+    docker logs -f expense-tracker
+fi

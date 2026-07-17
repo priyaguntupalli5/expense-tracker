@@ -1,0 +1,34 @@
+name: Deploy to production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 30s
+          command_timeout: 20m
+          script: |
+            set -e
+            REPO_DIR=~/expense-tracker
+
+            if [ ! -d "$REPO_DIR/.git" ]; then
+              echo "ERROR: $REPO_DIR is not a git checkout. Clone it manually on the" \
+                   "EC2 box first (with working GitHub auth), then re-run this workflow."
+              exit 1
+            fi
+
+            echo "==> Pulling latest master..."
+            cd "$REPO_DIR"
+            git fetch origin
+            git reset --hard origin/master
+
+            echo "==> Running deploy.sh..."
+            bash deployment/deploy.sh --non-interactive
