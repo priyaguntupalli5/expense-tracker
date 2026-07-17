@@ -1,5 +1,6 @@
 #!/bin/bash
-# Build and (re)start the expense-tracker container.
+# Pull and (re)start the expense-tracker container. The image is built and
+# pushed to GHCR by the GitHub Actions workflow, not on this box.
 # Run from the repo root: bash deployment/deploy.sh
 #
 # Required environment variables (set in .env or export before running):
@@ -7,6 +8,7 @@
 #   DB_USER      RDS master username
 #   DB_PASS      RDS master password
 #   JWT_SECRET   Long random string (min 32 chars)
+#   IMAGE        Docker image to pull (defaults to the GHCR image for this repo)
 
 set -e
 
@@ -22,8 +24,10 @@ fi
 : "${DB_PASS:?DB_PASS is required}"
 : "${JWT_SECRET:?JWT_SECRET is required}"
 
-echo "==> Building Docker image..."
-docker build -t expense-tracker .
+IMAGE="${IMAGE:-ghcr.io/priyaguntupalli5/expense-tracker:latest}"
+
+echo "==> Pulling Docker image ($IMAGE)..."
+docker pull "$IMAGE"
 
 echo "==> Stopping old container (if running)..."
 docker stop expense-tracker 2>/dev/null || true
@@ -38,12 +42,12 @@ docker run -d \
     -e SPRING_DATASOURCE_USERNAME="$DB_USER" \
     -e SPRING_DATASOURCE_PASSWORD="$DB_PASS" \
     -e JWT_SECRET="$JWT_SECRET" \
-    expense-tracker
+    "$IMAGE"
 
 if [ "$1" = "--non-interactive" ] || [ ! -t 1 ]; then
     echo "==> Waiting for container to become healthy..."
     for i in $(seq 1 30); do
-        if curl -fs http://localhost:8080/ >/dev/null 2>&1; then
+        if curl -fs http://localhost/ >/dev/null 2>&1; then
             echo "==> App is up and responding."
             docker logs --tail 50 expense-tracker
             exit 0
