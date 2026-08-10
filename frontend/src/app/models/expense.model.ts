@@ -105,6 +105,20 @@ export interface Income {
   templateId?: number;
 }
 
+export interface BankAccount {
+  id?: number;
+  ownerName: string;
+  accountName: string;
+}
+
+export interface SavingsEntry {
+  id?: number;
+  bankAccountId: number;
+  month: number;
+  year: number;
+  amount: number;
+}
+
 export interface Subcategory {
   id: number;
   categoryValue: string;

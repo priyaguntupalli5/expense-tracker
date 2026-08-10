@@ -92,6 +92,32 @@ CREATE TABLE IF NOT EXISTS income_entries (
     PRIMARY KEY (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS bank_accounts (
+    id           BIGINT       NOT NULL AUTO_INCREMENT,
+    owner_name   VARCHAR(50)  NOT NULL,
+    account_name VARCHAR(100) NOT NULL,
+    group_id     BIGINT       NOT NULL,
+    created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (group_id) REFERENCES `groups`(id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS savings_entries (
+    id              BIGINT        NOT NULL AUTO_INCREMENT,
+    bank_account_id BIGINT        NOT NULL,
+    group_id        BIGINT        NOT NULL,
+    month           INT           NOT NULL,
+    year            INT           NOT NULL,
+    amount          DECIMAL(12,2) NOT NULL,
+    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_savings_account_month_year (bank_account_id, month, year),
+    CONSTRAINT fk_savings_bank_account FOREIGN KEY (bank_account_id) REFERENCES bank_accounts (id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES `groups`(id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
     id         BIGINT        NOT NULL AUTO_INCREMENT,
     endpoint   VARCHAR(2000) NOT NULL,

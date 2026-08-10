@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, catchError, map, of, tap } from 'rxjs';
-import { Category, Expense, FixedExpense, Subcategory, Summary } from '../models/expense.model';
+import { BankAccount, Category, Expense, FixedExpense, SavingsEntry, Subcategory, Summary } from '../models/expense.model';
 import { environment } from '../../environments/environment';
 
 const API = environment.apiUrl;
@@ -106,6 +106,38 @@ export class ExpenseService {
 
   deleteFixedExpense(id: number): Observable<void> {
     return this.http.delete<void>(`${API}/fixed-expenses/${id}`);
+  }
+
+  // ── Bank Accounts & Savings ────────────────────────────────────────────────
+
+  getBankAccounts(): Observable<BankAccount[]> {
+    return this.http.get<BankAccount[]>(`${API}/bank-accounts`)
+      .pipe(catchError(() => of<BankAccount[]>([])));
+  }
+
+  createBankAccount(account: BankAccount): Observable<BankAccount> {
+    return this.http.post<BankAccount>(`${API}/bank-accounts`, account);
+  }
+
+  updateBankAccount(id: number, account: BankAccount): Observable<BankAccount> {
+    return this.http.put<BankAccount>(`${API}/bank-accounts/${id}`, account);
+  }
+
+  deleteBankAccount(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/bank-accounts/${id}`);
+  }
+
+  getSavings(month: number, year: number): Observable<SavingsEntry[]> {
+    return this.http.get<SavingsEntry[]>(`${API}/savings`, { params: { month: String(month), year: String(year) } })
+      .pipe(catchError(() => of<SavingsEntry[]>([])));
+  }
+
+  saveSavingsEntry(entry: SavingsEntry): Observable<SavingsEntry> {
+    return this.http.post<SavingsEntry>(`${API}/savings`, entry);
+  }
+
+  deleteSavingsEntry(id: number): Observable<void> {
+    return this.http.delete<void>(`${API}/savings/${id}`);
   }
 
   // ── Categories ─────────────────────────────────────────────────────────────

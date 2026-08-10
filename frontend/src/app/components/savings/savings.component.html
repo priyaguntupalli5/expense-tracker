@@ -1,0 +1,95 @@
+<div class="list-container">
+
+  <mat-card class="list-card">
+    <div class="card-header">
+      <div class="header-left">
+        <div class="header-title">
+          <mat-icon class="title-icon">account_balance</mat-icon>
+          <span>Savings</span>
+          <span class="count-chip">{{ accounts.length }}</span>
+        </div>
+        <div class="header-sub">
+          {{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} saved in
+          {{ months[selectedMonth - 1].label }}
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="period-selectors">
+          <mat-form-field appearance="outline" class="period-field">
+            <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
+              @for (m of months; track m.value) {
+                <mat-option [value]="m.value">{{ m.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="period-field year-field">
+            <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
+              @for (y of years; track y) {
+                <mat-option [value]="y">{{ y }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
+          <mat-icon>add</mat-icon> Add Account
+        </button>
+      </div>
+    </div>
+
+    <mat-card-content>
+      @if (rows.length === 0) {
+        <div class="empty-state">
+          <mat-icon>account_balance</mat-icon>
+          <p>No bank accounts yet</p>
+          <small>Add an account for each person to start tracking monthly savings</small>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="savings-table">
+            <thead>
+              <tr>
+                <th>Owner</th>
+                <th>Account</th>
+                <th class="amount-col">Amount</th>
+                <th class="actions-col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows; track row.account.id) {
+                <tr class="savings-row">
+                  <td>
+                    <span class="owner-chip">{{ row.account.ownerName }}</span>
+                  </td>
+                  <td class="account-name">{{ row.account.accountName }}</td>
+                  <td class="amount-col">
+                    <mat-form-field appearance="outline" class="amount-field">
+                      <span matPrefix>$&nbsp;</span>
+                      <input matInput type="number" [(ngModel)]="row.amount"
+                             (change)="saveRow(row)" min="0" step="0.01">
+                    </mat-form-field>
+                  </td>
+                  <td class="actions-col">
+                    <button mat-icon-button matTooltip="Edit account" (click)="openEdit(row.account)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Delete account" color="warn" (click)="confirmDelete(row.account)">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="2">Total</td>
+                <td class="amount-col">{{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</td>
+                <td class="actions-col"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+</div>

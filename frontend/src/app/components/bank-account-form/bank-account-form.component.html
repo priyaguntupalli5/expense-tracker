@@ -1,0 +1,45 @@
+<div class="dialog-titlebar">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ isEditing ? 'edit' : 'add_circle' }}</mat-icon>
+    {{ isEditing ? 'Edit Bank Account' : 'Add Bank Account' }}
+  </h2>
+  <button mat-icon-button (click)="cancel()" matTooltip="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="account-form">
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Owner</mat-label>
+      <mat-select formControlName="ownerName">
+        @for (member of members; track member) {
+          <mat-option [value]="member">{{ member }}</mat-option>
+        }
+      </mat-select>
+      @if (form.get('ownerName')?.hasError('required')) {
+        <mat-error>Owner is required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Account Name</mat-label>
+      <input matInput formControlName="accountName" placeholder="e.g. TD Chequing, RBC Savings">
+      @if (form.get('accountName')?.hasError('required')) {
+        <mat-error>Account name is required</mat-error>
+      }
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || saving">
+    @if (saving) {
+      <mat-spinner diameter="20" style="display:inline-block; margin-right:8px;"></mat-spinner>
+    }
+    {{ saving ? 'Saving...' : (isEditing ? 'Update' : 'Add Account') }}
+  </button>
+</mat-dialog-actions>
