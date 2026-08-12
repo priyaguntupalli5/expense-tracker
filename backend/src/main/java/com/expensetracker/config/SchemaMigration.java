@@ -29,8 +29,33 @@ public class SchemaMigration implements ApplicationRunner {
         migrateIncomePaymentDate();
         migrateFixedExpenseColumns();
         migrateExpenseTagsToJoinTable();
+        migrateSavingsAccounts();
         dropLegacyTables();
         resetGroups1And3ToDefaults();
+    }
+
+    // Brings pre-existing bank_accounts/savings_entries tables (created before
+    // opening balances and transfers existed) up to the current schema: adds the
+    // new columns and drops the old one-entry-per-account-per-month unique key,
+    // which otherwise blocks transfers (two rows) and any second entry in a month.
+    private void migrateSavingsAccounts() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            addColumnIfAbsent(conn, "bank_accounts", "opening_balance", "DECIMAL(12,2) NOT NULL DEFAULT 0");
+
+            addColumnIfAbsent(conn, "savings_entries", "is_transfer", "BOOLEAN NOT NULL DEFAULT FALSE");
+            addColumnIfAbsent(conn, "savings_entries", "linked_entry_id", "BIGINT NULL");
+            addColumnIfAbsent(conn, "savings_entries", "note", "VARCHAR(255) NULL");
+
+            if (indexExists(conn, "savings_entries", "uk_savings_account_month_year")) {
+                // The unique key backs the bank_account_id FK, so a replacement index
+                // must be added in the same statement or MySQL refuses the drop.
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE savings_entries " +
+                        "ADD INDEX idx_savings_bank_account (bank_account_id), " +
+                        "DROP INDEX uk_savings_account_month_year");
+                }
+            }
+        }
     }
 
     private void migrateGroupCodes() throws SQLException {

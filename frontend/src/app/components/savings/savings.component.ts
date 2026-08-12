@@ -141,8 +141,12 @@ export class SavingsComponent implements OnInit {
   }
 
   openEdit(account: BankAccount) {
+    const row = this.rows.find(r => r.account.id === account.id);
+    const currentBalance = row ? row.tillDate : Number(account.openingBalance || 0);
+    const currentThisMonth = row ? row.thisMonth : 0;
     const ref = this.dialog.open(BankAccountFormComponent, {
-      width: '420px', maxWidth: '95vw', data: account,
+      width: '420px', maxWidth: '95vw',
+      data: { account, currentBalance, currentThisMonth, month: this.selectedMonth, year: this.selectedYear },
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }
