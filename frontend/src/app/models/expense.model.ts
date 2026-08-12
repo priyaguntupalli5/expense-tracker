@@ -109,6 +109,7 @@ export interface BankAccount {
   id?: number;
   ownerName: string;
   accountName: string;
+  openingBalance?: number;
 }
 
 export interface SavingsEntry {
@@ -117,6 +118,24 @@ export interface SavingsEntry {
   month: number;
   year: number;
   amount: number;
+  isTransfer?: boolean;
+  linkedEntryId?: number;
+  note?: string;
+}
+
+export interface SavingsBalance {
+  bankAccountId: number;
+  tillDate: number;
+  thisMonth: number;
+}
+
+export interface TransferRequest {
+  fromAccountId: number;
+  toAccountId: number;
+  amount: number;
+  month: number;
+  year: number;
+  note?: string;
 }
 
 export interface Subcategory {

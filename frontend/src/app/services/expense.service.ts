@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, catchError, map, of, tap } from 'rxjs';
-import { BankAccount, Category, Expense, FixedExpense, SavingsEntry, Subcategory, Summary } from '../models/expense.model';
+import { BankAccount, Category, Expense, FixedExpense, SavingsBalance, SavingsEntry, Subcategory, Summary, TransferRequest } from '../models/expense.model';
 import { environment } from '../../environments/environment';
 
 const API = environment.apiUrl;
@@ -132,8 +132,17 @@ export class ExpenseService {
       .pipe(catchError(() => of<SavingsEntry[]>([])));
   }
 
-  saveSavingsEntry(entry: SavingsEntry): Observable<SavingsEntry> {
+  getSavingsBalances(month: number, year: number): Observable<SavingsBalance[]> {
+    return this.http.get<SavingsBalance[]>(`${API}/savings/balances`, { params: { month: String(month), year: String(year) } })
+      .pipe(catchError(() => of<SavingsBalance[]>([])));
+  }
+
+  addSavingsEntry(entry: SavingsEntry): Observable<SavingsEntry> {
     return this.http.post<SavingsEntry>(`${API}/savings`, entry);
+  }
+
+  transferSavings(request: TransferRequest): Observable<void> {
+    return this.http.post<void>(`${API}/savings/transfer`, request);
   }
 
   deleteSavingsEntry(id: number): Observable<void> {

@@ -35,8 +35,9 @@ export class BankAccountFormComponent implements OnInit {
   members: string[] = [];
 
   form = this.fb.group({
-    ownerName:   ['', [Validators.required, Validators.maxLength(50)]],
-    accountName: ['', [Validators.required, Validators.maxLength(100)]],
+    ownerName:      ['', [Validators.required, Validators.maxLength(50)]],
+    accountName:    ['', [Validators.required, Validators.maxLength(100)]],
+    openingBalance: [0, [Validators.required, Validators.min(0)]],
   });
 
   ngOnInit() {
@@ -50,8 +51,9 @@ export class BankAccountFormComponent implements OnInit {
     if (this.data) {
       this.isEditing = true;
       this.form.patchValue({
-        ownerName:   this.data.ownerName,
-        accountName: this.data.accountName,
+        ownerName:      this.data.ownerName,
+        accountName:    this.data.accountName,
+        openingBalance: this.data.openingBalance ?? 0,
       });
     }
   }
@@ -61,8 +63,9 @@ export class BankAccountFormComponent implements OnInit {
     this.saving = true;
     const v = this.form.value;
     const account: BankAccount = {
-      ownerName:   v.ownerName!,
-      accountName: v.accountName!,
+      ownerName:      v.ownerName!,
+      accountName:    v.accountName!,
+      openingBalance: v.openingBalance ?? 0,
     };
 
     const op = this.isEditing

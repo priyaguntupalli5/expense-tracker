@@ -93,16 +93,20 @@ CREATE TABLE IF NOT EXISTS income_entries (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS bank_accounts (
-    id           BIGINT       NOT NULL AUTO_INCREMENT,
-    owner_name   VARCHAR(50)  NOT NULL,
-    account_name VARCHAR(100) NOT NULL,
-    group_id     BIGINT       NOT NULL,
-    created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    id              BIGINT        NOT NULL AUTO_INCREMENT,
+    owner_name      VARCHAR(50)   NOT NULL,
+    account_name    VARCHAR(100)  NOT NULL,
+    group_id        BIGINT        NOT NULL,
+    opening_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (group_id) REFERENCES `groups`(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+-- Ledger of savings deposits/withdrawals/transfers per account. Multiple entries
+-- per account/month are allowed; transfers are two linked rows (see linked_entry_id)
+-- excluded from "this month's savings" since they move money, not save it.
 CREATE TABLE IF NOT EXISTS savings_entries (
     id              BIGINT        NOT NULL AUTO_INCREMENT,
     bank_account_id BIGINT        NOT NULL,
@@ -110,10 +114,12 @@ CREATE TABLE IF NOT EXISTS savings_entries (
     month           INT           NOT NULL,
     year            INT           NOT NULL,
     amount          DECIMAL(12,2) NOT NULL,
+    is_transfer     BOOLEAN       NOT NULL DEFAULT FALSE,
+    linked_entry_id BIGINT        NULL,
+    note            VARCHAR(255)  NULL,
     created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_savings_account_month_year (bank_account_id, month, year),
     CONSTRAINT fk_savings_bank_account FOREIGN KEY (bank_account_id) REFERENCES bank_accounts (id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES `groups`(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

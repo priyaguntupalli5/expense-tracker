@@ -34,6 +34,15 @@ public class SavingsEntry {
     @Digits(integer = 10, fraction = 2)
     private BigDecimal amount;
 
+    @Column(name = "is_transfer", nullable = false)
+    private boolean isTransfer = false;
+
+    @Column(name = "linked_entry_id")
+    private Long linkedEntryId;
+
+    @Size(max = 255)
+    private String note;
+
     @Column(name = "created_at", nullable = false, updatable = false,
             columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     @CreationTimestamp
@@ -63,6 +72,15 @@ public class SavingsEntry {
 
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public boolean getIsTransfer() { return isTransfer; }
+    public void setIsTransfer(boolean isTransfer) { this.isTransfer = isTransfer; }
+
+    public Long getLinkedEntryId() { return linkedEntryId; }
+    public void setLinkedEntryId(Long linkedEntryId) { this.linkedEntryId = linkedEntryId; }
+
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

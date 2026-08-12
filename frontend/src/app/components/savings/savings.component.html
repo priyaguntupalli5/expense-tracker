@@ -9,8 +9,13 @@
           <span class="count-chip">{{ accounts.length }}</span>
         </div>
         <div class="header-sub">
-          {{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} saved in
-          {{ months[selectedMonth - 1].label }}
+          <span class="summary-figure">
+            {{ tillDateTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} till date
+          </span>
+          <span class="summary-dot">·</span>
+          <span class="summary-figure">
+            {{ thisMonthTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} saved in {{ months[selectedMonth - 1].label }}
+          </span>
         </div>
       </div>
       <div class="header-actions">
@@ -30,6 +35,12 @@
             </mat-select>
           </mat-form-field>
         </div>
+        <button mat-stroked-button class="transfer-btn" (click)="openTransfer()" [disabled]="accounts.length < 2">
+          <mat-icon>swap_horiz</mat-icon> Transfer
+        </button>
+        <button mat-stroked-button class="entry-btn" (click)="openAddEntry()" [disabled]="accounts.length === 0">
+          <mat-icon>add</mat-icon> Add Entry
+        </button>
         <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
           <mat-icon>add</mat-icon> Add Account
         </button>
@@ -41,34 +52,40 @@
         <div class="empty-state">
           <mat-icon>account_balance</mat-icon>
           <p>No bank accounts yet</p>
-          <small>Add an account for each person to start tracking monthly savings</small>
+          <small>Add an account for each person to start tracking savings</small>
         </div>
       } @else {
         <div class="table-wrapper">
           <table class="savings-table">
             <thead>
               <tr>
+                <th></th>
                 <th>Owner</th>
                 <th>Account</th>
-                <th class="amount-col">Amount</th>
+                <th class="amount-col">Till Date</th>
+                <th class="amount-col">This Month</th>
                 <th class="actions-col"></th>
               </tr>
             </thead>
             <tbody>
               @for (row of rows; track row.account.id) {
-                <tr class="savings-row">
+                <tr class="savings-row" (click)="toggleExpand(row.account.id!)">
+                  <td class="expand-col">
+                    <mat-icon class="expand-icon" [class.expanded]="expandedAccountId === row.account.id">
+                      chevron_right
+                    </mat-icon>
+                  </td>
                   <td>
                     <span class="owner-chip">{{ row.account.ownerName }}</span>
                   </td>
                   <td class="account-name">{{ row.account.accountName }}</td>
-                  <td class="amount-col">
-                    <mat-form-field appearance="outline" class="amount-field">
-                      <span matPrefix>$&nbsp;</span>
-                      <input matInput type="number" [(ngModel)]="row.amount"
-                             (change)="saveRow(row)" min="0" step="0.01">
-                    </mat-form-field>
+                  <td class="amount-col till-date-figure">
+                    {{ row.tillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
                   </td>
-                  <td class="actions-col">
+                  <td class="amount-col" [class.positive]="row.thisMonth > 0" [class.negative]="row.thisMonth < 0">
+                    {{ row.thisMonth | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                  </td>
+                  <td class="actions-col" (click)="$event.stopPropagation()">
                     <button mat-icon-button matTooltip="Edit account" (click)="openEdit(row.account)">
                       <mat-icon>edit</mat-icon>
                     </button>
@@ -77,12 +94,40 @@
                     </button>
                   </td>
                 </tr>
+                @if (expandedAccountId === row.account.id) {
+                  <tr class="entries-row">
+                    <td colspan="6">
+                      @if (row.entries.length === 0) {
+                        <div class="no-entries">No entries this month</div>
+                      } @else {
+                        <ul class="entries-list">
+                          @for (entry of row.entries; track entry.id) {
+                            <li>
+                              <mat-icon class="entry-icon">{{ entry.isTransfer ? 'swap_horiz' : (entry.amount >= 0 ? 'arrow_upward' : 'arrow_downward') }}</mat-icon>
+                              <span class="entry-amount" [class.positive]="entry.amount > 0" [class.negative]="entry.amount < 0">
+                                {{ entry.amount >= 0 ? '+' : '' }}{{ entry.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                              </span>
+                              <span class="entry-label">
+                                {{ entry.isTransfer ? 'Transfer' : (entry.amount >= 0 ? 'Deposit' : 'Withdrawal') }}
+                                @if (entry.note) { — {{ entry.note }} }
+                              </span>
+                              <button mat-icon-button class="entry-delete" matTooltip="Delete" (click)="deleteEntry(entry)">
+                                <mat-icon>close</mat-icon>
+                              </button>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
             <tfoot>
               <tr class="total-row">
-                <td colspan="2">Total</td>
-                <td class="amount-col">{{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</td>
+                <td colspan="3">Total</td>
+                <td class="amount-col">{{ tillDateTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</td>
+                <td class="amount-col">{{ thisMonthTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</td>
                 <td class="actions-col"></td>
               </tr>
             </tfoot>

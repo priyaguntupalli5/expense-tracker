@@ -7,18 +7,21 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { SettingsService } from '../../services/settings.service';
-import { BankAccount, SavingsEntry } from '../../models/expense.model';
+import { BankAccount, SavingsBalance, SavingsEntry } from '../../models/expense.model';
 import { BankAccountFormComponent } from '../bank-account-form/bank-account-form.component';
+import { SavingsEntryFormComponent } from '../savings-entry-form/savings-entry-form.component';
+import { SavingsTransferFormComponent } from '../savings-transfer-form/savings-transfer-form.component';
 
 interface SavingsRow {
   account: BankAccount;
-  amount: number;
+  tillDate: number;
+  thisMonth: number;
+  entries: SavingsEntry[];
 }
 
 @Component({
@@ -26,7 +29,7 @@ interface SavingsRow {
   imports: [
     CurrencyPipe, FormsModule,
     MatCardModule, MatIconModule, MatButtonModule, MatTooltipModule,
-    MatSelectModule, MatFormFieldModule, MatInputModule,
+    MatSelectModule, MatFormFieldModule,
   ],
   templateUrl: './savings.component.html',
   styleUrl: './savings.component.scss',
@@ -39,6 +42,7 @@ export class SavingsComponent implements OnInit {
 
   accounts: BankAccount[] = [];
   rows: SavingsRow[] = [];
+  expandedAccountId: number | null = null;
 
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
@@ -57,43 +61,77 @@ export class SavingsComponent implements OnInit {
     this.load();
   }
 
-  get total(): number {
-    return this.rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  get tillDateTotal(): number {
+    return this.rows.reduce((sum, r) => sum + r.tillDate, 0);
   }
 
-  onPeriodChange() { this.loadEntries(); }
+  get thisMonthTotal(): number {
+    return this.rows.reduce((sum, r) => sum + r.thisMonth, 0);
+  }
+
+  onPeriodChange() { this.loadPeriodData(); }
+
+  toggleExpand(accountId: number) {
+    this.expandedAccountId = this.expandedAccountId === accountId ? null : accountId;
+  }
 
   private load() {
     forkJoin([
       this.expenseService.getBankAccounts(),
+      this.expenseService.getSavingsBalances(this.selectedMonth, this.selectedYear),
       this.expenseService.getSavings(this.selectedMonth, this.selectedYear),
-    ]).subscribe(([accounts, entries]) => {
+    ]).subscribe(([accounts, balances, entries]) => {
       this.accounts = accounts;
-      this.buildRows(entries);
+      this.buildRows(balances, entries);
     });
   }
 
-  private loadEntries() {
-    this.expenseService.getSavings(this.selectedMonth, this.selectedYear)
-      .subscribe(entries => this.buildRows(entries));
+  private loadPeriodData() {
+    forkJoin([
+      this.expenseService.getSavingsBalances(this.selectedMonth, this.selectedYear),
+      this.expenseService.getSavings(this.selectedMonth, this.selectedYear),
+    ]).subscribe(([balances, entries]) => this.buildRows(balances, entries));
   }
 
-  private buildRows(entries: SavingsEntry[]) {
+  private buildRows(balances: SavingsBalance[], entries: SavingsEntry[]) {
     this.rows = this.accounts.map(account => {
-      const entry = entries.find(e => e.bankAccountId === account.id);
-      return { account, amount: entry ? Number(entry.amount) : 0 };
+      const balance = balances.find(b => b.bankAccountId === account.id);
+      return {
+        account,
+        tillDate: balance ? Number(balance.tillDate) : Number(account.openingBalance || 0),
+        thisMonth: balance ? Number(balance.thisMonth) : 0,
+        entries: entries.filter(e => e.bankAccountId === account.id),
+      };
     });
   }
 
-  saveRow(row: SavingsRow) {
-    this.expenseService.saveSavingsEntry({
-      bankAccountId: row.account.id!,
-      month: this.selectedMonth,
-      year: this.selectedYear,
-      amount: row.amount || 0,
-    }).subscribe({
-      next: () => this.snackBar.open('Savings saved', 'Dismiss', { duration: 2000 }),
-      error: () => this.snackBar.open('Failed to save', 'Dismiss', { duration: 3000 }),
+  openAddEntry() {
+    if (this.accounts.length === 0) return;
+    const ref = this.dialog.open(SavingsEntryFormComponent, {
+      width: '420px', maxWidth: '95vw',
+      data: { accounts: this.accounts, month: this.selectedMonth, year: this.selectedYear },
+    });
+    ref.afterClosed().subscribe(saved => { if (saved) this.loadPeriodData(); });
+  }
+
+  openTransfer() {
+    if (this.accounts.length < 2) return;
+    const ref = this.dialog.open(SavingsTransferFormComponent, {
+      width: '440px', maxWidth: '95vw',
+      data: { accounts: this.accounts, month: this.selectedMonth, year: this.selectedYear },
+    });
+    ref.afterClosed().subscribe(saved => { if (saved) this.loadPeriodData(); });
+  }
+
+  deleteEntry(entry: SavingsEntry) {
+    const label = entry.isTransfer ? 'this transfer' : 'this entry';
+    if (!confirm(`Delete ${label}?`)) return;
+    this.expenseService.deleteSavingsEntry(entry.id!).subscribe({
+      next: () => {
+        this.snackBar.open('Entry deleted', 'Dismiss', { duration: 2000 });
+        this.loadPeriodData();
+      },
+      error: () => this.snackBar.open('Failed to delete', 'Dismiss', { duration: 3000 }),
     });
   }
 
@@ -110,7 +148,7 @@ export class SavingsComponent implements OnInit {
   }
 
   confirmDelete(account: BankAccount) {
-    if (!confirm(`Delete "${account.accountName}"? This also removes its saved monthly amounts.`)) return;
+    if (!confirm(`Delete "${account.accountName}"? This also removes its savings history.`)) return;
     this.expenseService.deleteBankAccount(account.id!).subscribe({
       next: () => {
         this.snackBar.open('Account deleted', 'Dismiss', { duration: 3000 });

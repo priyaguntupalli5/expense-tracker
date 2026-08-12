@@ -41,6 +41,7 @@ public class BankAccountController {
         return repository.findByIdAndGroupId(id, user.getGroup().getId()).map(existing -> {
             existing.setOwnerName(updated.getOwnerName());
             existing.setAccountName(updated.getAccountName());
+            existing.setOpeningBalance(updated.getOpeningBalance());
             return ResponseEntity.ok(repository.save(existing));
         }).orElse(ResponseEntity.notFound().build());
     }
