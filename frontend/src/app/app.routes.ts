@@ -6,6 +6,7 @@ import { CategoriesComponent } from './components/categories/categories.componen
 import { SettingsComponent } from './components/settings/settings.component';
 import { IncomeComponent } from './components/income/income.component';
 import { SavingsComponent } from './components/savings/savings.component';
+import { SavingsDashboardComponent } from './components/savings-dashboard/savings-dashboard.component';
 import { LoginComponent } from './components/login/login.component';
 import { authGuard } from './guards/auth.guard';
 
@@ -17,6 +18,7 @@ export const routes: Routes = [
   { path: 'expenses',       component: ExpenseListComponent,     canActivate: [authGuard] },
   { path: 'fixed-expenses', component: FixedExpensesComponent,   canActivate: [authGuard] },
   { path: 'savings',        component: SavingsComponent,         canActivate: [authGuard] },
+  { path: 'savings-dashboard', component: SavingsDashboardComponent, canActivate: [authGuard] },
   { path: 'categories',     component: CategoriesComponent,      canActivate: [authGuard] },
   { path: 'settings',       component: SettingsComponent,        canActivate: [authGuard] },
 ];
