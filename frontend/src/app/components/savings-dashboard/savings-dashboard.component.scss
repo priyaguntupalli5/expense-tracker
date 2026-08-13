@@ -131,9 +131,11 @@
 
   mat-icon { font-size: 1rem; width: 1rem; height: 1rem; color: white; }
 
-  &.month-icon    { background: rgba(76,175,80,0.4); }
-  &.accounts-icon { background: rgba(255,255,255,0.18); }
-  &.owners-icon   { background: rgba(33,150,243,0.4); }
+  &.month-icon      { background: rgba(76,175,80,0.4); }
+  &.accounts-icon   { background: rgba(255,255,255,0.18); }
+  &.owners-icon     { background: rgba(33,150,243,0.4); }
+  &.cash-icon       { background: rgba(255,193,7,0.4); }
+  &.investment-icon { background: rgba(156,39,176,0.4); }
 }
 
 .stat-text {

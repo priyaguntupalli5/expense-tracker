@@ -58,6 +58,22 @@
         </div>
         <div class="stat-sep"></div>
         <div class="hero-stat">
+          <div class="stat-icon cash-icon"><mat-icon>payments</mat-icon></div>
+          <div class="stat-text">
+            <span class="stat-val">{{ formatCompact(totalCash) }}</span>
+            <span class="stat-lbl">Total Cash</span>
+          </div>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="hero-stat">
+          <div class="stat-icon investment-icon"><mat-icon>show_chart</mat-icon></div>
+          <div class="stat-text">
+            <span class="stat-val">{{ formatCompact(totalInvestment) }}</span>
+            <span class="stat-lbl">Total Investment</span>
+          </div>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="hero-stat">
           <div class="stat-icon accounts-icon"><mat-icon>account_balance</mat-icon></div>
           <div class="stat-text">
             <span class="stat-val">{{ rows.length }}</span>
