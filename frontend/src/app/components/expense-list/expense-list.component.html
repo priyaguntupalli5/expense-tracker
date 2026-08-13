@@ -100,7 +100,7 @@
                 <mat-checkbox [checked]="allSelected" [indeterminate]="someSelected && !allSelected"
                               (change)="selectAll()"></mat-checkbox>
               </th>
-              <td mat-cell *matCellDef="let e" class="select-col">
+              <td mat-cell *matCellDef="let e" class="select-col" (mousedown)="$event.stopPropagation()">
                 <mat-checkbox [checked]="isSelected(e.id)" (change)="toggleSelect(e.id)"
                               (click)="$event.stopPropagation()"></mat-checkbox>
               </td>
@@ -127,7 +127,7 @@
                     <span class="notes-text">{{ e.notes }}</span>
                   }
                   @if (e.tags?.length) {
-                    <span class="tag-chips-row" (click)="$event.stopPropagation()">
+                    <span class="tag-chips-row" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()">
                       @for (tag of e.tags; track tag) {
                         <span class="tag-chip">
                           <mat-icon class="tag-icon" (click)="filterByTag(tag)">label</mat-icon>
@@ -175,7 +175,8 @@
 
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let e" class="actions-col">
+              <td mat-cell *matCellDef="let e" class="actions-col"
+                  (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()">
                 @if (e.imageData) {
                   <button mat-icon-button matTooltip="View receipt" class="receipt-btn" (click)="viewingImage = e.imageData">
                     <mat-icon>receipt</mat-icon>
@@ -193,7 +194,17 @@
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="expense-row"
                 [id]="'expense-row-' + row.id"
-                [class.credit-row]="isCredit(row.category, row.subcategory)"></tr>
+                [class.credit-row]="isCredit(row.category, row.subcategory)"
+                [class.selectable-row]="selectionMode"
+                [class.pressing]="pressingId === row.id"
+                (mousedown)="onRowPressStart(row)"
+                (mouseup)="onRowPressEnd()"
+                (mouseleave)="onRowPressEnd()"
+                (touchstart)="onRowPressStart(row)"
+                (touchend)="onRowPressEnd()"
+                (touchmove)="onRowPressEnd()"
+                (contextmenu)="$event.preventDefault()"
+                (click)="onRowClick(row)"></tr>
           </table>
         </div>
       }

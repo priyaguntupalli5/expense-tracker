@@ -35,6 +35,14 @@
   gap: 8px;
 }
 
+.manage-btn {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .period-row {
   display: flex;
   align-items: center;

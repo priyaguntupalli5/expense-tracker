@@ -6,7 +6,7 @@ import { environment } from '../../environments/environment';
 
 const API = environment.apiUrl;
 
-interface AuthResponse {
+export interface AuthResponse {
   token: string;
   username: string;
   groupName: string;
@@ -69,7 +69,7 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  private storeSession(res: AuthResponse) {
+  storeSession(res: AuthResponse) {
     localStorage.setItem(this.TOKEN_KEY, res.token);
     localStorage.setItem(this.USERNAME_KEY, res.username);
     localStorage.setItem(this.GROUP_KEY, res.groupName);

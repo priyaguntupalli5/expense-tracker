@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -45,7 +45,7 @@ type ChartView  = 'category' | 'label';
 @Component({
   selector: 'app-dashboard',
   imports: [
-    CurrencyPipe, FormsModule,
+    CurrencyPipe, FormsModule, RouterLink,
     MatCardModule, MatSelectModule, MatFormFieldModule,
     MatIconModule, MatButtonModule, MatTooltipModule,
   ],
