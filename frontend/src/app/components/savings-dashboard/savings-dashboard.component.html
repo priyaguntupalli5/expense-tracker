@@ -80,119 +80,260 @@
       <mat-card-header>
         <mat-card-title>
           <mat-icon>donut_large</mat-icon>
-          Balance by Owner
+          Balance Breakdown
         </mat-card-title>
+        <div class="chart-view-tabs">
+          <button class="chart-tab" [class.active]="chartView === 'owner'" (click)="setChartView('owner')">
+            <mat-icon>people</mat-icon> Owner
+          </button>
+          <button class="chart-tab" [class.active]="chartView === 'label'" (click)="setChartView('label')">
+            <mat-icon>label</mat-icon> Labels
+          </button>
+        </div>
       </mat-card-header>
       <mat-card-content>
-        <div class="pies-row" [class.resizing]="isResizingSplit">
 
-          <!-- Owner pie -->
-          <div class="pie-panel" [style.flex-basis]="mainPanelBasis">
-            <div class="chart-layout">
-              <div class="pie-wrapper">
-                <svg viewBox="0 0 200 200" class="pie-svg">
-                  @for (slice of ownerSlices; track slice.owner) {
-                    @if (slice.path) {
-                      <path
-                        [attr.d]="slice.path"
-                        [attr.fill]="slice.color"
-                        [class.selected]="drillDownOwner === slice.owner"
-                        class="pie-slice"
-                        (click)="onOwnerSliceClick(slice.owner)">
-                      </path>
+        <!-- ── Owner view ─────────────────────────────────────────────────────── -->
+        @if (chartView === 'owner') {
+          <div class="pies-row" [class.resizing]="isResizingSplit">
+
+            <!-- Owner pie -->
+            <div class="pie-panel" [style.flex-basis]="mainPanelBasis">
+              <div class="chart-layout">
+                <div class="pie-wrapper">
+                  <svg viewBox="0 0 200 200" class="pie-svg">
+                    @for (slice of ownerSlices; track slice.owner) {
+                      @if (slice.path) {
+                        <path
+                          [attr.d]="slice.path"
+                          [attr.fill]="slice.color"
+                          [class.selected]="drillDownOwner === slice.owner"
+                          class="pie-slice"
+                          (click)="onOwnerSliceClick(slice.owner)">
+                        </path>
+                      }
                     }
-                  }
-                  <circle cx="100" cy="100" r="50" fill="white"/>
-                  <text x="100" y="94" text-anchor="middle" class="donut-sm">Total</text>
-                  <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(totalTillDate) }}</text>
-                </svg>
-              </div>
-              <div class="legend">
-                @for (slice of ownerSlices; track slice.owner) {
-                  <div class="legend-row legend-row--clickable"
-                       [class.selected]="drillDownOwner === slice.owner"
-                       (click)="onOwnerSliceClick(slice.owner)">
-                    <span class="legend-dot" [style.background]="slice.color"></span>
-                    <div class="legend-main">
-                      <div class="legend-top">
-                        <span class="legend-label">{{ slice.owner }}</span>
-                        <span class="legend-pct">{{ slice.percentage }}%</span>
-                        <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                    <circle cx="100" cy="100" r="50" fill="white"/>
+                    <text x="100" y="94" text-anchor="middle" class="donut-sm">Total</text>
+                    <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(totalTillDate) }}</text>
+                  </svg>
+                </div>
+                <div class="legend">
+                  @for (slice of ownerSlices; track slice.owner) {
+                    <div class="legend-row legend-row--clickable"
+                         [class.selected]="drillDownOwner === slice.owner"
+                         (click)="onOwnerSliceClick(slice.owner)">
+                      <span class="legend-dot" [style.background]="slice.color"></span>
+                      <div class="legend-main">
+                        <div class="legend-top">
+                          <span class="legend-label">{{ slice.owner }}</span>
+                          <span class="legend-pct">{{ slice.percentage }}%</span>
+                          <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                        </div>
+                        @if (slice.cashTillDate !== 0 && slice.investmentTillDate !== 0) {
+                          <div class="legend-sub">
+                            Cash {{ slice.cashTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                            · Investment {{ slice.investmentTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                          </div>
+                        }
                       </div>
-                      @if (slice.cashTillDate !== 0 && slice.investmentTillDate !== 0) {
-                        <div class="legend-sub">
-                          Cash {{ slice.cashTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
-                          · Investment {{ slice.investmentTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                      <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Drill-down pie (by account) -->
+            @if (drillDownOwner) {
+              <div class="split-divider" (mousedown)="startResize($event)" matTooltip="Drag to resize">
+                <span class="split-divider-handle"></span>
+              </div>
+
+              <div class="pie-panel drill-panel" [style.flex-basis]="drillPanelBasis" [style.border-left-color]="drillDownColor">
+                <div class="drill-panel-header">
+                  <button class="back-btn" (click)="clearDrillDown()" matTooltip="Back to owners">
+                    <mat-icon>arrow_back</mat-icon>
+                  </button>
+                  <span class="drill-panel-title">{{ drillDownOwner }}'s Accounts</span>
+                </div>
+                @if (accountSlices.length === 0) {
+                  <div class="empty-state">
+                    <mat-icon>account_balance</mat-icon>
+                    <p>No data</p>
+                  </div>
+                } @else {
+                  <div class="chart-layout">
+                    <div class="pie-wrapper">
+                      <svg viewBox="0 0 200 200" class="pie-svg">
+                        @for (slice of accountSlices; track slice.account.id) {
+                          @if (slice.path) {
+                            <path [attr.d]="slice.path" [attr.fill]="slice.color" class="pie-slice sub-slice"
+                                  style="cursor:pointer" (click)="onAccountSliceClick(slice.account)"></path>
+                          }
+                        }
+                        <circle cx="100" cy="100" r="50" fill="white"/>
+                        <text x="100" y="94" text-anchor="middle" class="donut-sm">{{ drillDownOwner }}</text>
+                        <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(accountSlicesTotal) }}</text>
+                      </svg>
+                    </div>
+                    <div class="legend">
+                      @for (slice of accountSlices; track slice.account.id) {
+                        <div class="legend-row legend-row--clickable" (click)="onAccountSliceClick(slice.account)">
+                          <span class="legend-dot" [style.background]="slice.color"></span>
+                          <div class="legend-main">
+                            <div class="legend-top">
+                              <span class="legend-label">{{ slice.account.accountName }}</span>
+                              <span class="legend-pct">{{ slice.percentage }}%</span>
+                              <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                            </div>
+                            @if (slice.cashTillDate !== 0 && slice.investmentTillDate !== 0) {
+                              <div class="legend-sub">
+                                Cash {{ slice.cashTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                                · Investment {{ slice.investmentTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                              </div>
+                            }
+                          </div>
+                          <mat-icon class="legend-nav-icon">chevron_right</mat-icon>
                         </div>
                       }
                     </div>
-                    <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
                   </div>
                 }
               </div>
-            </div>
+            }
+
           </div>
+        }
 
-          <!-- Drill-down pie (by account) -->
-          @if (drillDownOwner) {
-            <div class="split-divider" (mousedown)="startResize($event)" matTooltip="Drag to resize">
-              <span class="split-divider-handle"></span>
+        <!-- ── Labels view ────────────────────────────────────────────────────── -->
+        @if (chartView === 'label') {
+          @if (availableLabels.length === 0) {
+            <div class="empty-state">
+              <mat-icon>label</mat-icon>
+              <p>No labeled accounts yet</p>
+              <small>Add a label to an account on the Savings page to see it here</small>
+            </div>
+          } @else {
+            <div class="label-select-row">
+              <mat-form-field appearance="outline" class="label-select-field">
+                <mat-select [ngModel]="selectedLabel" (ngModelChange)="onLabelSelect($event)" placeholder="Choose a label">
+                  @for (tag of availableLabels; track tag) {
+                    <mat-option [value]="tag">{{ tag }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
             </div>
 
-            <div class="pie-panel drill-panel" [style.flex-basis]="drillPanelBasis" [style.border-left-color]="drillDownColor">
-              <div class="drill-panel-header">
-                <button class="back-btn" (click)="clearDrillDown()" matTooltip="Back to owners">
-                  <mat-icon>arrow_back</mat-icon>
-                </button>
-                <span class="drill-panel-title">{{ drillDownOwner }}'s Accounts</span>
+            @if (!selectedLabel) {
+              <div class="empty-state">
+                <mat-icon>label</mat-icon>
+                <p>Choose a label above to see its breakdown</p>
               </div>
-              @if (accountSlices.length === 0) {
-                <div class="empty-state">
-                  <mat-icon>account_balance</mat-icon>
-                  <p>No data</p>
-                </div>
-              } @else {
-                <div class="chart-layout">
-                  <div class="pie-wrapper">
-                    <svg viewBox="0 0 200 200" class="pie-svg">
-                      @for (slice of accountSlices; track slice.account.id) {
-                        @if (slice.path) {
-                          <path [attr.d]="slice.path" [attr.fill]="slice.color" class="pie-slice sub-slice"
-                                style="cursor:pointer" (click)="onAccountSliceClick(slice.account)"></path>
+            } @else if (labelOwnerSlices.length === 0) {
+              <div class="empty-state">
+                <mat-icon>label</mat-icon>
+                <p>No accounts labeled "{{ selectedLabel }}"</p>
+              </div>
+            } @else {
+              <div class="pies-row" [class.resizing]="isResizingSplit">
+
+                <!-- Owner pie for the selected label -->
+                <div class="pie-panel" [style.flex-basis]="mainPanelBasis">
+                  <div class="chart-layout">
+                    <div class="pie-wrapper">
+                      <svg viewBox="0 0 200 200" class="pie-svg">
+                        @for (slice of labelOwnerSlices; track slice.owner) {
+                          @if (slice.path) {
+                            <path
+                              [attr.d]="slice.path"
+                              [attr.fill]="slice.color"
+                              [class.selected]="labelDrillOwner === slice.owner"
+                              class="pie-slice"
+                              (click)="onLabelOwnerSliceClick(slice.owner)">
+                            </path>
+                          }
                         }
-                      }
-                      <circle cx="100" cy="100" r="50" fill="white"/>
-                      <text x="100" y="94" text-anchor="middle" class="donut-sm">{{ drillDownOwner }}</text>
-                      <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(accountSlicesTotal) }}</text>
-                    </svg>
-                  </div>
-                  <div class="legend">
-                    @for (slice of accountSlices; track slice.account.id) {
-                      <div class="legend-row legend-row--clickable" (click)="onAccountSliceClick(slice.account)">
-                        <span class="legend-dot" [style.background]="slice.color"></span>
-                        <div class="legend-main">
-                          <div class="legend-top">
-                            <span class="legend-label">{{ slice.account.accountName }}</span>
-                            <span class="legend-pct">{{ slice.percentage }}%</span>
-                            <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                        <circle cx="100" cy="100" r="50" fill="white"/>
+                        <text x="100" y="94" text-anchor="middle" class="donut-sm">{{ selectedLabel }}</text>
+                        <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(labelOwnerTotal) }}</text>
+                      </svg>
+                    </div>
+                    <div class="legend">
+                      @for (slice of labelOwnerSlices; track slice.owner) {
+                        <div class="legend-row legend-row--clickable"
+                             [class.selected]="labelDrillOwner === slice.owner"
+                             (click)="onLabelOwnerSliceClick(slice.owner)">
+                          <span class="legend-dot" [style.background]="slice.color"></span>
+                          <div class="legend-main">
+                            <div class="legend-top">
+                              <span class="legend-label">{{ slice.owner }}</span>
+                              <span class="legend-pct">{{ slice.percentage }}%</span>
+                              <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                            </div>
                           </div>
-                          @if (slice.cashTillDate !== 0 && slice.investmentTillDate !== 0) {
-                            <div class="legend-sub">
-                              Cash {{ slice.cashTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
-                              · Investment {{ slice.investmentTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                          <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Drill-down pie (by account) -->
+                @if (labelDrillOwner) {
+                  <div class="split-divider" (mousedown)="startResize($event)" matTooltip="Drag to resize">
+                    <span class="split-divider-handle"></span>
+                  </div>
+
+                  <div class="pie-panel drill-panel" [style.flex-basis]="drillPanelBasis" [style.border-left-color]="labelDrillColor">
+                    <div class="drill-panel-header">
+                      <button class="back-btn" (click)="clearLabelDrillDown()" matTooltip="Back to owners">
+                        <mat-icon>arrow_back</mat-icon>
+                      </button>
+                      <span class="drill-panel-title">{{ labelDrillOwner }}'s Accounts</span>
+                    </div>
+                    @if (labelAccountSlices.length === 0) {
+                      <div class="empty-state"><mat-icon>account_balance</mat-icon><p>No data</p></div>
+                    } @else {
+                      <div class="chart-layout">
+                        <div class="pie-wrapper">
+                          <svg viewBox="0 0 200 200" class="pie-svg">
+                            @for (slice of labelAccountSlices; track slice.account.id) {
+                              @if (slice.path) {
+                                <path [attr.d]="slice.path" [attr.fill]="slice.color" class="pie-slice sub-slice"
+                                      style="cursor:pointer" (click)="onAccountSliceClick(slice.account)"></path>
+                              }
+                            }
+                            <circle cx="100" cy="100" r="50" fill="white"/>
+                            <text x="100" y="94" text-anchor="middle" class="donut-sm">{{ labelDrillOwner }}</text>
+                            <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(labelAccountSlicesTotal) }}</text>
+                          </svg>
+                        </div>
+                        <div class="legend">
+                          @for (slice of labelAccountSlices; track slice.account.id) {
+                            <div class="legend-row legend-row--clickable" (click)="onAccountSliceClick(slice.account)">
+                              <span class="legend-dot" [style.background]="slice.color"></span>
+                              <div class="legend-main">
+                                <div class="legend-top">
+                                  <span class="legend-label">{{ slice.account.accountName }}</span>
+                                  <span class="legend-pct">{{ slice.percentage }}%</span>
+                                  <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                                </div>
+                              </div>
+                              <mat-icon class="legend-nav-icon">chevron_right</mat-icon>
                             </div>
                           }
                         </div>
-                        <mat-icon class="legend-nav-icon">chevron_right</mat-icon>
                       </div>
                     }
                   </div>
-                </div>
-              }
-            </div>
-          }
+                }
 
-        </div>
+              </div>
+            }
+          }
+        }
+
       </mat-card-content>
     </mat-card>
 

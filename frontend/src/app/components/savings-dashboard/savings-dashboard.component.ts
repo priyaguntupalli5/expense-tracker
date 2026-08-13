@@ -83,8 +83,17 @@ export class SavingsDashboardComponent implements OnInit {
   drillDownColor = '#607d8b';
   accountSlices: AccountSlice[] = [];
 
+  chartView: 'owner' | 'label' = 'owner';
+  availableLabels: string[] = [];
+  selectedLabel: string | null = null;
+  labelOwnerSlices: OwnerSlice[] = [];
+  labelDrillOwner: string | null = null;
+  labelDrillColor = '#607d8b';
+  labelAccountSlices: AccountSlice[] = [];
+
   // Draggable split between the owner pie and the drill-down panel, as a
-  // percentage of the row's width given to the owner pie side.
+  // percentage of the row's width given to the owner pie side. Shared across
+  // the owner and label views since only one is ever shown at once.
   splitRatio = 65;
   isResizingSplit = false;
 
@@ -107,7 +116,16 @@ export class SavingsDashboardComponent implements OnInit {
 
   onPeriodChange() {
     this.clearDrillDown();
+    this.clearLabelDrillDown();
     this.load();
+  }
+
+  setChartView(view: 'owner' | 'label') {
+    if (this.chartView === view) return;
+    this.chartView = view;
+    this.clearDrillDown();
+    this.clearLabelDrillDown();
+    if (view === 'label') this.computeAvailableLabels();
   }
 
   private load() {
@@ -128,6 +146,9 @@ export class SavingsDashboardComponent implements OnInit {
       });
       this.buildOwnerPieChart();
       if (this.drillDownOwner) this.buildAccountPieChart(this.drillDownOwner, this.drillDownColor);
+
+      this.computeAvailableLabels();
+      if (this.selectedLabel) this.onLabelSelect(this.selectedLabel);
     });
   }
 
@@ -145,6 +166,14 @@ export class SavingsDashboardComponent implements OnInit {
 
   get accountSlicesTotal(): number {
     return this.accountSlices.reduce((sum, s) => sum + s.amount, 0);
+  }
+
+  get labelOwnerTotal(): number {
+    return this.labelOwnerSlices.reduce((sum, s) => sum + s.amount, 0);
+  }
+
+  get labelAccountSlicesTotal(): number {
+    return this.labelAccountSlices.reduce((sum, s) => sum + s.amount, 0);
   }
 
   formatCompact(amount: number): string {
@@ -175,8 +204,44 @@ export class SavingsDashboardComponent implements OnInit {
     this.router.navigate(['/savings'], { queryParams: { highlightId: account.id } });
   }
 
+  private computeAvailableLabels() {
+    const tags = new Set<string>();
+    for (const row of this.rows) for (const t of (row.account.tags ?? [])) tags.add(t);
+    this.availableLabels = [...tags].sort();
+    if (this.selectedLabel && !tags.has(this.selectedLabel)) this.onLabelSelect(null);
+    if (!this.selectedLabel && this.availableLabels.length === 1) this.onLabelSelect(this.availableLabels[0]);
+  }
+
+  onLabelSelect(tag: string | null) {
+    this.selectedLabel = tag;
+    this.clearLabelDrillDown();
+    this.labelOwnerSlices = tag
+      ? this.buildOwnerSlicesFrom(this.rows.filter(r => (r.account.tags ?? []).includes(tag)))
+      : [];
+  }
+
+  onLabelOwnerSliceClick(owner: string) {
+    if (this.labelDrillOwner === owner) {
+      this.clearLabelDrillDown();
+      return;
+    }
+    this.labelDrillOwner = owner;
+    this.labelDrillColor = this.labelOwnerSlices.find(s => s.owner === owner)?.color ?? OVERFLOW_COLOR;
+    const taggedRows = this.rows.filter(r => (r.account.tags ?? []).includes(this.selectedLabel!));
+    this.labelAccountSlices = this.buildAccountSlicesFrom(taggedRows, owner, this.labelDrillColor);
+  }
+
+  clearLabelDrillDown() {
+    this.labelDrillOwner = null;
+    this.labelAccountSlices = [];
+  }
+
+  get isDrillDownOpen(): boolean {
+    return !!this.drillDownOwner || !!this.labelDrillOwner;
+  }
+
   get mainPanelBasis(): string {
-    return this.drillDownOwner ? `calc(${this.splitRatio}% - 5px)` : '100%';
+    return this.isDrillDownOpen ? `calc(${this.splitRatio}% - 5px)` : '100%';
   }
 
   get drillPanelBasis(): string {
@@ -208,8 +273,18 @@ export class SavingsDashboardComponent implements OnInit {
   }
 
   private buildOwnerPieChart() {
+    this.ownerSlices = this.buildOwnerSlicesFrom(this.rows);
+  }
+
+  private buildAccountPieChart(owner: string, baseColor: string) {
+    this.accountSlices = this.buildAccountSlicesFrom(this.rows, owner, baseColor);
+  }
+
+  // Shared by the owner view and the label view (which just pre-filters rows
+  // to accounts carrying the selected label before calling these).
+  private buildOwnerSlicesFrom(rows: AccountRow[]): OwnerSlice[] {
     const totals = new Map<string, OwnerAgg>();
-    for (const row of this.rows) {
+    for (const row of rows) {
       const agg = totals.get(row.account.ownerName) ?? {
         owner: row.account.ownerName, tillDate: 0, cashTillDate: 0, investmentTillDate: 0,
       };
@@ -222,20 +297,20 @@ export class SavingsDashboardComponent implements OnInit {
     const built = this.buildSlices([...totals.values()], o => o.tillDate,
       i => i < PALETTE.length ? PALETTE[i] : OVERFLOW_COLOR);
 
-    this.ownerSlices = built.map(b => ({
+    return built.map(b => ({
       path: b.path, color: b.color, owner: b.item.owner, amount: b.amount, percentage: b.percentage,
       cashTillDate: b.item.cashTillDate, investmentTillDate: b.item.investmentTillDate,
     }));
   }
 
-  private buildAccountPieChart(owner: string, baseColor: string) {
-    const items = this.rows.filter(r => r.account.ownerName === owner);
+  private buildAccountSlicesFrom(rows: AccountRow[], owner: string, baseColor: string): AccountSlice[] {
+    const items = rows.filter(r => r.account.ownerName === owner);
     const positiveCount = items.filter(r => r.tillDate > 0).length;
     const colors = this.generateSubColors(baseColor, positiveCount);
 
     const built = this.buildSlices(items, r => r.tillDate, i => colors[i] ?? OVERFLOW_COLOR);
 
-    this.accountSlices = built.map(b => ({
+    return built.map(b => ({
       path: b.path, color: b.color, account: b.item.account, amount: b.amount, percentage: b.percentage,
       cashTillDate: b.item.cashTillDate, investmentTillDate: b.item.investmentTillDate,
     }));

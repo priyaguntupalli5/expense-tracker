@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "bank_accounts")
@@ -33,6 +35,12 @@ public class BankAccount {
     @Column(name = "opening_balance")
     private BigDecimal openingBalance = BigDecimal.ZERO;
 
+    // Multiple labels per account (many-to-many, mirrors expense_tags)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "bank_account_tags", joinColumns = @JoinColumn(name = "bank_account_id"))
+    @Column(name = "tag", length = 50)
+    private Set<String> tags = new LinkedHashSet<>();
+
     @Column(name = "created_at", nullable = false, updatable = false,
             columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     @CreationTimestamp
@@ -59,6 +67,9 @@ public class BankAccount {
 
     public BigDecimal getOpeningBalance() { return openingBalance; }
     public void setOpeningBalance(BigDecimal openingBalance) { this.openingBalance = openingBalance; }
+
+    public Set<String> getTags() { return tags; }
+    public void setTags(Set<String> tags) { this.tags = tags != null ? tags : new LinkedHashSet<>(); }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

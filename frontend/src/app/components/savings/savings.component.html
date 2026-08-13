@@ -35,11 +35,17 @@
             </mat-select>
           </mat-form-field>
         </div>
-        <button mat-stroked-button class="transfer-btn" (click)="openTransfer()" [disabled]="accounts.length < 2">
-          <mat-icon>swap_horiz</mat-icon> Transfer
-        </button>
-        <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
-          <mat-icon>add</mat-icon> Add Account
+        @if (!selectionMode) {
+          <button mat-stroked-button class="transfer-btn" (click)="openTransfer()" [disabled]="accounts.length < 2">
+            <mat-icon>swap_horiz</mat-icon> Transfer
+          </button>
+          <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
+            <mat-icon>add</mat-icon> Add Account
+          </button>
+        }
+        <button mat-stroked-button class="select-btn" [class.active]="selectionMode" (click)="toggleSelectionMode()">
+          <mat-icon>{{ selectionMode ? 'close' : 'checklist' }}</mat-icon>
+          {{ selectionMode ? 'Cancel' : 'Select' }}
         </button>
       </div>
     </div>
@@ -56,6 +62,12 @@
           <table class="savings-table">
             <thead>
               <tr>
+                @if (selectionMode) {
+                  <th class="select-col">
+                    <mat-checkbox [checked]="allSelected" [indeterminate]="someSelected && !allSelected"
+                                  (change)="selectAll()"></mat-checkbox>
+                  </th>
+                }
                 <th></th>
                 <th>Owner</th>
                 <th>Account</th>
@@ -67,6 +79,12 @@
             <tbody>
               @for (row of rows; track row.account.id) {
                 <tr class="savings-row" [id]="'savings-row-' + row.account.id" (click)="toggleExpand(row.account.id!)">
+                  @if (selectionMode) {
+                    <td class="select-col" (click)="$event.stopPropagation()">
+                      <mat-checkbox [checked]="isSelected(row.account.id!)"
+                                    (change)="toggleSelectAccount(row.account.id!)"></mat-checkbox>
+                    </td>
+                  }
                   <td class="expand-col">
                     <mat-icon class="expand-icon" [class.expanded]="expandedAccountId === row.account.id">
                       chevron_right
@@ -75,7 +93,12 @@
                   <td>
                     <span class="owner-chip">{{ row.account.ownerName }}</span>
                   </td>
-                  <td class="account-name">{{ row.account.accountName }}</td>
+                  <td class="account-name">
+                    {{ row.account.accountName }}
+                    @for (tag of row.account.tags; track tag) {
+                      <span class="account-tag-chip">{{ tag }}</span>
+                    }
+                  </td>
                   <td class="amount-col till-date-figure">
                     {{ row.tillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
                   </td>
@@ -93,7 +116,7 @@
                 </tr>
                 @if (expandedAccountId === row.account.id) {
                   <tr class="entries-row">
-                    <td colspan="6">
+                    <td [attr.colspan]="selectionMode ? 7 : 6">
                       <div class="type-breakdown-group">
                         <span class="breakdown-group-label">Till Date</span>
                         <div class="type-breakdown">
@@ -129,6 +152,38 @@
                           </div>
                         </div>
                       </div>
+
+                      <div class="type-breakdown-group labels-group" (click)="$event.stopPropagation()">
+                        <span class="breakdown-group-label">Labels</span>
+                        <div class="type-breakdown">
+                          @for (tag of row.account.tags; track tag) {
+                            <span class="account-tag-chip removable" (click)="removeAccountTag(row.account, tag)" matTooltip="Remove label">
+                              {{ tag }} <mat-icon>close</mat-icon>
+                            </span>
+                          }
+                          @if (taggingAccountId === row.account.id) {
+                            <mat-form-field appearance="outline" class="tag-input-field">
+                              <input matInput [formControl]="tagCtrl" [matAutocomplete]="tagAuto"
+                                     placeholder="Label name" (keydown.enter)="submitTag(row.account)" #tagInput>
+                              <mat-autocomplete #tagAuto>
+                                @for (tag of filteredTags; track tag) {
+                                  <mat-option [value]="tag">{{ tag }}</mat-option>
+                                }
+                              </mat-autocomplete>
+                            </mat-form-field>
+                            <button mat-icon-button matTooltip="Add" (click)="submitTag(row.account)">
+                              <mat-icon>check</mat-icon>
+                            </button>
+                            <button mat-icon-button matTooltip="Cancel" (click)="cancelTagging()">
+                              <mat-icon>close</mat-icon>
+                            </button>
+                          } @else {
+                            <button mat-icon-button matTooltip="Add label" (click)="startTagging(row.account)">
+                              <mat-icon>add_circle_outline</mat-icon>
+                            </button>
+                          }
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 }
@@ -136,7 +191,7 @@
             </tbody>
             <tfoot>
               <tr class="total-row">
-                <td colspan="3">Total</td>
+                <td [attr.colspan]="selectionMode ? 4 : 3">Total</td>
                 <td class="amount-col">{{ tillDateTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</td>
                 <td class="amount-col">{{ thisMonthTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</td>
                 <td class="actions-col"></td>
@@ -149,3 +204,25 @@
   </mat-card>
 
 </div>
+
+@if (selectionMode) {
+  <div class="tag-action-bar">
+    <span class="selection-count">{{ selectedIds.size }} selected</span>
+    <mat-form-field appearance="outline" class="bulk-tag-input-field">
+      <mat-label>Label</mat-label>
+      <input matInput [formControl]="tagCtrl" [matAutocomplete]="bulkTagAuto" placeholder="e.g. Emergency, Vacation…">
+      <mat-autocomplete #bulkTagAuto>
+        @for (tag of filteredTags; track tag) {
+          <mat-option [value]="tag">{{ tag }}</mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="applyBulkTag()"
+            [disabled]="!someSelected || !tagCtrl.value?.trim()">
+      Apply
+    </button>
+    <button mat-icon-button matTooltip="Cancel selection" (click)="cancelSelection()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}

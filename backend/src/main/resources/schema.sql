@@ -128,6 +128,14 @@ CREATE TABLE IF NOT EXISTS savings_entries (
     FOREIGN KEY (group_id) REFERENCES `groups`(id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+-- Multiple labels per bank account (many-to-many, mirrors expense_tags)
+CREATE TABLE IF NOT EXISTS bank_account_tags (
+    bank_account_id BIGINT      NOT NULL,
+    tag             VARCHAR(50) NOT NULL,
+    PRIMARY KEY (bank_account_id, tag),
+    CONSTRAINT fk_bank_account_tags_account FOREIGN KEY (bank_account_id) REFERENCES bank_accounts (id) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
     id         BIGINT        NOT NULL AUTO_INCREMENT,
     endpoint   VARCHAR(2000) NOT NULL,

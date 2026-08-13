@@ -1,5 +1,6 @@
 package com.expensetracker.controller;
 
+import com.expensetracker.dto.BulkTagRequest;
 import com.expensetracker.model.BankAccount;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.BankAccountRepository;
@@ -53,5 +54,38 @@ public class BankAccountController {
         }
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/tags")
+    public List<String> getTags(@AuthenticationPrincipal User user) {
+        return repository.findDistinctTagsByGroupId(user.getGroup().getId());
+    }
+
+    @PatchMapping("/bulk-tag")
+    public ResponseEntity<Void> bulkTag(@AuthenticationPrincipal User user,
+                                        @RequestBody BulkTagRequest request) {
+        applyTag(request, user.getGroup().getId(), true);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/bulk-untag")
+    public ResponseEntity<Void> bulkUntag(@AuthenticationPrincipal User user,
+                                          @RequestBody BulkTagRequest request) {
+        applyTag(request, user.getGroup().getId(), false);
+        return ResponseEntity.noContent().build();
+    }
+
+    private void applyTag(BulkTagRequest request, Long groupId, boolean add) {
+        List<Long> ids = request.getIds();
+        String tag = request.getTag();
+        if (ids == null || ids.isEmpty() || tag == null || tag.isBlank()) return;
+
+        String normalized = tag.trim();
+        List<BankAccount> accounts = repository.findByIdInAndGroupId(ids, groupId);
+        for (BankAccount account : accounts) {
+            if (add) account.getTags().add(normalized);
+            else account.getTags().remove(normalized);
+        }
+        repository.saveAll(accounts);
     }
 }

@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +8,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
@@ -31,9 +34,9 @@ interface SavingsRow {
 @Component({
   selector: 'app-savings',
   imports: [
-    CurrencyPipe, FormsModule,
+    CurrencyPipe, FormsModule, ReactiveFormsModule,
     MatCardModule, MatIconModule, MatButtonModule, MatTooltipModule,
-    MatSelectModule, MatFormFieldModule,
+    MatSelectModule, MatFormFieldModule, MatInputModule, MatAutocompleteModule, MatCheckboxModule,
   ],
   templateUrl: './savings.component.html',
   styleUrl: './savings.component.scss',
@@ -51,6 +54,14 @@ export class SavingsComponent implements OnInit, OnDestroy {
   private balances: SavingsBalance[] = [];
   expandedAccountId: number | null = null;
   highlightId: number | null = null;
+
+  availableTags: string[] = [];
+  taggingAccountId: number | null = null;
+  readonly tagCtrl = new FormControl<string>('');
+
+  // Selection & bulk label-apply state
+  selectionMode = false;
+  selectedIds = new Set<number>();
 
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
@@ -99,7 +110,68 @@ export class SavingsComponent implements OnInit, OnDestroy {
   onPeriodChange() { this.loadPeriodData(); }
 
   toggleExpand(accountId: number) {
+    if (this.selectionMode) return;
     this.expandedAccountId = this.expandedAccountId === accountId ? null : accountId;
+  }
+
+  get allSelected(): boolean {
+    const ids = this.rows.map(r => r.account.id!);
+    return ids.length > 0 && ids.every(id => this.selectedIds.has(id));
+  }
+
+  get someSelected(): boolean { return this.selectedIds.size > 0; }
+
+  toggleSelectionMode() {
+    this.selectionMode = !this.selectionMode;
+    if (this.selectionMode) {
+      this.expandedAccountId = null;
+      if (this.availableTags.length === 0) {
+        this.expenseService.getBankAccountTags().subscribe(tags => { this.availableTags = tags.sort(); });
+      }
+    } else {
+      this.selectedIds.clear();
+      this.tagCtrl.setValue('');
+    }
+  }
+
+  isSelected(id: number): boolean { return this.selectedIds.has(id); }
+
+  toggleSelectAccount(id: number) {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
+  }
+
+  selectAll() {
+    const ids = this.rows.map(r => r.account.id!);
+    if (this.allSelected) ids.forEach(id => this.selectedIds.delete(id));
+    else ids.forEach(id => this.selectedIds.add(id));
+  }
+
+  applyBulkTag() {
+    const tag = this.tagCtrl.value?.trim() ?? '';
+    const ids = [...this.selectedIds];
+    if (!ids.length || !tag) return;
+    this.expenseService.addBankAccountTag(ids, tag).subscribe({
+      next: () => {
+        this.rows.forEach(r => {
+          if (r.account.id && this.selectedIds.has(r.account.id)) {
+            r.account.tags = [...new Set([...(r.account.tags ?? []), tag])];
+          }
+        });
+        if (!this.availableTags.includes(tag)) this.availableTags = [...this.availableTags, tag].sort();
+        this.snackBar.open(`Label "${tag}" applied to ${ids.length} account(s)`, 'OK', { duration: 3000 });
+        this.selectedIds.clear();
+        this.tagCtrl.setValue('');
+        this.selectionMode = false;
+      },
+      error: () => this.snackBar.open('Failed to apply label', 'Dismiss', { duration: 3000 }),
+    });
+  }
+
+  cancelSelection() {
+    this.selectionMode = false;
+    this.selectedIds.clear();
+    this.tagCtrl.setValue('');
   }
 
   private load() {
@@ -186,6 +258,44 @@ export class SavingsComponent implements OnInit, OnDestroy {
       },
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
+  }
+
+  get filteredTags(): string[] {
+    const value = (this.tagCtrl.value ?? '').toLowerCase();
+    return this.availableTags.filter(t => t.toLowerCase().includes(value));
+  }
+
+  startTagging(account: BankAccount) {
+    this.taggingAccountId = account.id!;
+    this.tagCtrl.setValue('');
+    if (this.availableTags.length === 0) {
+      this.expenseService.getBankAccountTags().subscribe(tags => { this.availableTags = tags.sort(); });
+    }
+  }
+
+  cancelTagging() {
+    this.taggingAccountId = null;
+    this.tagCtrl.setValue('');
+  }
+
+  submitTag(account: BankAccount) {
+    const tag = this.tagCtrl.value?.trim() ?? '';
+    if (!tag) return;
+    this.expenseService.addBankAccountTag([account.id!], tag).subscribe({
+      next: () => {
+        account.tags = [...new Set([...(account.tags ?? []), tag])];
+        if (!this.availableTags.includes(tag)) this.availableTags = [...this.availableTags, tag].sort();
+        this.cancelTagging();
+      },
+      error: () => this.snackBar.open('Failed to apply label', 'Dismiss', { duration: 3000 }),
+    });
+  }
+
+  removeAccountTag(account: BankAccount, tag: string) {
+    this.expenseService.removeBankAccountTag([account.id!], tag).subscribe({
+      next: () => { account.tags = (account.tags ?? []).filter(t => t !== tag); },
+      error: () => this.snackBar.open('Failed to remove label', 'Dismiss', { duration: 3000 }),
+    });
   }
 
   confirmDelete(account: BankAccount) {

@@ -127,6 +127,20 @@ export class ExpenseService {
     return this.http.delete<void>(`${API}/bank-accounts/${id}`);
   }
 
+  addBankAccountTag(ids: number[], tag: string): Observable<void> {
+    return this.http.patch<void>(`${API}/bank-accounts/bulk-tag`, { ids, tag });
+  }
+
+  removeBankAccountTag(ids: number[], tag: string): Observable<void> {
+    return this.http.patch<void>(`${API}/bank-accounts/bulk-untag`, { ids, tag });
+  }
+
+  getBankAccountTags(): Observable<string[]> {
+    return this.http.get<string[]>(`${API}/bank-accounts/tags`).pipe(
+      catchError(() => of<string[]>([])),
+    );
+  }
+
   getSavings(month: number, year: number): Observable<SavingsEntry[]> {
     return this.http.get<SavingsEntry[]>(`${API}/savings`, { params: { month: String(month), year: String(year) } })
       .pipe(catchError(() => of<SavingsEntry[]>([])));

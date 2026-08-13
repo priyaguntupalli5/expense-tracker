@@ -96,6 +96,62 @@
   flex-shrink: 0;
 }
 
+.select-btn {
+  border-radius: 20px !important;
+  font-size: 0.85rem;
+  height: 34px;
+  flex-shrink: 0;
+  border-color: rgba(0, 0, 0, 0.18) !important;
+
+  &.active {
+    background: rgba(25, 118, 210, 0.08);
+    border-color: #1976d2 !important;
+    color: #1976d2;
+  }
+}
+
+.select-col {
+  width: 48px;
+  padding-right: 0 !important;
+}
+
+// ── Floating tag action bar ───────────────────────────────────────────────────
+
+.tag-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+}
+
+.selection-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1976d2;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.bulk-tag-input-field {
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .mat-mdc-form-field-infix { padding-top: 8px !important; padding-bottom: 8px !important; min-height: unset; }
+  }
+}
+
 .table-wrapper {
   overflow-x: auto;
   margin-top: 4px;
@@ -223,6 +279,46 @@
 
 .account-name {
   font-size: 0.92rem;
+}
+
+.account-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(156,39,176,0.1);
+  color: #8e24aa;
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  margin-left: 6px;
+  white-space: nowrap;
+
+  &.removable {
+    cursor: pointer;
+    transition: background 0.12s;
+    &:hover { background: rgba(156,39,176,0.2); }
+
+    mat-icon {
+      font-size: 0.85rem;
+      width: 0.85rem;
+      height: 0.85rem;
+    }
+  }
+}
+
+.labels-group {
+  cursor: default;
+}
+
+.tag-input-field {
+  width: 160px;
+
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .mat-mdc-form-field-infix { padding-top: 6px !important; padding-bottom: 6px !important; min-height: unset; }
+    .mat-mdc-text-field-wrapper { height: 36px; }
+  }
 }
 
 .type-breakdown-group {

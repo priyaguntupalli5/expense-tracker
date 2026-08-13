@@ -113,6 +113,7 @@ export interface BankAccount {
   ownerName: string;
   accountName: string;
   openingBalance?: number;
+  tags?: string[];
 }
 
 export interface SavingsEntry {
