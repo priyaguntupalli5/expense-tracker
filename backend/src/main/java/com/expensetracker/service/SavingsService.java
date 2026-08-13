@@ -61,13 +61,21 @@ public class SavingsService {
             .toList();
     }
 
-    public boolean transfer(Long groupId, TransferRequestDTO request) {
+    // Returns an error message if the transfer was rejected, or null on success.
+    public String transfer(Long groupId, TransferRequestDTO request) {
         if (request.getFromAccountId().equals(request.getToAccountId())) {
-            return false;
+            return "From and To accounts must be different.";
         }
-        if (!bankAccountRepository.existsByIdAndGroupId(request.getFromAccountId(), groupId)
-            || !bankAccountRepository.existsByIdAndGroupId(request.getToAccountId(), groupId)) {
-            return false;
+
+        BankAccount fromAccount = bankAccountRepository.findByIdAndGroupId(request.getFromAccountId(), groupId).orElse(null);
+        if (fromAccount == null || !bankAccountRepository.existsByIdAndGroupId(request.getToAccountId(), groupId)) {
+            return "Account not found.";
+        }
+
+        BigDecimal available = balanceForType(groupId, fromAccount, request.getAssetType(), request.getMonth(), request.getYear());
+        if (request.getAmount().compareTo(available) > 0) {
+            String type = "INVESTMENT".equals(request.getAssetType()) ? "investment" : "cash";
+            return "Insufficient " + type + " balance in the source account — only " + available + " available.";
         }
 
         SavingsEntry outgoing = new SavingsEntry();
@@ -98,7 +106,20 @@ public class SavingsService {
         savingsEntryRepository.save(outgoing);
         savingsEntryRepository.save(incoming);
 
-        return true;
+        return null;
+    }
+
+    // Balance of a single account/asset-type combination up to and including
+    // the given period — the same rule getBalances() uses per account, just
+    // scoped to one account so transfer() can check it before committing.
+    private BigDecimal balanceForType(Long groupId, BankAccount account, String assetType, Integer month, Integer year) {
+        BigDecimal sum = "INVESTMENT".equals(assetType) ? BigDecimal.ZERO : account.getOpeningBalance();
+        for (SavingsEntry entry : savingsEntryRepository.findByGroupIdAndPeriodUpTo(groupId, year, month)) {
+            if (entry.getBankAccountId().equals(account.getId()) && assetType.equals(entry.getAssetType())) {
+                sum = sum.add(entry.getAmount());
+            }
+        }
+        return sum;
     }
 
     public boolean deleteEntry(Long groupId, Long id) {

@@ -42,6 +42,12 @@
       </mat-button-toggle>
     </mat-button-toggle-group>
 
+    @if (availableBalance !== null) {
+      <div class="available-hint">
+        Available: {{ availableBalance | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+      </div>
+    }
+
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Amount</mat-label>
       <span matPrefix>$&nbsp;</span>
@@ -50,6 +56,10 @@
         <mat-error>Amount is required</mat-error>
       }
     </mat-form-field>
+
+    @if (form.hasError('insufficientBalance')) {
+      <div class="form-error">You don't have that much available in the source account</div>
+    }
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Note (optional)</mat-label>

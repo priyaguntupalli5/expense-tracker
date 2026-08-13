@@ -14,7 +14,6 @@ import { ExpenseService } from '../../services/expense.service';
 import { SettingsService } from '../../services/settings.service';
 import { BankAccount, SavingsBalance, SavingsEntry } from '../../models/expense.model';
 import { BankAccountFormComponent } from '../bank-account-form/bank-account-form.component';
-import { SavingsEntryFormComponent } from '../savings-entry-form/savings-entry-form.component';
 import { SavingsTransferFormComponent } from '../savings-transfer-form/savings-transfer-form.component';
 
 interface SavingsRow {
@@ -46,6 +45,7 @@ export class SavingsComponent implements OnInit {
 
   accounts: BankAccount[] = [];
   rows: SavingsRow[] = [];
+  private balances: SavingsBalance[] = [];
   expandedAccountId: number | null = null;
 
   selectedMonth = new Date().getMonth() + 1;
@@ -98,6 +98,7 @@ export class SavingsComponent implements OnInit {
   }
 
   private buildRows(balances: SavingsBalance[], entries: SavingsEntry[]) {
+    this.balances = balances;
     this.rows = this.accounts.map(account => {
       const balance = balances.find(b => b.bankAccountId === account.id);
       const opening = Number(account.openingBalance || 0);
@@ -114,20 +115,11 @@ export class SavingsComponent implements OnInit {
     });
   }
 
-  openAddEntry() {
-    if (this.accounts.length === 0) return;
-    const ref = this.dialog.open(SavingsEntryFormComponent, {
-      width: '420px', maxWidth: '95vw',
-      data: { accounts: this.accounts, month: this.selectedMonth, year: this.selectedYear },
-    });
-    ref.afterClosed().subscribe(saved => { if (saved) this.loadPeriodData(); });
-  }
-
   openTransfer() {
     if (this.accounts.length < 2) return;
     const ref = this.dialog.open(SavingsTransferFormComponent, {
       width: '440px', maxWidth: '95vw',
-      data: { accounts: this.accounts, month: this.selectedMonth, year: this.selectedYear },
+      data: { accounts: this.accounts, balances: this.balances, month: this.selectedMonth, year: this.selectedYear },
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.loadPeriodData(); });
   }

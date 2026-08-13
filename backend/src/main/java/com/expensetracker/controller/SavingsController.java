@@ -14,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/savings")
@@ -66,10 +67,13 @@ public class SavingsController {
     }
 
     @PostMapping("/transfer")
-    public ResponseEntity<Void> transfer(@AuthenticationPrincipal User user,
-                                         @Valid @RequestBody TransferRequestDTO request) {
-        boolean ok = savingsService.transfer(user.getGroup().getId(), request);
-        return ok ? ResponseEntity.status(HttpStatus.CREATED).build() : ResponseEntity.badRequest().build();
+    public ResponseEntity<?> transfer(@AuthenticationPrincipal User user,
+                                      @Valid @RequestBody TransferRequestDTO request) {
+        String error = savingsService.transfer(user.getGroup().getId(), request);
+        if (error != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", error));
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @DeleteMapping("/{id}")
