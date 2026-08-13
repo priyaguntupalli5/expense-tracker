@@ -58,6 +58,8 @@ public class SavingsController {
         entry.setMonth(incoming.getMonth());
         entry.setYear(incoming.getYear());
         entry.setAmount(incoming.getAmount());
+        entry.setAssetType(incoming.getAssetType());
+        entry.setIsOpeningBalance(incoming.getIsOpeningBalance());
         entry.setNote(incoming.getNote());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(entry));

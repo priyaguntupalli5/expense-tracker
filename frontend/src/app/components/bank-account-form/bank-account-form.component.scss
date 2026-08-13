@@ -22,3 +22,16 @@
 }
 
 .full-width { width: 100%; }
+
+.dual-balance-row {
+  display: flex;
+  gap: 12px;
+}
+
+.half-width { flex: 1; min-width: 0; }
+
+.dual-hint {
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.6);
+  margin: -12px 0 14px 2px;
+}

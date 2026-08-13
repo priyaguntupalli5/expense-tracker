@@ -10,7 +10,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ExpenseService } from '../../services/expense.service';
-import { BankAccount } from '../../models/expense.model';
+import { AssetType, BankAccount } from '../../models/expense.model';
 
 export interface SavingsEntryFormData {
   accounts: BankAccount[];
@@ -40,6 +40,7 @@ export class SavingsEntryFormComponent {
   form = this.fb.group({
     bankAccountId: [null as number | null, Validators.required],
     type:          ['DEPOSIT' as 'DEPOSIT' | 'WITHDRAWAL', Validators.required],
+    assetType:     ['CASH' as AssetType, Validators.required],
     amount:        [null as number | null, [Validators.required, Validators.min(0.01)]],
     note:          ['', Validators.maxLength(255)],
   });
@@ -55,6 +56,7 @@ export class SavingsEntryFormComponent {
       month: this.data.month,
       year: this.data.year,
       amount,
+      assetType: v.assetType!,
       note: v.note || undefined,
     }).subscribe({
       next: () => {

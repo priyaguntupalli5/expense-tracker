@@ -107,6 +107,8 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
 -- Ledger of savings deposits/withdrawals/transfers per account. Multiple entries
 -- per account/month are allowed; transfers are two linked rows (see linked_entry_id)
 -- excluded from "this month's savings" since they move money, not save it.
+-- asset_type (CASH/INVESTMENT) lets one account hold both — the account itself
+-- has no type, only its entries do, so balances can be broken down by type.
 CREATE TABLE IF NOT EXISTS savings_entries (
     id              BIGINT        NOT NULL AUTO_INCREMENT,
     bank_account_id BIGINT        NOT NULL,
@@ -114,7 +116,9 @@ CREATE TABLE IF NOT EXISTS savings_entries (
     month           INT           NOT NULL,
     year            INT           NOT NULL,
     amount          DECIMAL(12,2) NOT NULL,
+    asset_type      VARCHAR(20)   NOT NULL DEFAULT 'CASH',
     is_transfer     BOOLEAN       NOT NULL DEFAULT FALSE,
+    is_opening_balance BOOLEAN    NOT NULL DEFAULT FALSE,
     linked_entry_id BIGINT        NULL,
     note            VARCHAR(255)  NULL,
     created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,

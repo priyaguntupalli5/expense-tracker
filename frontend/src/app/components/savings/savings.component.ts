@@ -21,6 +21,10 @@ interface SavingsRow {
   account: BankAccount;
   tillDate: number;
   thisMonth: number;
+  cashTillDate: number;
+  investmentTillDate: number;
+  cashThisMonth: number;
+  investmentThisMonth: number;
   entries: SavingsEntry[];
 }
 
@@ -96,10 +100,15 @@ export class SavingsComponent implements OnInit {
   private buildRows(balances: SavingsBalance[], entries: SavingsEntry[]) {
     this.rows = this.accounts.map(account => {
       const balance = balances.find(b => b.bankAccountId === account.id);
+      const opening = Number(account.openingBalance || 0);
       return {
         account,
-        tillDate: balance ? Number(balance.tillDate) : Number(account.openingBalance || 0),
-        thisMonth: balance ? Number(balance.thisMonth) : 0,
+        tillDate:             balance ? Number(balance.tillDate) : opening,
+        thisMonth:            balance ? Number(balance.thisMonth) : 0,
+        cashTillDate:         balance ? Number(balance.cashTillDate) : opening,
+        investmentTillDate:   balance ? Number(balance.investmentTillDate) : 0,
+        cashThisMonth:        balance ? Number(balance.cashThisMonth) : 0,
+        investmentThisMonth:  balance ? Number(balance.investmentThisMonth) : 0,
         entries: entries.filter(e => e.bankAccountId === account.id),
       };
     });
@@ -136,17 +145,26 @@ export class SavingsComponent implements OnInit {
   }
 
   openAdd() {
-    const ref = this.dialog.open(BankAccountFormComponent, { width: '420px', maxWidth: '95vw' });
+    const ref = this.dialog.open(BankAccountFormComponent, {
+      width: '420px', maxWidth: '95vw',
+      data: { month: this.selectedMonth, year: this.selectedYear },
+    });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }
 
   openEdit(account: BankAccount) {
     const row = this.rows.find(r => r.account.id === account.id);
-    const currentBalance = row ? row.tillDate : Number(account.openingBalance || 0);
-    const currentThisMonth = row ? row.thisMonth : 0;
+    const opening = Number(account.openingBalance || 0);
     const ref = this.dialog.open(BankAccountFormComponent, {
       width: '420px', maxWidth: '95vw',
-      data: { account, currentBalance, currentThisMonth, month: this.selectedMonth, year: this.selectedYear },
+      data: {
+        account,
+        currentCashBalance:       row ? row.cashTillDate : opening,
+        currentInvestmentBalance: row ? row.investmentTillDate : 0,
+        currentCashThisMonth:     row ? row.cashThisMonth : 0,
+        currentInvestmentThisMonth: row ? row.investmentThisMonth : 0,
+        month: this.selectedMonth, year: this.selectedYear,
+      },
     });
     ref.afterClosed().subscribe(saved => { if (saved) this.load(); });
   }

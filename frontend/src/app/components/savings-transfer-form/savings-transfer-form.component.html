@@ -33,6 +33,15 @@
       <div class="form-error">From and To accounts must be different</div>
     }
 
+    <mat-button-toggle-group formControlName="assetType" class="type-toggle">
+      <mat-button-toggle value="CASH">
+        <mat-icon>payments</mat-icon> Cash
+      </mat-button-toggle>
+      <mat-button-toggle value="INVESTMENT">
+        <mat-icon>show_chart</mat-icon> Investment
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Amount</mat-label>
       <span matPrefix>$&nbsp;</span>

@@ -29,6 +29,17 @@
   margin: -6px 0 8px;
 }
 
+.type-toggle {
+  align-self: stretch;
+  display: flex;
+  margin-bottom: 8px;
+
+  ::ng-deep .mat-button-toggle {
+    flex: 1;
+    text-align: center;
+  }
+}
+
 .hint {
   font-size: 0.8rem;
   color: rgba(0, 0, 0, 0.6);

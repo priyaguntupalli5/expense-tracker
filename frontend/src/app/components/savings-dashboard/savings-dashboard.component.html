@@ -101,11 +101,21 @@
             @for (slice of slices; track slice.account.id) {
               <div class="legend-row">
                 <span class="legend-dot" [style.background]="slice.color"></span>
-                <span class="legend-label">
-                  {{ slice.account.ownerName }} · {{ slice.account.accountName }}
-                </span>
-                <span class="legend-pct">{{ slice.percentage }}%</span>
-                <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                <div class="legend-main">
+                  <div class="legend-top">
+                    <span class="legend-label">
+                      {{ slice.account.ownerName }} · {{ slice.account.accountName }}
+                    </span>
+                    <span class="legend-pct">{{ slice.percentage }}%</span>
+                    <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                  </div>
+                  @if (slice.cashTillDate !== 0 && slice.investmentTillDate !== 0) {
+                    <div class="legend-sub">
+                      Cash {{ slice.cashTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                      · Investment {{ slice.investmentTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
+                    </div>
+                  }
+                </div>
               </div>
             }
           </div>

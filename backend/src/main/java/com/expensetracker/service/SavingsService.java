@@ -28,14 +28,22 @@ public class SavingsService {
         List<BankAccount> accounts = bankAccountRepository.findByGroupId(groupId);
 
         Map<Long, BigDecimal> tillDateSums = new HashMap<>();
+        Map<Long, BigDecimal> cashTillDateSums = new HashMap<>();
+        Map<Long, BigDecimal> investmentTillDateSums = new HashMap<>();
         for (SavingsEntry entry : savingsEntryRepository.findByGroupIdAndPeriodUpTo(groupId, year, month)) {
             tillDateSums.merge(entry.getBankAccountId(), entry.getAmount(), BigDecimal::add);
+            Map<Long, BigDecimal> typeSums = "INVESTMENT".equals(entry.getAssetType()) ? investmentTillDateSums : cashTillDateSums;
+            typeSums.merge(entry.getBankAccountId(), entry.getAmount(), BigDecimal::add);
         }
 
         Map<Long, BigDecimal> thisMonthSums = new HashMap<>();
+        Map<Long, BigDecimal> cashThisMonthSums = new HashMap<>();
+        Map<Long, BigDecimal> investmentThisMonthSums = new HashMap<>();
         for (SavingsEntry entry : savingsEntryRepository.findByGroupIdAndMonthAndYear(groupId, month, year)) {
-            if (!entry.getIsTransfer()) {
+            if (!entry.getIsTransfer() && !entry.getIsOpeningBalance()) {
                 thisMonthSums.merge(entry.getBankAccountId(), entry.getAmount(), BigDecimal::add);
+                Map<Long, BigDecimal> typeSums = "INVESTMENT".equals(entry.getAssetType()) ? investmentThisMonthSums : cashThisMonthSums;
+                typeSums.merge(entry.getBankAccountId(), entry.getAmount(), BigDecimal::add);
             }
         }
 
@@ -43,7 +51,12 @@ public class SavingsService {
             .map(account -> new SavingsBalanceDTO(
                 account.getId(),
                 account.getOpeningBalance().add(tillDateSums.getOrDefault(account.getId(), BigDecimal.ZERO)),
-                thisMonthSums.getOrDefault(account.getId(), BigDecimal.ZERO)
+                thisMonthSums.getOrDefault(account.getId(), BigDecimal.ZERO),
+                // the opening balance predates per-entry typing, so it's folded into cash
+                account.getOpeningBalance().add(cashTillDateSums.getOrDefault(account.getId(), BigDecimal.ZERO)),
+                investmentTillDateSums.getOrDefault(account.getId(), BigDecimal.ZERO),
+                cashThisMonthSums.getOrDefault(account.getId(), BigDecimal.ZERO),
+                investmentThisMonthSums.getOrDefault(account.getId(), BigDecimal.ZERO)
             ))
             .toList();
     }
@@ -63,6 +76,7 @@ public class SavingsService {
         outgoing.setMonth(request.getMonth());
         outgoing.setYear(request.getYear());
         outgoing.setAmount(request.getAmount().negate());
+        outgoing.setAssetType(request.getAssetType());
         outgoing.setIsTransfer(true);
         outgoing.setNote(request.getNote());
 
@@ -72,6 +86,7 @@ public class SavingsService {
         incoming.setMonth(request.getMonth());
         incoming.setYear(request.getYear());
         incoming.setAmount(request.getAmount());
+        incoming.setAssetType(request.getAssetType());
         incoming.setIsTransfer(true);
         incoming.setNote(request.getNote());
 

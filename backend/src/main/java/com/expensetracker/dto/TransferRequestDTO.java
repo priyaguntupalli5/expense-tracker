@@ -15,6 +15,10 @@ public class TransferRequestDTO {
     @Digits(integer = 10, fraction = 2)
     private BigDecimal amount;
 
+    @NotBlank
+    @Size(max = 20)
+    private String assetType = "CASH";
+
     @NotNull
     @Min(1)
     @Max(12)
@@ -34,6 +38,9 @@ public class TransferRequestDTO {
 
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public String getAssetType() { return assetType; }
+    public void setAssetType(String assetType) { this.assetType = assetType; }
 
     public Integer getMonth() { return month; }
     public void setMonth(Integer month) { this.month = month; }

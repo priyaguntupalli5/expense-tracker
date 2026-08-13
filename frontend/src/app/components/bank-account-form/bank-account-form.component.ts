@@ -14,11 +14,14 @@ import { SettingsService } from '../../services/settings.service';
 import { BankAccount } from '../../models/expense.model';
 
 export interface BankAccountFormData {
-  account: BankAccount;
-  currentBalance: number;
-  currentThisMonth: number;
   month: number;
   year: number;
+  // present only when editing an existing account
+  account?: BankAccount;
+  currentCashBalance?: number;
+  currentInvestmentBalance?: number;
+  currentCashThisMonth?: number;
+  currentInvestmentThisMonth?: number;
 }
 
 @Component({
@@ -53,11 +56,14 @@ export class BankAccountFormComponent implements OnInit {
   ];
 
   form = this.fb.group({
-    ownerName:        ['', [Validators.required, Validators.maxLength(50)]],
-    accountName:      ['', [Validators.required, Validators.maxLength(100)]],
-    openingBalance:   [0, [Validators.required, Validators.min(0)]],
-    tillDateBalance:  [0, [Validators.required, Validators.min(0)]],
-    thisMonthSavings: [0, [Validators.required]],
+    ownerName:              ['', [Validators.required, Validators.maxLength(50)]],
+    accountName:            ['', [Validators.required, Validators.maxLength(100)]],
+    cashBalance:            [0, [Validators.required, Validators.min(0)]],
+    investmentBalance:      [0, [Validators.required, Validators.min(0)]],
+    cashTillDate:           [0, [Validators.required, Validators.min(0)]],
+    investmentTillDate:     [0, [Validators.required, Validators.min(0)]],
+    cashThisMonth:          [0, [Validators.required]],
+    investmentThisMonth:    [0, [Validators.required]],
   });
 
   ngOnInit() {
@@ -68,14 +74,16 @@ export class BankAccountFormComponent implements OnInit {
       }
     });
 
-    if (this.data) {
+    if (this.data?.account) {
       this.isEditing = true;
-      const { account, currentBalance, currentThisMonth } = this.data;
+      const { account, currentCashBalance, currentInvestmentBalance, currentCashThisMonth, currentInvestmentThisMonth } = this.data;
       this.form.patchValue({
-        ownerName:        account.ownerName,
-        accountName:      account.accountName,
-        tillDateBalance:  currentBalance,
-        thisMonthSavings: currentThisMonth,
+        ownerName:            account.ownerName,
+        accountName:          account.accountName,
+        cashTillDate:         currentCashBalance,
+        investmentTillDate:   currentInvestmentBalance,
+        cashThisMonth:        currentCashThisMonth,
+        investmentThisMonth:  currentInvestmentThisMonth,
       });
     }
   }
@@ -84,9 +92,10 @@ export class BankAccountFormComponent implements OnInit {
     if (this.form.invalid) return;
     this.saving = true;
     const v = this.form.value;
+    const { month, year } = this.data!;
 
     if (this.isEditing) {
-      const { account, currentBalance, currentThisMonth, month, year } = this.data!;
+      const account = this.data!.account!;
       const updated: BankAccount = {
         ownerName:      v.ownerName!,
         accountName:    v.accountName!,
@@ -95,35 +104,44 @@ export class BankAccountFormComponent implements OnInit {
 
       const round = (n: number) => Math.round(n * 100) / 100;
 
-      // Apply the "this month" change first as a normal entry in the selected
-      // month (it naturally rolls into Till Date too), then make up whatever's
-      // left of the Till Date change with an entry dated the month before —
-      // that way the two fields can be edited independently of one another.
-      const thisMonthDelta = round((v.thisMonthSavings ?? 0) - currentThisMonth);
-      const tillDateAfterMonthEdit = round(currentBalance + thisMonthDelta);
-      const priorDelta = round((v.tillDateBalance ?? 0) - tillDateAfterMonthEdit);
+      // Per type: apply the "this month" change first as a normal entry in the
+      // selected month (it naturally rolls into Till Date too), then make up
+      // whatever's left of the Till Date change with an entry dated the month
+      // before — so Till Date and This Month can be edited independently.
+      const buildOps = (
+        assetType: 'CASH' | 'INVESTMENT',
+        currentTillDate: number, newTillDate: number,
+        currentThisMonth: number, newThisMonth: number,
+      ): Observable<unknown>[] => {
+        const ops: Observable<unknown>[] = [];
+        const thisMonthDelta = round(newThisMonth - currentThisMonth);
+        const tillDateAfterMonthEdit = round(currentTillDate + thisMonthDelta);
+        const priorDelta = round(newTillDate - tillDateAfterMonthEdit);
 
-      const ops: Observable<unknown>[] = [this.expenseService.updateBankAccount(account.id!, updated)];
+        if (Math.abs(thisMonthDelta) >= 0.01) {
+          ops.push(this.expenseService.addSavingsEntry({
+            bankAccountId: account.id!, month, year,
+            amount: thisMonthDelta, assetType, note: 'Balance adjustment',
+          }));
+        }
+        if (Math.abs(priorDelta) >= 0.01) {
+          const prevMonth = month === 1 ? 12 : month - 1;
+          const prevYear  = month === 1 ? year - 1 : year;
+          ops.push(this.expenseService.addSavingsEntry({
+            bankAccountId: account.id!, month: prevMonth, year: prevYear,
+            amount: priorDelta, assetType, note: 'Balance adjustment',
+          }));
+        }
+        return ops;
+      };
 
-      if (Math.abs(thisMonthDelta) >= 0.01) {
-        ops.push(this.expenseService.addSavingsEntry({
-          bankAccountId: account.id!,
-          month, year,
-          amount: thisMonthDelta,
-          note: 'Balance adjustment',
-        }));
-      }
-
-      if (Math.abs(priorDelta) >= 0.01) {
-        const prevMonth = month === 1 ? 12 : month - 1;
-        const prevYear  = month === 1 ? year - 1 : year;
-        ops.push(this.expenseService.addSavingsEntry({
-          bankAccountId: account.id!,
-          month: prevMonth, year: prevYear,
-          amount: priorDelta,
-          note: 'Balance adjustment',
-        }));
-      }
+      const ops: Observable<unknown>[] = [
+        this.expenseService.updateBankAccount(account.id!, updated),
+        ...buildOps('CASH', this.data!.currentCashBalance!, v.cashTillDate ?? 0,
+          this.data!.currentCashThisMonth!, v.cashThisMonth ?? 0),
+        ...buildOps('INVESTMENT', this.data!.currentInvestmentBalance!, v.investmentTillDate ?? 0,
+          this.data!.currentInvestmentThisMonth!, v.investmentThisMonth ?? 0),
+      ];
 
       forkJoin(ops).subscribe({
         next: () => {
@@ -136,15 +154,45 @@ export class BankAccountFormComponent implements OnInit {
         },
       });
     } else {
-      const account: BankAccount = {
-        ownerName:      v.ownerName!,
-        accountName:    v.accountName!,
-        openingBalance: v.openingBalance ?? 0,
-      };
-      this.expenseService.createBankAccount(account).subscribe({
-        next: () => {
-          this.snackBar.open('Account added!', 'OK', { duration: 3000 });
-          this.dialogRef.close(true);
+      const cash       = v.cashBalance ?? 0;
+      const investment = v.investmentBalance ?? 0;
+
+      if (cash <= 0 && investment <= 0) {
+        this.snackBar.open('Enter a Cash or Investment balance', 'OK', { duration: 3000 });
+        this.saving = false;
+        return;
+      }
+
+      // One account either way — cash and investment become separately typed
+      // entries under it, so the account never has to be split into two rows.
+      this.expenseService.createBankAccount({
+        ownerName: v.ownerName!, accountName: v.accountName!, openingBalance: 0,
+      }).subscribe({
+        next: created => {
+          const entryOps: Observable<unknown>[] = [];
+          if (cash > 0) {
+            entryOps.push(this.expenseService.addSavingsEntry({
+              bankAccountId: created.id!, month, year,
+              amount: cash, assetType: 'CASH', isOpeningBalance: true, note: 'Opening balance',
+            }));
+          }
+          if (investment > 0) {
+            entryOps.push(this.expenseService.addSavingsEntry({
+              bankAccountId: created.id!, month, year,
+              amount: investment, assetType: 'INVESTMENT', isOpeningBalance: true, note: 'Opening balance',
+            }));
+          }
+
+          (entryOps.length ? forkJoin(entryOps) : forkJoin([])).subscribe({
+            next: () => {
+              this.snackBar.open('Account added!', 'OK', { duration: 3000 });
+              this.dialogRef.close(true);
+            },
+            error: () => {
+              this.snackBar.open('Account created, but balances failed to save', 'OK', { duration: 4000 });
+              this.saving = false;
+            },
+          });
         },
         error: () => {
           this.snackBar.open('Failed to save. Is the backend running?', 'OK', { duration: 4000 });

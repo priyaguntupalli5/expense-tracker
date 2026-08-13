@@ -34,8 +34,20 @@ public class SavingsEntry {
     @Digits(integer = 10, fraction = 2)
     private BigDecimal amount;
 
+    // CASH or INVESTMENT — lets one account hold a mix of both
+    @NotBlank
+    @Size(max = 20)
+    @Column(name = "asset_type")
+    private String assetType = "CASH";
+
     @Column(name = "is_transfer", nullable = false)
     private boolean isTransfer = false;
+
+    // True for the initial cash/investment amounts logged when an account is
+    // created — like transfers, these represent money you already had rather
+    // than new savings, so they're excluded from "this month" totals.
+    @Column(name = "is_opening_balance", nullable = false)
+    private boolean isOpeningBalance = false;
 
     @Column(name = "linked_entry_id")
     private Long linkedEntryId;
@@ -73,8 +85,14 @@ public class SavingsEntry {
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
 
+    public String getAssetType() { return assetType; }
+    public void setAssetType(String assetType) { this.assetType = assetType; }
+
     public boolean getIsTransfer() { return isTransfer; }
     public void setIsTransfer(boolean isTransfer) { this.isTransfer = isTransfer; }
+
+    public boolean getIsOpeningBalance() { return isOpeningBalance; }
+    public void setIsOpeningBalance(boolean isOpeningBalance) { this.isOpeningBalance = isOpeningBalance; }
 
     public Long getLinkedEntryId() { return linkedEntryId; }
     public void setLinkedEntryId(Long linkedEntryId) { this.linkedEntryId = linkedEntryId; }

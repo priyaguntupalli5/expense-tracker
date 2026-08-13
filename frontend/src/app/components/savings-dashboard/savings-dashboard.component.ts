@@ -16,6 +16,8 @@ interface AccountRow {
   account: BankAccount;
   tillDate: number;
   thisMonth: number;
+  cashTillDate: number;
+  investmentTillDate: number;
 }
 
 interface AccountSlice {
@@ -24,6 +26,8 @@ interface AccountSlice {
   account: BankAccount;
   amount: number;
   percentage: number;
+  cashTillDate: number;
+  investmentTillDate: number;
 }
 
 // Fixed-order categorical palette (validated for CVD-safe adjacent pairs) —
@@ -82,10 +86,13 @@ export class SavingsDashboardComponent implements OnInit {
     ]).subscribe(([accounts, balances]) => {
       this.rows = accounts.map(account => {
         const balance = balances.find((b: SavingsBalance) => b.bankAccountId === account.id);
+        const opening = Number(account.openingBalance || 0);
         return {
           account,
-          tillDate:  balance ? Number(balance.tillDate) : Number(account.openingBalance || 0),
-          thisMonth: balance ? Number(balance.thisMonth) : 0,
+          tillDate:            balance ? Number(balance.tillDate) : opening,
+          thisMonth:           balance ? Number(balance.thisMonth) : 0,
+          cashTillDate:        balance ? Number(balance.cashTillDate) : opening,
+          investmentTillDate:  balance ? Number(balance.investmentTillDate) : 0,
         };
       });
       this.buildPieChart();
@@ -129,6 +136,8 @@ export class SavingsDashboardComponent implements OnInit {
         account: positive[0].account,
         amount: positive[0].tillDate,
         percentage: 100,
+        cashTillDate: positive[0].cashTillDate,
+        investmentTillDate: positive[0].investmentTillDate,
       });
     } else if (positiveTotal > 0) {
       let angle = -Math.PI / 2;
@@ -146,6 +155,8 @@ export class SavingsDashboardComponent implements OnInit {
           account: row.account,
           amount: row.tillDate,
           percentage: Math.round((row.tillDate / positiveTotal) * 100),
+          cashTillDate: row.cashTillDate,
+          investmentTillDate: row.investmentTillDate,
         });
 
         angle = endAngle;
@@ -153,7 +164,10 @@ export class SavingsDashboardComponent implements OnInit {
     }
 
     nonPositive.forEach(row => {
-      slices.push({ path: '', color: OVERFLOW_COLOR, account: row.account, amount: row.tillDate, percentage: 0 });
+      slices.push({
+        path: '', color: OVERFLOW_COLOR, account: row.account, amount: row.tillDate, percentage: 0,
+        cashTillDate: row.cashTillDate, investmentTillDate: row.investmentTillDate,
+      });
     });
 
     this.slices = slices;

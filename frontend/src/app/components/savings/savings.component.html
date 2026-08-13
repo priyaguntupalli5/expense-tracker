@@ -97,19 +97,34 @@
                 @if (expandedAccountId === row.account.id) {
                   <tr class="entries-row">
                     <td colspan="6">
+                      <div class="type-breakdown">
+                        <div class="breakdown-chip">
+                          <mat-icon>payments</mat-icon>
+                          <span class="breakdown-label">Cash</span>
+                          <span class="breakdown-amt">{{ row.cashTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                        </div>
+                        <div class="breakdown-chip">
+                          <mat-icon>show_chart</mat-icon>
+                          <span class="breakdown-label">Investment</span>
+                          <span class="breakdown-amt">{{ row.investmentTillDate | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                        </div>
+                      </div>
                       @if (row.entries.length === 0) {
-                        <div class="no-entries">No entries this month</div>
+                        <div class="no-entries">No new entries this month</div>
                       } @else {
                         <ul class="entries-list">
                           @for (entry of row.entries; track entry.id) {
                             <li>
                               <mat-icon class="entry-icon">{{ entry.isTransfer ? 'swap_horiz' : (entry.amount >= 0 ? 'arrow_upward' : 'arrow_downward') }}</mat-icon>
+                              <mat-icon class="asset-icon" [matTooltip]="entry.assetType === 'INVESTMENT' ? 'Investment' : 'Cash'">
+                                {{ entry.assetType === 'INVESTMENT' ? 'show_chart' : 'payments' }}
+                              </mat-icon>
                               <span class="entry-amount" [class.positive]="entry.amount > 0" [class.negative]="entry.amount < 0">
                                 {{ entry.amount >= 0 ? '+' : '' }}{{ entry.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
                               </span>
                               <span class="entry-label">
-                                {{ entry.isTransfer ? 'Transfer' : (entry.amount >= 0 ? 'Deposit' : 'Withdrawal') }}
-                                @if (entry.note) { — {{ entry.note }} }
+                                {{ entry.isTransfer ? 'Transfer' : entry.isOpeningBalance ? 'Opening Balance' : (entry.amount >= 0 ? 'Deposit' : 'Withdrawal') }}
+                                @if (entry.note && !entry.isOpeningBalance) { — {{ entry.note }} }
                               </span>
                               <button mat-icon-button class="entry-delete" matTooltip="Delete" (click)="deleteEntry(entry)">
                                 <mat-icon>close</mat-icon>

@@ -105,6 +105,9 @@ export interface Income {
   templateId?: number;
 }
 
+// CASH or INVESTMENT — lives on the entry, not the account, so one account can hold both
+export type AssetType = 'CASH' | 'INVESTMENT';
+
 export interface BankAccount {
   id?: number;
   ownerName: string;
@@ -118,7 +121,9 @@ export interface SavingsEntry {
   month: number;
   year: number;
   amount: number;
+  assetType?: AssetType;
   isTransfer?: boolean;
+  isOpeningBalance?: boolean;
   linkedEntryId?: number;
   note?: string;
 }
@@ -127,12 +132,17 @@ export interface SavingsBalance {
   bankAccountId: number;
   tillDate: number;
   thisMonth: number;
+  cashTillDate: number;
+  investmentTillDate: number;
+  cashThisMonth: number;
+  investmentThisMonth: number;
 }
 
 export interface TransferRequest {
   fromAccountId: number;
   toAccountId: number;
   amount: number;
+  assetType?: AssetType;
   month: number;
   year: number;
   note?: string;

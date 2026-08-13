@@ -32,26 +32,47 @@
     </mat-form-field>
 
     @if (!isEditing) {
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Current Balance</mat-label>
-        <span matPrefix>$&nbsp;</span>
-        <input matInput type="number" formControlName="openingBalance" min="0" step="0.01">
-        <mat-hint>The account's balance right now — the starting point for tracking</mat-hint>
-      </mat-form-field>
+      <div class="dual-balance-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Cash Balance</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="cashBalance" min="0" step="0.01">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Investment Balance</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="investmentBalance" min="0" step="0.01">
+        </mat-form-field>
+      </div>
+      <div class="dual-hint">Enter one or both — a separate account is created for each</div>
     } @else {
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Till Date Balance</mat-label>
-        <span matPrefix>$&nbsp;</span>
-        <input matInput type="number" formControlName="tillDateBalance" min="0" step="0.01">
-        <mat-hint>Total balance in this account as of {{ months[data!.month - 1].label }} {{ data!.year }}</mat-hint>
-      </mat-form-field>
+      <div class="dual-balance-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Cash Till Date</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="cashTillDate" min="0" step="0.01">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Investment Till Date</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="investmentTillDate" min="0" step="0.01">
+        </mat-form-field>
+      </div>
+      <div class="dual-hint">Total balance in each as of {{ months[data!.month - 1].label }} {{ data!.year }}</div>
 
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>This Month's Savings</mat-label>
-        <span matPrefix>$&nbsp;</span>
-        <input matInput type="number" formControlName="thisMonthSavings" step="0.01">
-        <mat-hint>Amount saved in {{ months[data!.month - 1].label }} — changing this also updates Till Date</mat-hint>
-      </mat-form-field>
+      <div class="dual-balance-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Cash This Month</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="cashThisMonth" step="0.01">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Investment This Month</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="investmentThisMonth" step="0.01">
+        </mat-form-field>
+      </div>
+      <div class="dual-hint">Amount saved in {{ months[data!.month - 1].label }} — changing this also updates Till Date</div>
     }
 
   </form>

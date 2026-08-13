@@ -216,7 +216,7 @@
 
 .legend-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 7px 4px;
   border-bottom: 1px solid rgba(0,0,0,0.04);
@@ -229,6 +229,24 @@
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .legend-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .legend-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .legend-sub {
+    font-size: 0.72rem;
+    color: #aaa;
+    margin-top: 1px;
   }
 
   .legend-label {

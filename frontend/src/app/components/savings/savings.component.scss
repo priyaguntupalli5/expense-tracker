@@ -215,6 +215,45 @@
   font-size: 0.92rem;
 }
 
+.type-breakdown {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0 4px;
+}
+
+.breakdown-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.035);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.82rem;
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+    color: #999;
+  }
+}
+
+.breakdown-label {
+  color: #888;
+}
+
+.breakdown-amt {
+  font-weight: 600;
+  color: #333;
+}
+
+.asset-icon {
+  font-size: 0.95rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: #aaa;
+}
+
 .amount-col { text-align: right; width: 180px; }
 
 .amount-field {

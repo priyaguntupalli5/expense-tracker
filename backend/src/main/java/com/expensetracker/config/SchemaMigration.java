@@ -30,6 +30,7 @@ public class SchemaMigration implements ApplicationRunner {
         migrateFixedExpenseColumns();
         migrateExpenseTagsToJoinTable();
         migrateSavingsAccounts();
+        backfillOpeningBalanceFlag();
         dropLegacyTables();
         resetGroups1And3ToDefaults();
     }
@@ -41,10 +42,15 @@ public class SchemaMigration implements ApplicationRunner {
     private void migrateSavingsAccounts() throws SQLException {
         try (Connection conn = dataSource.getConnection()) {
             addColumnIfAbsent(conn, "bank_accounts", "opening_balance", "DECIMAL(12,2) NOT NULL DEFAULT 0");
+            // Superseded by savings_entries.asset_type — an account can hold both
+            // cash and investment, so the type belongs on the entry, not the account.
+            dropColumnIfPresent(conn, "bank_accounts", "account_type");
 
             addColumnIfAbsent(conn, "savings_entries", "is_transfer", "BOOLEAN NOT NULL DEFAULT FALSE");
             addColumnIfAbsent(conn, "savings_entries", "linked_entry_id", "BIGINT NULL");
             addColumnIfAbsent(conn, "savings_entries", "note", "VARCHAR(255) NULL");
+            addColumnIfAbsent(conn, "savings_entries", "asset_type", "VARCHAR(20) NOT NULL DEFAULT 'CASH'");
+            addColumnIfAbsent(conn, "savings_entries", "is_opening_balance", "BOOLEAN NOT NULL DEFAULT FALSE");
 
             if (indexExists(conn, "savings_entries", "uk_savings_account_month_year")) {
                 // The unique key backs the bank_account_id FK, so a replacement index
@@ -54,6 +60,22 @@ public class SchemaMigration implements ApplicationRunner {
                         "ADD INDEX idx_savings_bank_account (bank_account_id), " +
                         "DROP INDEX uk_savings_account_month_year");
                 }
+            }
+        }
+    }
+
+    // One-time: entries logged before is_opening_balance existed were still
+    // tagged with a note of 'Opening balance', so backfill the flag from that
+    // rather than leaving pre-existing accounts' "this month" totals inflated.
+    private void backfillOpeningBalanceFlag() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+            if (migrationApplied(conn, "backfill_opening_balance_flag")) return;
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("UPDATE savings_entries SET is_opening_balance = TRUE WHERE note = 'Opening balance'");
+                stmt.execute(
+                    "INSERT IGNORE INTO applied_migrations (migration_name) " +
+                    "VALUES ('backfill_opening_balance_flag')");
             }
         }
     }
@@ -216,6 +238,15 @@ public class SchemaMigration implements ApplicationRunner {
         if (!columnExists(meta, conn, table, column)) {
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
+            }
+        }
+    }
+
+    private void dropColumnIfPresent(Connection conn, String table, String column) throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
+        if (columnExists(meta, conn, table, column)) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE `" + table + "` DROP COLUMN `" + column + "`");
             }
         }
     }
