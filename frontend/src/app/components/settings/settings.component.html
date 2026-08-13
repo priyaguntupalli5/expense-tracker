@@ -111,8 +111,30 @@
             <span class="card-title">Account</span>
           </div>
           <div class="field-row">
-            <span class="field-label">Signed in as</span>
-            <span class="field-value">{{ auth.currentUsername }}</span>
+            <span class="field-label">Username</span>
+            @if (!editingUsername) {
+              <div class="username-display-row">
+                <span class="field-value">{{ auth.currentUsername }}</span>
+                <button mat-icon-button matTooltip="Edit username" (click)="startEditUsername()">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </div>
+            } @else {
+              <div class="currency-row">
+                <mat-form-field appearance="outline" class="currency-field">
+                  <mat-label>Username</mat-label>
+                  <input matInput [(ngModel)]="newUsername" maxlength="100" (keydown.enter)="saveUsername()">
+                </mat-form-field>
+                <button mat-flat-button color="primary" class="save-btn" [class.saved]="usernameSaved"
+                        [disabled]="savingUsername || !newUsername.trim()" (click)="saveUsername()">
+                  <mat-icon>{{ usernameSaved ? 'check' : 'save' }}</mat-icon>
+                  {{ usernameSaved ? 'Saved!' : 'Save' }}
+                </button>
+                <button mat-icon-button matTooltip="Cancel" (click)="cancelEditUsername()">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            }
           </div>
           <button mat-stroked-button class="logout-btn" (click)="auth.logout()">
             <mat-icon>logout</mat-icon>

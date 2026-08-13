@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { SettingsService, GroupSettings, JoinRequestItem } from '../../services/settings.service';
@@ -25,7 +26,7 @@ export const CURRENCIES = [
 
 @Component({
   selector: 'app-settings',
-  imports: [FormsModule, MatIconModule, MatButtonModule, MatSelectModule, MatFormFieldModule, MatTooltipModule],
+  imports: [FormsModule, MatIconModule, MatButtonModule, MatSelectModule, MatFormFieldModule, MatInputModule, MatTooltipModule],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -43,6 +44,11 @@ export class SettingsComponent implements OnInit {
   selectedCurrency = this.settingsService.currency;
   currencySaved = false;
   codeCopied = false;
+
+  editingUsername = false;
+  newUsername = '';
+  savingUsername = false;
+  usernameSaved = false;
 
   ngOnInit() {
     this.settingsService.load().subscribe({
@@ -111,6 +117,39 @@ export class SettingsComponent implements OnInit {
         this.snackBar.open('Currency updated', 'OK', { duration: 2500 });
       },
       error: () => this.snackBar.open('Failed to save currency', 'OK', { duration: 3000 }),
+    });
+  }
+
+  startEditUsername() {
+    this.newUsername = this.auth.currentUsername ?? '';
+    this.editingUsername = true;
+  }
+
+  cancelEditUsername() {
+    this.editingUsername = false;
+    this.newUsername = '';
+  }
+
+  saveUsername() {
+    const username = this.newUsername.trim();
+    if (!username || username === this.auth.currentUsername) {
+      this.cancelEditUsername();
+      return;
+    }
+    this.savingUsername = true;
+    this.settingsService.updateUsername(username).subscribe({
+      next: () => {
+        this.savingUsername = false;
+        this.editingUsername = false;
+        this.usernameSaved = true;
+        setTimeout(() => this.usernameSaved = false, 2000);
+        this.snackBar.open('Username updated', 'OK', { duration: 2500 });
+        this.settingsService.load().subscribe(s => this.settings = s);
+      },
+      error: err => {
+        this.savingUsername = false;
+        this.snackBar.open(err.error?.error ?? 'Failed to update username', 'OK', { duration: 3000 });
+      },
     });
   }
 

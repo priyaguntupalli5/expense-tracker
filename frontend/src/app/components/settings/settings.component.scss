@@ -104,6 +104,20 @@
   color: #1a1a2e;
 }
 
+.username-display-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  button {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+
+    mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+  }
+}
+
 .field-hint {
   display: block;
   font-size: 0.76rem;

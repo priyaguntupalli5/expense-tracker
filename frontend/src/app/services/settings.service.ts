@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthResponse, AuthService } from './auth.service';
 
 const API = environment.apiUrl;
 
@@ -22,6 +23,7 @@ export interface JoinRequestItem {
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
   private readonly CURRENCY_KEY = 'app_currency';
 
   get currency(): string { return localStorage.getItem(this.CURRENCY_KEY) ?? 'CAD'; }
@@ -52,5 +54,13 @@ export class SettingsService {
 
   removeMember(username: string): Observable<void> {
     return this.http.delete<void>(`${API}/settings/members/${encodeURIComponent(username)}`);
+  }
+
+  // Renaming invalidates the current JWT (its subject is the username), so the
+  // backend returns a fresh token — store it immediately so later requests work.
+  updateUsername(username: string): Observable<AuthResponse> {
+    return this.http.put<AuthResponse>(`${API}/settings/username`, { username }).pipe(
+      tap(res => this.authService.storeSession(res)),
+    );
   }
 }
