@@ -55,6 +55,12 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   availableTags: string[] = [];
   readonly tagCtrl = new FormControl<string>('');
 
+  // Long-press-to-select state
+  private static readonly LONG_PRESS_MS = 500;
+  private pressTimer: ReturnType<typeof setTimeout> | null = null;
+  private longPressTriggered = false;
+  pressingId: number | null = null;
+
   get displayedColumns(): string[] {
     return this.selectionMode
       ? ['select', 'date', 'title', 'category', 'amount', 'actions']
@@ -152,6 +158,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.clearPressTimer();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -161,6 +168,52 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  onRowPressStart(expense: Expense) {
+    this.clearPressTimer();
+    this.longPressTriggered = false;
+    this.pressingId = expense.id ?? null;
+    this.pressTimer = setTimeout(() => {
+      this.longPressTriggered = true;
+      this.pressTimer = null;
+      this.pressingId = null;
+      this.beginSelectionFromLongPress(expense);
+    }, ExpenseListComponent.LONG_PRESS_MS);
+  }
+
+  onRowPressEnd() {
+    this.clearPressTimer();
+    this.pressingId = null;
+  }
+
+  private clearPressTimer() {
+    if (this.pressTimer) {
+      clearTimeout(this.pressTimer);
+      this.pressTimer = null;
+    }
+  }
+
+  private beginSelectionFromLongPress(expense: Expense) {
+    if (!this.selectionMode) {
+      this.selectionMode = true;
+      if (this.availableTags.length === 0) {
+        this.expenseService.getTags().subscribe(tags => { this.availableTags = tags.sort(); });
+      }
+    }
+    if (expense.id) this.selectedIds.add(expense.id);
+  }
+
+  // A long-press fires this via setTimeout, then the browser's own click event
+  // (from the same mousedown/mouseup pair) fires right after — this guard stops
+  // that trailing click from immediately toggling the row back off.
+  onRowClick(expense: Expense) {
+    if (this.longPressTriggered) {
+      this.longPressTriggered = false;
+      return;
+    }
+    if (!this.selectionMode || !expense.id) return;
+    this.toggleSelect(expense.id);
   }
 
   toggleSelectionMode() {

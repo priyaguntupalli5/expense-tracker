@@ -78,9 +78,19 @@
             </thead>
             <tbody>
               @for (row of rows; track row.account.id) {
-                <tr class="savings-row" [id]="'savings-row-' + row.account.id" (click)="toggleExpand(row.account.id!)">
+                <tr class="savings-row" [id]="'savings-row-' + row.account.id"
+                    [class.selectable-row]="selectionMode"
+                    [class.pressing]="pressingId === row.account.id"
+                    (mousedown)="onRowPressStart(row.account)"
+                    (mouseup)="onRowPressEnd()"
+                    (mouseleave)="onRowPressEnd()"
+                    (touchstart)="onRowPressStart(row.account)"
+                    (touchend)="onRowPressEnd()"
+                    (touchmove)="onRowPressEnd()"
+                    (contextmenu)="$event.preventDefault()"
+                    (click)="onRowClick(row.account)">
                   @if (selectionMode) {
-                    <td class="select-col" (click)="$event.stopPropagation()">
+                    <td class="select-col" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()">
                       <mat-checkbox [checked]="isSelected(row.account.id!)"
                                     (change)="toggleSelectAccount(row.account.id!)"></mat-checkbox>
                     </td>
@@ -105,7 +115,7 @@
                   <td class="amount-col" [class.positive]="row.thisMonth > 0" [class.negative]="row.thisMonth < 0">
                     {{ row.thisMonth | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}
                   </td>
-                  <td class="actions-col" (click)="$event.stopPropagation()">
+                  <td class="actions-col" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()">
                     <button mat-icon-button matTooltip="Edit account" (click)="openEdit(row.account)">
                       <mat-icon>edit</mat-icon>
                     </button>

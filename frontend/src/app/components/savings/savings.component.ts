@@ -63,6 +63,12 @@ export class SavingsComponent implements OnInit, OnDestroy {
   selectionMode = false;
   selectedIds = new Set<number>();
 
+  // Long-press-to-select state
+  private static readonly LONG_PRESS_MS = 500;
+  private pressTimer: ReturnType<typeof setTimeout> | null = null;
+  private longPressTriggered = false;
+  pressingId: number | null = null;
+
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
 
@@ -84,6 +90,7 @@ export class SavingsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.clearPressTimer();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -112,6 +119,56 @@ export class SavingsComponent implements OnInit, OnDestroy {
   toggleExpand(accountId: number) {
     if (this.selectionMode) return;
     this.expandedAccountId = this.expandedAccountId === accountId ? null : accountId;
+  }
+
+  onRowPressStart(account: BankAccount) {
+    this.clearPressTimer();
+    this.longPressTriggered = false;
+    this.pressingId = account.id ?? null;
+    this.pressTimer = setTimeout(() => {
+      this.longPressTriggered = true;
+      this.pressTimer = null;
+      this.pressingId = null;
+      this.beginSelectionFromLongPress(account);
+    }, SavingsComponent.LONG_PRESS_MS);
+  }
+
+  onRowPressEnd() {
+    this.clearPressTimer();
+    this.pressingId = null;
+  }
+
+  private clearPressTimer() {
+    if (this.pressTimer) {
+      clearTimeout(this.pressTimer);
+      this.pressTimer = null;
+    }
+  }
+
+  private beginSelectionFromLongPress(account: BankAccount) {
+    if (!this.selectionMode) {
+      this.expandedAccountId = null;
+      this.selectionMode = true;
+      if (this.availableTags.length === 0) {
+        this.expenseService.getBankAccountTags().subscribe(tags => { this.availableTags = tags.sort(); });
+      }
+    }
+    if (account.id) this.selectedIds.add(account.id);
+  }
+
+  // A long-press fires this via setTimeout, then the browser's own click event
+  // (from the same mousedown/mouseup pair) fires right after — this guard stops
+  // that trailing click from immediately toggling the row back off.
+  onRowClick(account: BankAccount) {
+    if (this.longPressTriggered) {
+      this.longPressTriggered = false;
+      return;
+    }
+    if (this.selectionMode) {
+      if (account.id) this.toggleSelectAccount(account.id);
+      return;
+    }
+    this.toggleExpand(account.id!);
   }
 
   get allSelected(): boolean {
