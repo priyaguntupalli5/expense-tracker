@@ -66,7 +66,7 @@
             </thead>
             <tbody>
               @for (row of rows; track row.account.id) {
-                <tr class="savings-row" (click)="toggleExpand(row.account.id!)">
+                <tr class="savings-row" [id]="'savings-row-' + row.account.id" (click)="toggleExpand(row.account.id!)">
                   <td class="expand-col">
                     <mat-icon class="expand-icon" [class.expanded]="expandedAccountId === row.account.id">
                       chevron_right

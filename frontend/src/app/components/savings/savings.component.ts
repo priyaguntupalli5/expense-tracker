@@ -1,6 +1,7 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { forkJoin } from 'rxjs';
+import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { SettingsService } from '../../services/settings.service';
 import { BankAccount, SavingsBalance, SavingsEntry } from '../../models/expense.model';
@@ -37,16 +38,19 @@ interface SavingsRow {
   templateUrl: './savings.component.html',
   styleUrl: './savings.component.scss',
 })
-export class SavingsComponent implements OnInit {
+export class SavingsComponent implements OnInit, OnDestroy {
   private readonly expenseService = inject(ExpenseService);
   private readonly dialog         = inject(MatDialog);
   private readonly snackBar       = inject(MatSnackBar);
+  private readonly route          = inject(ActivatedRoute);
+  private readonly destroy$       = new Subject<void>();
   readonly settingsService        = inject(SettingsService);
 
   accounts: BankAccount[] = [];
   rows: SavingsRow[] = [];
   private balances: SavingsBalance[] = [];
   expandedAccountId: number | null = null;
+  highlightId: number | null = null;
 
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
@@ -62,7 +66,26 @@ export class SavingsComponent implements OnInit {
   readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   ngOnInit() {
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      if (params['highlightId']) this.highlightId = Number(params['highlightId']);
+    });
     this.load();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private scrollToRow(id: number) {
+    setTimeout(() => {
+      const el = document.getElementById(`savings-row-${id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('row--highlighted');
+        setTimeout(() => el.classList.remove('row--highlighted'), 3000);
+      }
+    }, 150);
   }
 
   get tillDateTotal(): number {
@@ -87,6 +110,10 @@ export class SavingsComponent implements OnInit {
     ]).subscribe(([accounts, balances, entries]) => {
       this.accounts = accounts;
       this.buildRows(balances, entries);
+      if (this.highlightId) {
+        this.expandedAccountId = this.highlightId;
+        this.scrollToRow(this.highlightId);
+      }
     });
   }
 

@@ -291,20 +291,45 @@
 
 .pies-row {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0;
+
+  &.resizing {
+    user-select: none;
+    cursor: col-resize;
+
+    .split-divider-handle { background: #1976d2; width: 3px; }
+  }
 }
 
 .pie-panel {
-  flex: 65;
+  flex: 0 0 auto;
   min-width: 0;
 }
 
+.split-divider {
+  flex: 0 0 10px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+}
+
+.split-divider-handle {
+  width: 2px;
+  height: 100%;
+  min-height: 120px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  transition: background 0.15s, width 0.15s;
+
+  .split-divider:hover & { background: #1976d2; width: 3px; }
+}
+
 .drill-panel {
-  flex: 35;
   border-left: 2px solid #e0e0e0;
   padding-left: 16px;
-  margin-left: 8px;
 }
 
 .drill-panel-header {
@@ -497,7 +522,10 @@
   .hero-stat  { flex: none; width: calc(50% - 12px); }
   .stat-sep   { display: none; }
 
+  // The drag-to-resize split only makes sense side-by-side — stack instead.
   .pies-row { flex-direction: column; }
+  .pie-panel { flex-basis: auto !important; }
+  .split-divider { display: none; }
   .drill-panel { border-left: none; border-top: 2px solid #e0e0e0; padding-left: 0; margin-left: 0; padding-top: 16px; margin-top: 8px; }
   .chart-layout { flex-direction: column; align-items: center; }
   .legend { min-width: unset; width: 100%; }

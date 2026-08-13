@@ -125,6 +125,16 @@
   transition: background 0.15s;
   cursor: pointer;
   &:hover { background: rgba(0,0,0,0.025); }
+
+  &.row--highlighted {
+    animation: highlight-fade 3s ease-out forwards;
+  }
+}
+
+@keyframes highlight-fade {
+  0%   { background: rgba(25, 118, 210, 0.22); }
+  60%  { background: rgba(25, 118, 210, 0.12); }
+  100% { background: transparent; }
 }
 
 .expand-col { width: 32px; }

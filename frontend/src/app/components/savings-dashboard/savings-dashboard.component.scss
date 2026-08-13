@@ -186,6 +186,80 @@
   }
 }
 
+.pies-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+
+  &.resizing {
+    user-select: none;
+    cursor: col-resize;
+
+    .split-divider-handle { background: #1976d2; width: 3px; }
+  }
+}
+
+.pie-panel {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.split-divider {
+  flex: 0 0 10px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+}
+
+.split-divider-handle {
+  width: 2px;
+  height: 100%;
+  min-height: 120px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  transition: background 0.15s, width 0.15s;
+
+  .split-divider:hover & { background: #1976d2; width: 3px; }
+}
+
+.drill-panel {
+  border-left: 2px solid #e0e0e0;
+  padding-left: 16px;
+}
+
+.drill-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.drill-panel-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: white;
+  color: #555;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+  &:hover { background: #eff6ff; color: #1976d2; }
+}
+
 .chart-layout {
   display: flex;
   align-items: center;
@@ -196,13 +270,27 @@
 
 .pie-wrapper { flex-shrink: 0; }
 
-.pie-svg {
+.pie-panel .pie-svg {
   width: 200px;
   height: 200px;
+}
 
+.drill-panel .pie-svg {
+  width: 150px;
+  height: 150px;
+}
+
+.pie-svg {
   .pie-slice {
-    transition: opacity 0.15s;
+    cursor: pointer;
+    transition: opacity 0.15s, filter 0.15s;
     &:hover { opacity: 0.82; }
+    &.selected {
+      filter: brightness(1.18) drop-shadow(0 0 4px rgba(0,0,0,0.25));
+      stroke: white;
+      stroke-width: 2;
+    }
+    &.sub-slice { cursor: pointer; }
   }
 
   .donut-sm { font-size: 11px; fill: #bbb; font-family: inherit; }
@@ -211,7 +299,7 @@
 
 .legend {
   flex: 1;
-  min-width: 220px;
+  min-width: 180px;
 }
 
 .legend-row {
@@ -221,8 +309,18 @@
   padding: 7px 4px;
   border-bottom: 1px solid rgba(0,0,0,0.04);
   border-radius: 6px;
+  transition: background 0.12s;
 
   &:last-child { border-bottom: none; }
+
+  &--clickable {
+    cursor: pointer;
+    &:hover { background: rgba(0,0,0,0.04); }
+    &:hover .legend-drill-icon,
+    &:hover .legend-nav-icon { opacity: 1; }
+  }
+
+  &.selected { background: rgba(25,118,210,0.08); }
 
   .legend-dot {
     width: 8px;
@@ -231,6 +329,20 @@
     flex-shrink: 0;
     margin-top: 6px;
   }
+
+  .legend-drill-icon,
+  .legend-nav-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+    color: #bbb;
+    opacity: 0;
+    transition: opacity 0.12s, color 0.12s;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  &.selected .legend-drill-icon { color: #1976d2; opacity: 1; }
 
   .legend-main {
     flex: 1;
@@ -305,6 +417,11 @@
   .hero-stat  { flex: none; width: calc(50% - 12px); }
   .stat-sep   { display: none; }
 
+  // The drag-to-resize split only makes sense side-by-side — stack instead.
+  .pies-row { flex-direction: column; }
+  .pie-panel { flex-basis: auto !important; }
+  .split-divider { display: none; }
+  .drill-panel { border-left: none; border-top: 2px solid #e0e0e0; padding-left: 0; margin-left: 0; padding-top: 16px; margin-top: 8px; }
   .chart-layout { flex-direction: column; align-items: center; }
   .legend { min-width: unset; width: 100%; }
 }

@@ -124,10 +124,10 @@
             <small>Add expenses to see the breakdown</small>
           </div>
         } @else {
-          <div class="pies-row">
+          <div class="pies-row" [class.resizing]="isResizingSplit">
 
             <!-- Main category pie -->
-            <div class="pie-panel">
+            <div class="pie-panel" [style.flex-basis]="mainPanelBasis">
               <div class="chart-layout">
                 <div class="pie-wrapper">
                   <svg viewBox="0 0 200 200" class="pie-svg">
@@ -166,7 +166,12 @@
 
             <!-- Drill-down pie (by subcategory) -->
             @if (drillDownCategory) {
+              <div class="split-divider" (mousedown)="startResize($event)" matTooltip="Drag to resize">
+                <span class="split-divider-handle"></span>
+              </div>
+
               <div class="pie-panel drill-panel"
+                   [style.flex-basis]="drillPanelBasis"
                    [style.border-left-color]="getCategoryColor(drillDownCategory)">
                 <div class="drill-panel-header">
                   <button class="back-btn" (click)="clearDrillDown()" matTooltip="Back to categories">
@@ -247,10 +252,10 @@
               <p>No spending under "{{ selectedLabel }}" this period</p>
             </div>
           } @else {
-            <div class="pies-row">
+            <div class="pies-row" [class.resizing]="isResizingSplit">
 
               <!-- Category pie for the selected label -->
-              <div class="pie-panel">
+              <div class="pie-panel" [style.flex-basis]="mainPanelBasis">
                 <div class="chart-layout">
                   <div class="pie-wrapper">
                     <svg viewBox="0 0 200 200" class="pie-svg">
@@ -289,7 +294,12 @@
 
               <!-- Drill-down pie (by subcategory) -->
               @if (labelDrillCategory) {
+                <div class="split-divider" (mousedown)="startResize($event)" matTooltip="Drag to resize">
+                  <span class="split-divider-handle"></span>
+                </div>
+
                 <div class="pie-panel drill-panel"
+                     [style.flex-basis]="drillPanelBasis"
                      [style.border-left-color]="getCategoryColor(labelDrillCategory)">
                   <div class="drill-panel-header">
                     <button class="back-btn" (click)="onLabelCategorySliceClick(labelDrillCategory)" matTooltip="Back to categories">

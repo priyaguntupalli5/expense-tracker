@@ -86,6 +86,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   popupSubcategory = '';
   popupItems: ExpenseItem[] = [];
 
+  // Draggable split between a main pie panel and its drill-down panel, shared
+  // across the category and label views since only one is ever shown at once.
+  splitRatio = 65;
+  isResizingSplit = false;
+
   readonly months = [
     { value: 1,  label: 'January' },   { value: 2,  label: 'February' },
     { value: 3,  label: 'March' },     { value: 4,  label: 'April' },
@@ -149,6 +154,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   get labelCategoryTotal(): number {
     return this.labelCategorySlices.reduce((s, sl) => s + sl.amount, 0);
+  }
+
+  get isDrillDownOpen(): boolean {
+    return !!this.drillDownCategory || !!this.labelDrillCategory;
+  }
+
+  get mainPanelBasis(): string {
+    return this.isDrillDownOpen ? `calc(${this.splitRatio}% - 5px)` : '100%';
+  }
+
+  get drillPanelBasis(): string {
+    return `calc(${100 - this.splitRatio}% - 5px)`;
+  }
+
+  startResize(event: MouseEvent) {
+    event.preventDefault();
+    const container = (event.currentTarget as HTMLElement).parentElement;
+    if (!container) return;
+
+    const containerWidth = container.getBoundingClientRect().width;
+    const startX     = event.clientX;
+    const startRatio = this.splitRatio;
+    this.isResizingSplit = true;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const deltaPct = ((e.clientX - startX) / containerWidth) * 100;
+      this.splitRatio = Math.min(80, Math.max(25, startRatio + deltaPct));
+    };
+    const onMouseUp = () => {
+      this.isResizingSplit = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
 
   onSubSliceClick(subcategory: string) {
