@@ -160,6 +160,10 @@ export class SavingsDashboardComponent implements OnInit {
     return this.rows.reduce((sum, r) => sum + r.thisMonth, 0);
   }
 
+  get totalSavings(): number {
+    return this.totalTillDate + this.totalThisMonth;
+  }
+
   get totalCash(): number {
     return this.rows.reduce((sum, r) => sum + r.cashTillDate, 0);
   }

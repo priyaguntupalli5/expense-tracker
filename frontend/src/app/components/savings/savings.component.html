@@ -10,11 +10,7 @@
         </div>
         <div class="header-sub">
           <span class="summary-figure">
-            {{ tillDateTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} till date
-          </span>
-          <span class="summary-dot">·</span>
-          <span class="summary-figure">
-            {{ thisMonthTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} saved in {{ months[selectedMonth - 1].label }}
+            {{ totalSavings | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} total savings
           </span>
         </div>
       </div>

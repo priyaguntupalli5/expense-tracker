@@ -114,6 +114,10 @@ export class SavingsComponent implements OnInit, OnDestroy {
     return this.rows.reduce((sum, r) => sum + r.thisMonth, 0);
   }
 
+  get totalSavings(): number {
+    return this.tillDateTotal + this.thisMonthTotal;
+  }
+
   onPeriodChange() { this.loadPeriodData(); }
 
   toggleExpand(accountId: number) {
