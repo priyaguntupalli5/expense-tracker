@@ -206,6 +206,7 @@ public class SchemaMigration implements ApplicationRunner {
             addColumnIfAbsent(conn, "fixed_expenses", "group_id",    "BIGINT NULL");
             addColumnIfAbsent(conn, "fixed_expenses", "recurrence",  "VARCHAR(20) NOT NULL DEFAULT 'MONTHLY'");
             addColumnIfAbsent(conn, "fixed_expenses", "start_date",  "DATE NULL");
+            addColumnIfAbsent(conn, "fixed_expenses", "end_date",    "DATE NULL");
             addColumnIfAbsent(conn, "fixed_expenses", "created_at",  "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
             addColumnIfAbsent(conn, "fixed_expenses", "updated_at",  "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             // income_entries

@@ -67,6 +67,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   pieSlices: PieSlice[] = [];
   incomeTotal = 0;
   private fixedExpenses: FixedExpense[] = [];
+  // Materialized fixed-expense occurrences (real, persisted `expenses` rows,
+  // tagged with sourceFixedId) for the selected past/current month — the
+  // source of truth for that month's Fixed total, so deleting a template
+  // later doesn't erase history that already happened. Only future months
+  // (which RecurringJobService hasn't materialized yet) fall back to
+  // projecting live from `fixedExpenses` via fixedAmount()/monthOccurrences.
+  private fixedEntries: Expense[] = [];
   private allExpenses: Expense[] = [];
 
   chartView: ChartView = 'category';
@@ -298,6 +305,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.viewMode === 'to-date' && this.isFuturePeriod) {
       this.incomeTotal   = 0;
       this.fixedExpenses = [];
+      this.fixedEntries  = [];
       this.summary       = { total: 0, count: 0, categoryBreakdown: {}, subcategoryBreakdown: {}, titleBreakdown: {} };
       this.pieSlices     = [];
       this.availableLabels = [];
@@ -313,14 +321,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
       : this.expenseService.getAll(this.selectedMonth, this.selectedYear);
 
     forkJoin({
-      categories:  this.expenseService.loadCategories(),
-      incomeTotal: this.incomeService.getMonthlyTotal(this.selectedMonth, this.selectedYear, toDate),
-      fixed:       this.expenseService.getFixedExpenses(),
-      summary:     this.expenseService.getSummary(this.selectedMonth, this.selectedYear, toDate),
-      expenses:    expensesObs,
-    }).pipe(takeUntil(this.destroy$)).subscribe(({ incomeTotal, fixed, summary, expenses }) => {
+      categories:   this.expenseService.loadCategories(),
+      incomeTotal:  this.incomeService.getMonthlyTotal(this.selectedMonth, this.selectedYear, toDate),
+      fixed:        this.expenseService.getFixedExpenses(),
+      fixedEntries: this.expenseService.getFixedEntries(this.selectedMonth, this.selectedYear),
+      summary:      this.expenseService.getSummary(this.selectedMonth, this.selectedYear, toDate),
+      expenses:     expensesObs,
+    }).pipe(takeUntil(this.destroy$)).subscribe(({ incomeTotal, fixed, fixedEntries, summary, expenses }) => {
       this.incomeTotal   = incomeTotal;
       this.fixedExpenses = fixed;
+      this.fixedEntries  = fixedEntries;
       this.summary       = summary;
       this.allExpenses   = expenses;
       this.buildPieChart();
@@ -331,7 +341,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  // The materialized fixed-expense rows relevant to the current view: trimmed
+  // to "up to today" when viewing the current month in to-date mode (since
+  // RecurringJobService materializes the whole month regardless of today),
+  // otherwise the full month (a past month is entirely "in the past" already).
+  private get relevantFixedEntries(): Expense[] {
+    const toDate = this.toDateParam;
+    return toDate ? this.fixedEntries.filter(e => e.date <= toDate) : this.fixedEntries;
+  }
+
   private toDateEquivalent(fe: FixedExpense): number {
+    if (fe.endDate) {
+      const ed = new Date(fe.endDate + 'T00:00:00');
+      const selectedMonthStart = new Date(this.selectedYear, this.selectedMonth - 1, 1);
+      if (ed < selectedMonthStart) return 0;
+    }
+
     const now = new Date();
     const thisMonth = now.getMonth() + 1;
     const thisYear  = now.getFullYear();
@@ -443,10 +468,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
       breakdown[e.category] = (breakdown[e.category] ?? 0) +
         (this.isRefund(e.subcategory) ? -Number(e.amount) : Number(e.amount));
     }
-    for (const fe of this.fixedExpenses) {
-      if (this.expenseService.getCategoryByValue(fe.category)?.isIncome) continue;
-      breakdown[fe.category] = (breakdown[fe.category] ?? 0) +
-        (this.isRefund(fe.subcategory) ? -this.fixedAmount(fe) : this.fixedAmount(fe));
+
+    if (!this.isFuturePeriod) {
+      for (const e of this.relevantFixedEntries) {
+        if (this.expenseService.getCategoryByValue(e.category)?.isIncome) continue;
+        const amount = Number(e.amount);
+        breakdown[e.category] = (breakdown[e.category] ?? 0) +
+          (this.isRefund(e.subcategory) ? -amount : amount);
+      }
+    } else {
+      for (const fe of this.fixedExpenses) {
+        if (this.expenseService.getCategoryByValue(fe.category)?.isIncome) continue;
+        breakdown[fe.category] = (breakdown[fe.category] ?? 0) +
+          (this.isRefund(fe.subcategory) ? -this.fixedAmount(fe) : this.fixedAmount(fe));
+      }
     }
 
     this.pieSlices = this.buildCategoryPieSlices(breakdown);
@@ -511,9 +546,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const sub = e.subcategory || 'Other';
       breakdown[sub] = (breakdown[sub] ?? 0) + Number(e.amount);
     }
-    for (const fe of this.fixedExpenses.filter(f => f.category === category)) {
-      const sub = fe.subcategory || 'Other';
-      breakdown[sub] = (breakdown[sub] ?? 0) + this.fixedAmount(fe);
+
+    if (!this.isFuturePeriod) {
+      for (const e of this.relevantFixedEntries.filter(e => e.category === category)) {
+        const sub = e.subcategory || 'Other';
+        breakdown[sub] = (breakdown[sub] ?? 0) + Number(e.amount);
+      }
+    } else {
+      for (const fe of this.fixedExpenses.filter(f => f.category === category)) {
+        const sub = fe.subcategory || 'Other';
+        breakdown[sub] = (breakdown[sub] ?? 0) + this.fixedAmount(fe);
+      }
     }
 
     const { slices, total } = this.buildSlices(breakdown, category);
@@ -625,6 +668,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get fixedTotal(): number {
+    if (!this.isFuturePeriod) {
+      return this.relevantFixedEntries
+        .filter(e => !this.expenseService.getCategoryByValue(e.category)?.isIncome)
+        .reduce((sum, e) => sum + Number(e.amount), 0);
+    }
     return this.fixedExpenses
       .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
       .reduce((sum, fe) => sum + this.fixedAmount(fe), 0);

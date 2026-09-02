@@ -100,8 +100,11 @@ public class RecurringJobService implements ApplicationRunner {
     private void generateForFixedExpense(FixedExpense fe, LocalDate today) {
         if (fe.getStartDate() == null || fe.getRecurrence() == null) return;
 
+        // Don't generate occurrences past the expense's end date, if it has one.
+        LocalDate until = (fe.getEndDate() != null && fe.getEndDate().isBefore(today)) ? fe.getEndDate() : today;
+
         List<LocalDate> dueDates = computePaymentDates(
-            fe.getRecurrence(), null, null, fe.getStartDate(), today);
+            fe.getRecurrence(), null, null, fe.getStartDate(), until);
 
         for (LocalDate due : dueDates) {
             if (!expenseRepository.existsBySourceFixedIdAndDate(fe.getId(), due)) {

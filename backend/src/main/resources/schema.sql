@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS fixed_expenses (
     recurrence  VARCHAR(20)    NOT NULL DEFAULT 'MONTHLY',
     subcategory VARCHAR(100)   NULL,
     start_date  DATE           NULL,
+    end_date    DATE           NULL,
     created_at  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)

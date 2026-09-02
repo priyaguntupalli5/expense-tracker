@@ -166,7 +166,7 @@ export class FixedExpensesComponent implements OnInit {
   }
 
   confirmDelete(expense: FixedExpense) {
-    if (!confirm(`Delete "${expense.title}"?`)) return;
+    if (!confirm(`Delete "${expense.title}"? Past payments already recorded stay in your history — this only stops future occurrences from being generated.`)) return;
     this.expenseService.deleteFixedExpense(expense.id!).subscribe({
       next: () => {
         this.snackBar.open('Fixed expense deleted', 'Dismiss', { duration: 3000 });

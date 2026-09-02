@@ -20,6 +20,7 @@ export interface FixedExpense {
   subcategory?: string;
   recurrence?: string; // WEEKLY | BIWEEKLY | MONTHLY | QUARTERLY | YEARLY
   startDate?: string;  // ISO 'YYYY-MM-DD' — first payment date, anchors auto-generation
+  endDate?: string;    // ISO 'YYYY-MM-DD' — last payment date (inclusive); unset = recurs indefinitely
 }
 
 export function monthlyEquivalent(fe: FixedExpense): number {
@@ -45,32 +46,35 @@ export function monthOccurrences(fe: FixedExpense, month: number, year: number):
   }
 
   const sd         = new Date(fe.startDate + 'T00:00:00');
+  const ed         = fe.endDate ? new Date(fe.endDate + 'T00:00:00') : null;
   const monthStart = new Date(year, month - 1, 1);
   const monthEnd   = new Date(year, month, 0);
 
   if (sd > monthEnd) return 0;
+  if (ed && ed < monthStart) return 0;
 
   const MS = 86_400_000;
+  const countCutoff = ed && ed < monthEnd ? ed : monthEnd;
 
   switch (recurrence) {
     case 'WEEKLY': {
       let cur = new Date(sd.getTime());
       while (cur < monthStart) cur = new Date(cur.getTime() + 7 * MS);
       let n = 0;
-      while (cur <= monthEnd) { n++; cur = new Date(cur.getTime() + 7 * MS); }
+      while (cur <= countCutoff) { n++; cur = new Date(cur.getTime() + 7 * MS); }
       return n;
     }
     case 'BIWEEKLY': {
       let cur = new Date(sd.getTime());
       while (cur < monthStart) cur = new Date(cur.getTime() + 14 * MS);
       let n = 0;
-      while (cur <= monthEnd) { n++; cur = new Date(cur.getTime() + 14 * MS); }
+      while (cur <= countCutoff) { n++; cur = new Date(cur.getTime() + 14 * MS); }
       return n;
     }
     case 'MONTHLY': {
       const dom = sd.getDate();
       const d   = new Date(year, month - 1, Math.min(dom, monthEnd.getDate()));
-      return d >= sd ? 1 : 0;
+      return d >= sd && d <= countCutoff ? 1 : 0;
     }
     case 'QUARTERLY': {
       const startMon  = sd.getMonth() + 1;
@@ -78,13 +82,13 @@ export function monthOccurrences(fe: FixedExpense, month: number, year: number):
       if (monthDiff % 3 !== 0) return 0;
       const dom = sd.getDate();
       const d   = new Date(year, month - 1, Math.min(dom, monthEnd.getDate()));
-      return d >= sd ? 1 : 0;
+      return d >= sd && d <= countCutoff ? 1 : 0;
     }
     case 'YEARLY': {
       if ((sd.getMonth() + 1) !== month) return 0;
       const dom = sd.getDate();
       const d   = new Date(year, month - 1, Math.min(dom, monthEnd.getDate()));
-      return d >= sd ? 1 : 0;
+      return d >= sd && d <= countCutoff ? 1 : 0;
     }
     default:
       return 1;

@@ -50,6 +50,11 @@
                     @if (e.startDate) {
                       <span class="auto-badge" matTooltip="Auto-generates expense entries from {{ e.startDate }}">auto</span>
                     }
+                    @if (e.endDate) {
+                      <span class="end-badge" matTooltip="Stops recurring after this date">
+                        ends {{ (e.endDate + 'T00:00:00') | date:'MMM d, y' }}
+                      </span>
+                    }
                   </span>
                   @if (e.notes) {
                     <span class="notes-text">{{ e.notes }}</span>

@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { AsyncPipe } from '@angular/common';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -28,6 +28,14 @@ export const RECURRENCE_OPTIONS = [
 function toIso(d: Date | null | undefined): string | undefined {
   if (!(d instanceof Date) || isNaN(d.getTime())) return undefined;
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function endNotBeforeStartValidator(): ValidatorFn {
+  return (group: AbstractControl): ValidationErrors | null => {
+    const start = group.get('startDate')?.value as Date | null;
+    const end   = group.get('endDate')?.value as Date | null;
+    return start && end && end < start ? { endBeforeStart: true } : null;
+  };
 }
 
 @Component({
@@ -65,9 +73,10 @@ export class FixedExpenseFormComponent implements OnInit {
     amount:      [null as number | null, [Validators.required, Validators.min(0.01)]],
     recurrence:  ['MONTHLY', Validators.required],
     startDate:   [null as Date | null],
+    endDate:     [null as Date | null],
     subcategory: ['' as string | null],
     notes:       ['' as string | null],
-  });
+  }, { validators: [endNotBeforeStartValidator()] });
 
   get recurrence(): string { return this.form.get('recurrence')?.value ?? 'MONTHLY'; }
 
@@ -114,6 +123,7 @@ export class FixedExpenseFormComponent implements OnInit {
         amount:      this.data.amount as unknown as number,
         recurrence:  this.data.recurrence  ?? 'MONTHLY',
         startDate:   this.data.startDate ? new Date(this.data.startDate + 'T00:00:00') : null,
+        endDate:     this.data.endDate   ? new Date(this.data.endDate   + 'T00:00:00') : null,
         subcategory: this.data.subcategory ?? null,
         notes:       this.data.notes ?? null,
       });
@@ -141,6 +151,7 @@ export class FixedExpenseFormComponent implements OnInit {
       category:    v.category!,
       recurrence:  v.recurrence!,
       startDate:   toIso(v.startDate as Date | null),
+      endDate:     toIso(v.endDate as Date | null),
       subcategory: v.subcategory || undefined,
       notes:       v.notes || undefined,
     };
@@ -157,8 +168,9 @@ export class FixedExpenseFormComponent implements OnInit {
         );
         this.dialogRef.close(true);
       },
-      error: () => {
-        this.snackBar.open('Failed to save. Is the backend running?', 'OK', { duration: 4000 });
+      error: (err) => {
+        const message = err?.error?.error ?? 'Failed to save. Is the backend running?';
+        this.snackBar.open(message, 'OK', { duration: 4000 });
         this.saving = false;
       },
     });

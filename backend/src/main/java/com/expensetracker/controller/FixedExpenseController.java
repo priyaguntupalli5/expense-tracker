@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/fixed-expenses")
@@ -31,8 +32,12 @@ public class FixedExpenseController {
     }
 
     @PostMapping
-    public ResponseEntity<FixedExpense> create(@AuthenticationPrincipal User user,
-                                               @Valid @RequestBody FixedExpense expense) {
+    public ResponseEntity<?> create(@AuthenticationPrincipal User user,
+                                    @Valid @RequestBody FixedExpense expense) {
+        if (expense.getEndDate() != null && expense.getStartDate() != null
+            && expense.getEndDate().isBefore(expense.getStartDate())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "End date cannot be before the first payment date."));
+        }
         expense.setId(null);
         expense.setGroupId(user.getGroup().getId());
         FixedExpense saved = repository.save(expense);
@@ -41,9 +46,13 @@ public class FixedExpenseController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<FixedExpense> update(@AuthenticationPrincipal User user,
-                                               @PathVariable Long id,
-                                               @Valid @RequestBody FixedExpense updated) {
+    public ResponseEntity<?> update(@AuthenticationPrincipal User user,
+                                    @PathVariable Long id,
+                                    @Valid @RequestBody FixedExpense updated) {
+        if (updated.getEndDate() != null && updated.getStartDate() != null
+            && updated.getEndDate().isBefore(updated.getStartDate())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "End date cannot be before the first payment date."));
+        }
         return repository.findByIdAndGroupId(id, user.getGroup().getId()).map(existing -> {
             existing.setTitle(updated.getTitle());
             existing.setAmount(updated.getAmount());
@@ -52,6 +61,7 @@ public class FixedExpenseController {
             existing.setSubcategory(updated.getSubcategory());
             existing.setRecurrence(updated.getRecurrence());
             existing.setStartDate(updated.getStartDate());
+            existing.setEndDate(updated.getEndDate());
             FixedExpense saved = repository.save(existing);
             if (saved.getStartDate() != null) recurringJobService.generateForFixedExpense(saved);
             return ResponseEntity.ok(saved);
