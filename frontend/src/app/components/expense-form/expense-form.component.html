@@ -75,14 +75,33 @@
     <!-- Receipt upload -->
     <div class="receipt-section">
       <input type="file" #fileInput accept="image/*" (change)="onFileSelected($event)" hidden>
+      <!-- Android sends image/* straight to its photo picker (no camera, no files), so it gets its own menu.
+           iOS already shows Photo Library / Take Photo / Choose File natively. -->
+      <input type="file" #cameraInput accept="image/*" capture="environment" (change)="onFileSelected($event)" hidden>
+      <input type="file" #docInput (change)="onFileSelected($event)" hidden>
+      <mat-menu #receiptMenu="matMenu">
+        <button mat-menu-item type="button" (click)="cameraInput.click()">
+          <mat-icon>photo_camera</mat-icon><span>Take Photo</span>
+        </button>
+        <button mat-menu-item type="button" (click)="fileInput.click()">
+          <mat-icon>photo_library</mat-icon><span>Photo Library</span>
+        </button>
+        <button mat-menu-item type="button" (click)="docInput.click()">
+          <mat-icon>folder_open</mat-icon><span>Choose File</span>
+        </button>
+      </mat-menu>
       @if (!form.get('imageData')?.value) {
-        <button type="button" class="receipt-upload-btn" (click)="fileInput.click()">
+        <button type="button" class="receipt-upload-btn"
+                [matMenuTriggerFor]="isAndroid ? receiptMenu : null"
+                (click)="!isAndroid && fileInput.click()">
           <mat-icon>add_photo_alternate</mat-icon>
           <span>Attach Receipt</span>
         </button>
       } @else {
         <div class="receipt-preview">
-          <img [src]="form.get('imageData')?.value" class="receipt-thumb" (click)="fileInput.click()">
+          <img [src]="form.get('imageData')?.value" class="receipt-thumb"
+               [matMenuTriggerFor]="isAndroid ? receiptMenu : null"
+               (click)="!isAndroid && fileInput.click()">
           <button type="button" mat-icon-button class="receipt-remove-btn" (click)="removeImage()" matTooltip="Remove receipt">
             <mat-icon>close</mat-icon>
           </button>

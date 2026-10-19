@@ -10,6 +10,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
@@ -24,7 +25,7 @@ import { Category, Expense } from '../../models/expense.model';
     AsyncPipe, ReactiveFormsModule,
     MatDialogModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatAutocompleteModule, MatDatepickerModule,
-    MatButtonModule, MatIconModule, MatProgressSpinnerModule,
+    MatButtonModule, MatIconModule, MatMenuModule, MatProgressSpinnerModule,
   ],
   templateUrl: './expense-form.component.html',
   styleUrl: './expense-form.component.scss',
@@ -39,6 +40,7 @@ export class ExpenseFormComponent implements OnInit {
   categories: Category[] = [];
   isEditing = false;
   saving = false;
+  readonly isAndroid = /Android/i.test(navigator.userAgent);
 
   private readonly subcategoriesSubject = new BehaviorSubject<string[]>([]);
   filteredSuggestions$!: Observable<string[]>;
@@ -106,8 +108,15 @@ export class ExpenseFormComponent implements OnInit {
   }
 
   onFileSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // allow picking the same file again
     if (!file) return;
+    // "Choose File" accepts any type so Android opens its file browser; only images can be attached
+    if (!file.type.startsWith('image/')) {
+      this.snackBar.open('Please choose an image file.', 'OK', { duration: 3000 });
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
