@@ -39,6 +39,20 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The box only needs deploy.sh (the image comes from GHCR), so copy it
+      # over instead of having EC2 pull the repo with its own GitHub credentials.
+      - name: Copy deploy script to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: deployment/deploy.sh
+          target: expense-tracker
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -54,18 +68,7 @@ jobs:
           envs: GHCR_TOKEN,GHCR_USER,IMAGE
           script: |
             set -e
-            REPO_DIR=~/expense-tracker
-
-            if [ ! -d "$REPO_DIR/.git" ]; then
-              echo "ERROR: $REPO_DIR is not a git checkout. Clone it manually on the" \
-                   "EC2 box first (with working GitHub auth), then re-run this workflow."
-              exit 1
-            fi
-
-            echo "==> Pulling latest master..."
-            cd "$REPO_DIR"
-            git fetch origin
-            git reset --hard origin/master
+            cd ~/expense-tracker
 
             echo "==> Logging into GHCR..."
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
