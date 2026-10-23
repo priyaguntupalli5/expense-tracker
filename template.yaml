@@ -1,15 +1,18 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Expense Tracker (serverless) — Spring Boot API on Lambda with SnapStart behind a Function URL,
-  Angular app on S3, both served through one CloudFront distribution (/api/* → Lambda, rest → S3).
+  Expense Tracker (serverless) â€” Spring Boot API on Lambda with SnapStart behind a Function URL,
+  Angular app on S3, both served through one CloudFront distribution (/api/* â†’ Lambda, rest â†’ S3).
   Scheduled jobs run via EventBridge Scheduler. Database is TiDB Cloud Starter (MySQL-compatible).
 
 # Secrets arrive as parameter overrides from the deploy workflow (GitHub secrets), never committed.
 Parameters:
-  DbUrl:
+  DbHost:
     Type: String
-    Description: JDBC URL, e.g. jdbc:mysql://<tidb-host>:4000/expensetracker?sslMode=VERIFY_IDENTITY&serverTimezone=UTC
+    Description: TiDB host, e.g. gateway01.us-east-1.prod.aws.tidbcloud.com
+  DbName:
+    Type: String
+    Default: expensetracker
   DbUsername:
     Type: String
   DbPassword:
@@ -34,10 +37,17 @@ Parameters:
     NoEcho: true
     MinLength: 24
     Description: Shared secret EventBridge Scheduler sends in X-Job-Secret to /api/internal/jobs/*
+  SchedulesState:
+    Type: String
+    AllowedValues: [ENABLED, DISABLED]
+    Default: DISABLED
+    Description: >
+      Keep DISABLED while EC2 is still live â€” its in-process jobs already send reminders, and running
+      both would notify everyone twice. Switch to ENABLED at cutover.
 
 Resources:
 
-  # ── API ──────────────────────────────────────────────────────────────────────
+  # â”€â”€ API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   ApiFunction:
     Type: AWS::Serverless::Function
@@ -48,7 +58,7 @@ Resources:
       Architectures: [arm64]
       MemorySize: 2048
       Timeout: 30
-      # Spring takes ~12 s to start; SnapStart snapshots it at publish time so cold starts are ~1–2 s
+      # Spring takes ~12 s to start; SnapStart snapshots it at publish time so cold starts are ~1â€“2 s
       SnapStart:
         ApplyOn: PublishedVersions
       AutoPublishAlias: live
@@ -59,7 +69,8 @@ Resources:
       Environment:
         Variables:
           JAVA_TOOL_OPTIONS: '-XX:+TieredCompilation -XX:TieredStopAtLevel=1'
-          SPRING_DATASOURCE_URL: !Ref DbUrl
+          # TiDB requires TLS; the JDK's default trust store verifies its certificate
+          SPRING_DATASOURCE_URL: !Sub 'jdbc:mysql://${DbHost}:4000/${DbName}?sslMode=VERIFY_IDENTITY&serverTimezone=UTC'
           SPRING_DATASOURCE_USERNAME: !Ref DbUsername
           SPRING_DATASOURCE_PASSWORD: !Ref DbPassword
           JWT_SECRET: !Ref JwtSecret
@@ -76,6 +87,7 @@ Resources:
             Description: Generate due income and fixed-expense entries (idempotent)
             ScheduleExpression: cron(0 6 * * ? *)
             ScheduleExpressionTimezone: UTC
+            State: !Ref SchedulesState
             RetryPolicy:
               MaximumRetryAttempts: 2
             Input: !Sub '{"version":"2.0","routeKey":"$default","rawPath":"/api/internal/jobs/recurring","rawQueryString":"","headers":{"x-job-secret":"${JobSecret}"},"requestContext":{"http":{"method":"POST","path":"/api/internal/jobs/recurring","protocol":"HTTP/1.1","sourceIp":"127.0.0.1","userAgent":"eventbridge-scheduler"},"requestId":"scheduler","stage":"$default","timeEpoch":0},"isBase64Encoded":false}'
@@ -86,6 +98,7 @@ Resources:
             Description: Daily push reminder, 9 PM Atlantic
             ScheduleExpression: cron(0 21 * * ? *)
             ScheduleExpressionTimezone: America/Halifax
+            State: !Ref SchedulesState
             RetryPolicy:
               MaximumRetryAttempts: 0   # never send a reminder twice
             Input: !Sub '{"version":"2.0","routeKey":"$default","rawPath":"/api/internal/jobs/reminder/evening","rawQueryString":"","headers":{"x-job-secret":"${JobSecret}"},"requestContext":{"http":{"method":"POST","path":"/api/internal/jobs/reminder/evening","protocol":"HTTP/1.1","sourceIp":"127.0.0.1","userAgent":"eventbridge-scheduler"},"requestId":"scheduler","stage":"$default","timeEpoch":0},"isBase64Encoded":false}'
@@ -96,6 +109,7 @@ Resources:
             Description: Weekend push reminder, noon Atlantic
             ScheduleExpression: cron(0 12 ? * SAT,SUN *)
             ScheduleExpressionTimezone: America/Halifax
+            State: !Ref SchedulesState
             RetryPolicy:
               MaximumRetryAttempts: 0
             Input: !Sub '{"version":"2.0","routeKey":"$default","rawPath":"/api/internal/jobs/reminder/weekend","rawQueryString":"","headers":{"x-job-secret":"${JobSecret}"},"requestContext":{"http":{"method":"POST","path":"/api/internal/jobs/reminder/weekend","protocol":"HTTP/1.1","sourceIp":"127.0.0.1","userAgent":"eventbridge-scheduler"},"requestId":"scheduler","stage":"$default","timeEpoch":0},"isBase64Encoded":false}'
@@ -107,7 +121,7 @@ Resources:
       LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-api'
       RetentionInDays: 14
 
-  # ── Frontend ─────────────────────────────────────────────────────────────────
+  # â”€â”€ Frontend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   FrontendBucket:
     Type: AWS::S3::Bucket
@@ -150,7 +164,7 @@ Resources:
         SigningBehavior: always
         SigningProtocol: sigv4
 
-  # Angular routes like /savings have no file in S3 — serve index.html for any path without
+  # Angular routes like /savings have no file in S3 â€” serve index.html for any path without
   # an extension. A function (not custom error pages) so real /api 404s aren't masked.
   SpaRewriteFunction:
     Type: AWS::CloudFront::Function
@@ -169,7 +183,7 @@ Resources:
           return request;
         }
 
-  # ── CDN ──────────────────────────────────────────────────────────────────────
+  # â”€â”€ CDN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Distribution:
     Type: AWS::CloudFront::Distribution
@@ -187,7 +201,7 @@ Resources:
             S3OriginConfig:
               OriginAccessIdentity: ''
           - Id: api
-            # Function URL looks like https://<id>.lambda-url.<region>.on.aws/ — keep just the host
+            # Function URL looks like https://<id>.lambda-url.<region>.on.aws/ â€” keep just the host
             DomainName: !Select [2, !Split ['/', !GetAtt ApiFunctionUrl.FunctionUrl]]
             CustomOriginConfig:
               OriginProtocolPolicy: https-only

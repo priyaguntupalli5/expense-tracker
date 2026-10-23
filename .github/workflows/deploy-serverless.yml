@@ -1,0 +1,117 @@
+name: Deploy serverless (Lambda + S3 + CloudFront)
+
+# Separate from deploy.yml (EC2) so both work until switchover. Run it manually from the Actions tab.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC login to AWS — no stored AWS keys
+  contents: read
+
+concurrency:
+  group: deploy-serverless
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  STACK_NAME: expense-tracker
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Set up SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Log in to AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── Backend ────────────────────────────────────────────────────────────
+      - name: Build Lambda package
+        working-directory: backend
+        run: mvn -B package -DskipTests -Plambda
+
+      # Publishes a new version, moves the 'live' alias and takes the SnapStart snapshot
+      - name: Deploy stack
+        env:
+          DB_HOST: ${{ secrets.TIDB_HOST }}
+          DB_USERNAME: ${{ secrets.TIDB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.TIDB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          JOB_SECRET: ${{ secrets.JOB_SECRET }}
+        run: |
+          sam deploy --no-progressbar --parameter-overrides \
+            "DbHost=$DB_HOST" \
+            "DbUsername=$DB_USERNAME" \
+            "DbPassword=$DB_PASSWORD" \
+            "JwtSecret=$JWT_SECRET" \
+            "VapidPublicKey=$VAPID_PUBLIC_KEY" \
+            "VapidPrivateKey=$VAPID_PRIVATE_KEY" \
+            "VapidSubject=${VAPID_SUBJECT:-https://localhost}" \
+            "JobSecret=$JOB_SECRET" \
+            "SchedulesState=${{ vars.SCHEDULES_STATE || 'DISABLED' }}"
+
+      - name: Read stack outputs
+        id: stack
+        run: |
+          out() { aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+                    --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
+          echo "bucket=$(out FrontendBucketName)"     >> "$GITHUB_OUTPUT"
+          echo "distribution=$(out DistributionId)"  >> "$GITHUB_OUTPUT"
+          echo "url=$(out AppUrl)"                   >> "$GITHUB_OUTPUT"
+
+      # ── Frontend ───────────────────────────────────────────────────────────
+      - name: Build Angular app
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      # Hashed bundles never change, so cache them for a year. index.html, the manifest and the
+      # service-worker files must always be revalidated or users get stuck on an old version.
+      - name: Upload to S3
+        working-directory: frontend/dist/frontend/browser
+        env:
+          BUCKET: ${{ steps.stack.outputs.bucket }}
+        run: |
+          NO_CACHE_FILES=(index.html ngsw.json ngsw-worker.js safety-worker.js worker-basic.min.js manifest.webmanifest)
+          EXCLUDES=(); INCLUDES=(--exclude '*')
+          for f in "${NO_CACHE_FILES[@]}"; do EXCLUDES+=(--exclude "$f"); INCLUDES+=(--include "$f"); done
+
+          aws s3 sync . "s3://$BUCKET" --delete "${EXCLUDES[@]}" \
+            --cache-control 'public, max-age=31536000, immutable'
+          # cp (not sync) so these always upload, even when their size is unchanged
+          aws s3 cp . "s3://$BUCKET" --recursive "${INCLUDES[@]}" --cache-control 'no-cache'
+
+      - name: Refresh CloudFront
+        run: |
+          aws cloudfront create-invalidation --distribution-id "${{ steps.stack.outputs.distribution }}" \
+            --paths '/*' --query 'Invalidation.Id' --output text
+
+      - name: Summary
+        run: echo "### Deployed to ${{ steps.stack.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
