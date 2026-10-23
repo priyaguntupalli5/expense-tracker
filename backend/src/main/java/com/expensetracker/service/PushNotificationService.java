@@ -93,14 +93,14 @@ public class PushNotificationService {
         subscriptionRepo.deleteByEndpoint(endpoint);
     }
 
-    // Every day at 10:00 PM CDT/CST
-    @Scheduled(cron = "0 0 9 * * *", zone = "America/Chicago")
+    // Every day at 9:00 PM Atlantic. On Lambda, the EventBridge schedule in template.yaml fires this instead.
+    @Scheduled(cron = "0 0 21 * * *", zone = "America/Halifax")
     public void sendEveningReminder() {
         sendReminder("evening");
     }
 
-    // Weekends only at 12:00 PM CDT/CST
-    @Scheduled(cron = "0 0 12 * * SAT,SUN", zone = "America/Chicago")
+    // Weekends only at 12:00 PM Atlantic (template.yaml mirrors this for Lambda)
+    @Scheduled(cron = "0 0 12 * * SAT,SUN", zone = "America/Halifax")
     public void sendWeekendNoonReminder() {
         sendReminder("weekend noon");
     }

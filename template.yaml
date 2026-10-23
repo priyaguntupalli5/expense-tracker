@@ -1,0 +1,225 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Expense Tracker (serverless) — Spring Boot API on Lambda with SnapStart behind a Function URL,
+  Angular app on S3, both served through one CloudFront distribution (/api/* → Lambda, rest → S3).
+  Scheduled jobs run via EventBridge Scheduler. Database is TiDB Cloud Starter (MySQL-compatible).
+
+# Secrets arrive as parameter overrides from the deploy workflow (GitHub secrets), never committed.
+Parameters:
+  DbUrl:
+    Type: String
+    Description: JDBC URL, e.g. jdbc:mysql://<tidb-host>:4000/expensetracker?sslMode=VERIFY_IDENTITY&serverTimezone=UTC
+  DbUsername:
+    Type: String
+  DbPassword:
+    Type: String
+    NoEcho: true
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+  VapidPublicKey:
+    Type: String
+    Default: ''
+  VapidPrivateKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+  VapidSubject:
+    Type: String
+    Default: 'https://localhost'   # same as the app's default; set to the AppUrl once known
+  JobSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 24
+    Description: Shared secret EventBridge Scheduler sends in X-Job-Secret to /api/internal/jobs/*
+
+Resources:
+
+  # ── API ──────────────────────────────────────────────────────────────────────
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/target/expense-tracker-backend-1.0.0-lambda.zip
+      Handler: com.expensetracker.LambdaHandler::handleRequest
+      Runtime: java21
+      Architectures: [arm64]
+      MemorySize: 2048
+      Timeout: 30
+      # Spring takes ~12 s to start; SnapStart snapshots it at publish time so cold starts are ~1–2 s
+      SnapStart:
+        ApplyOn: PublishedVersions
+      AutoPublishAlias: live
+      FunctionUrlConfig:
+        AuthType: NONE   # app enforces JWT auth itself; CloudFront is the public entry point
+      LoggingConfig:
+        LogGroup: !Ref ApiLogGroup
+      Environment:
+        Variables:
+          JAVA_TOOL_OPTIONS: '-XX:+TieredCompilation -XX:TieredStopAtLevel=1'
+          SPRING_DATASOURCE_URL: !Ref DbUrl
+          SPRING_DATASOURCE_USERNAME: !Ref DbUsername
+          SPRING_DATASOURCE_PASSWORD: !Ref DbPassword
+          JWT_SECRET: !Ref JwtSecret
+          VAPID_PUBLIC_KEY: !Ref VapidPublicKey
+          VAPID_PRIVATE_KEY: !Ref VapidPrivateKey
+          VAPID_SUBJECT: !Ref VapidSubject
+          APP_JOBS_SECRET: !Ref JobSecret
+      # Each schedule sends an HTTP API v2-shaped event, which LambdaHandler routes to JobController.
+      Events:
+        RecurringEntries:
+          Type: ScheduleV2
+          Properties:
+            Name: !Sub '${AWS::StackName}-recurring-entries'
+            Description: Generate due income and fixed-expense entries (idempotent)
+            ScheduleExpression: cron(0 6 * * ? *)
+            ScheduleExpressionTimezone: UTC
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+            Input: !Sub '{"version":"2.0","routeKey":"$default","rawPath":"/api/internal/jobs/recurring","rawQueryString":"","headers":{"x-job-secret":"${JobSecret}"},"requestContext":{"http":{"method":"POST","path":"/api/internal/jobs/recurring","protocol":"HTTP/1.1","sourceIp":"127.0.0.1","userAgent":"eventbridge-scheduler"},"requestId":"scheduler","stage":"$default","timeEpoch":0},"isBase64Encoded":false}'
+        EveningReminder:
+          Type: ScheduleV2
+          Properties:
+            Name: !Sub '${AWS::StackName}-evening-reminder'
+            Description: Daily push reminder, 9 PM Atlantic
+            ScheduleExpression: cron(0 21 * * ? *)
+            ScheduleExpressionTimezone: America/Halifax
+            RetryPolicy:
+              MaximumRetryAttempts: 0   # never send a reminder twice
+            Input: !Sub '{"version":"2.0","routeKey":"$default","rawPath":"/api/internal/jobs/reminder/evening","rawQueryString":"","headers":{"x-job-secret":"${JobSecret}"},"requestContext":{"http":{"method":"POST","path":"/api/internal/jobs/reminder/evening","protocol":"HTTP/1.1","sourceIp":"127.0.0.1","userAgent":"eventbridge-scheduler"},"requestId":"scheduler","stage":"$default","timeEpoch":0},"isBase64Encoded":false}'
+        WeekendReminder:
+          Type: ScheduleV2
+          Properties:
+            Name: !Sub '${AWS::StackName}-weekend-reminder'
+            Description: Weekend push reminder, noon Atlantic
+            ScheduleExpression: cron(0 12 ? * SAT,SUN *)
+            ScheduleExpressionTimezone: America/Halifax
+            RetryPolicy:
+              MaximumRetryAttempts: 0
+            Input: !Sub '{"version":"2.0","routeKey":"$default","rawPath":"/api/internal/jobs/reminder/weekend","rawQueryString":"","headers":{"x-job-secret":"${JobSecret}"},"requestContext":{"http":{"method":"POST","path":"/api/internal/jobs/reminder/weekend","protocol":"HTTP/1.1","sourceIp":"127.0.0.1","userAgent":"eventbridge-scheduler"},"requestId":"scheduler","stage":"$default","timeEpoch":0},"isBase64Encoded":false}'
+
+  # Short retention keeps CloudWatch log storage inside the free tier
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-api'
+      RetentionInDays: 14
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+
+  FrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-frontend'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Angular routes like /savings have no file in S3 — serve index.html for any path without
+  # an extension. A function (not custom error pages) so real /api 404s aren't masked.
+  SpaRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub '${AWS::StackName}-spa-rewrite'
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Rewrite extensionless paths to /index.html
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          if (!request.uri.includes('.')) {
+            request.uri = '/index.html';
+          }
+          return request;
+        }
+
+  # ── CDN ──────────────────────────────────────────────────────────────────────
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Expense Tracker
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: frontend
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+          - Id: api
+            # Function URL looks like https://<id>.lambda-url.<region>.on.aws/ — keep just the host
+            DomainName: !Select [2, !Split ['/', !GetAtt ApiFunctionUrl.FunctionUrl]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+        DefaultCacheBehavior:
+          TargetOriginId: frontend
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6   # Managed-CachingOptimized
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt SpaRewriteFunction.FunctionMetadata.FunctionARN
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # Managed-CachingDisabled
+            # Forwards Authorization etc. but not Host, which a Function URL rejects
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # Managed-AllViewerExceptHostHeader
+
+Outputs:
+  AppUrl:
+    Description: Open the app here
+    Value: !Sub 'https://${Distribution.DomainName}'
+  DistributionId:
+    Description: For cache invalidation after a frontend deploy
+    Value: !Ref Distribution
+  FrontendBucketName:
+    Description: Upload the Angular build here
+    Value: !Ref FrontendBucket
+  ApiFunctionUrl:
+    Description: Direct Lambda URL (for debugging; users go through AppUrl)
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl

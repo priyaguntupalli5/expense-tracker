@@ -1,0 +1,11 @@
+# SAM CLI defaults for `sam deploy`. Secrets are passed with --parameter-overrides by the
+# deploy workflow; nothing sensitive belongs in this file.
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "expense-tracker"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+confirm_changeset = false
+fail_on_empty_changeset = false
