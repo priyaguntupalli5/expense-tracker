@@ -177,8 +177,8 @@
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let e" class="actions-col"
                   (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()">
-                @if (e.imageData) {
-                  <button mat-icon-button matTooltip="View receipt" class="receipt-btn" (click)="viewingImage = e.imageData">
+                @if (e.hasImage) {
+                  <button mat-icon-button matTooltip="View receipt" class="receipt-btn" (click)="viewReceipt(e)">
                     <mat-icon>receipt</mat-icon>
                   </button>
                 }

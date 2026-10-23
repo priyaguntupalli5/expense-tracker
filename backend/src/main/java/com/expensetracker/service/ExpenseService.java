@@ -56,7 +56,10 @@ public class ExpenseService {
             existing.setDate(updated.getDate());
             existing.setNotes(updated.getNotes());
             existing.setSubcategory(updated.getSubcategory());
-            existing.setImageData(updated.getImageData());
+            // null = image untouched (clients no longer receive it, so can't echo it back); "" = remove
+            if (updated.getImageData() != null) {
+                existing.setImageData(updated.getImageData().isEmpty() ? null : updated.getImageData());
+            }
             return repository.save(existing);
         });
     }

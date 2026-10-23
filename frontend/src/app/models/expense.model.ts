@@ -6,7 +6,8 @@ export interface Expense {
   date: string;
   notes?: string;
   subcategory?: string;
-  imageData?: string;
+  imageData?: string;     // sent on create/update only; '' on update removes the receipt
+  hasImage?: boolean;     // set by the API; fetch the image with ExpenseService.getImage()
   sourceFixedId?: number; // set on auto-generated entries from fixed expenses
   tags?: string[];
 }

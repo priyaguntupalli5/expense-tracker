@@ -69,6 +69,14 @@ export class ExpenseService {
     return this.http.delete<void>(`${API}/expenses/${id}`);
   }
 
+  // Receipts aren't included in expense lists (too large) — load one on demand
+  getImage(id: number): Observable<string | null> {
+    return this.http.get<{ imageData: string }>(`${API}/expenses/${id}/image`).pipe(
+      map(r => r.imageData),
+      catchError(() => of(null)),
+    );
+  }
+
   addTag(ids: number[], tag: string): Observable<void> {
     return this.http.patch<void>(`${API}/expenses/bulk-tag`, { ids, tag });
   }

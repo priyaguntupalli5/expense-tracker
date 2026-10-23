@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/expenses")
@@ -60,6 +61,15 @@ public class ExpenseController {
     public ResponseEntity<Expense> getById(@AuthenticationPrincipal User user, @PathVariable Long id) {
         return service.getById(id, user.getGroup().getId())
             .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** The receipt image, kept out of the expense JSON so lists stay small. */
+    @GetMapping("/{id}/image")
+    public ResponseEntity<Map<String, String>> getImage(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        return service.getById(id, user.getGroup().getId())
+            .filter(Expense::hasImage)
+            .map(e -> ResponseEntity.ok(Map.of("imageData", e.getImageData())))
             .orElse(ResponseEntity.notFound().build());
     }
 

@@ -1,5 +1,7 @@
 package com.expensetracker.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -12,6 +14,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "expenses")
+@JsonIgnoreProperties(value = "hasImage", allowGetters = true) // output-only, ignored if echoed back
 public class Expense {
 
     @Id
@@ -39,7 +42,11 @@ public class Expense {
     @Size(max = 100)
     private String subcategory;
 
+    // Accepted on create/update but never serialized: receipts are ~100–250 KB each, and
+    // returning them in lists blows past Lambda's 6 MB response cap. Clients read hasImage
+    // and fetch the image itself from GET /api/expenses/{id}/image.
     @Column(name = "image_data", columnDefinition = "MEDIUMTEXT")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String imageData;
 
     @Column(name = "group_id")
@@ -88,6 +95,9 @@ public class Expense {
 
     public String getImageData() { return imageData; }
     public void setImageData(String imageData) { this.imageData = imageData; }
+
+    @JsonProperty("hasImage")
+    public boolean hasImage() { return imageData != null && !imageData.isEmpty(); }
 
     public Long getGroupId() { return groupId; }
     public void setGroupId(Long groupId) { this.groupId = groupId; }

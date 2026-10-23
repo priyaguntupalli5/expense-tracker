@@ -7,6 +7,7 @@ import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.repository.FixedExpenseRepository;
 import com.expensetracker.repository.IncomeRepository;
 import org.springframework.boot.ApplicationArguments;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,9 @@ public class RecurringJobService implements ApplicationRunner {
     private final FixedExpenseRepository fixedExpenseRepository;
     private final ExpenseRepository      expenseRepository;
 
+    @Value("${app.startup-jobs.enabled:true}")
+    private boolean startupJobsEnabled;
+
     public RecurringJobService(IncomeRepository incomeRepository,
                                FixedExpenseRepository fixedExpenseRepository,
                                ExpenseRepository expenseRepository) {
@@ -39,6 +43,7 @@ public class RecurringJobService implements ApplicationRunner {
     /** Runs after schema.sql/data.sql and SchemaMigration — guaranteed post-init ordering. */
     @Override
     public void run(ApplicationArguments args) {
+        if (!startupJobsEnabled) return; // Lambda: the daily scheduled call does the catch-up
         generateAll(LocalDate.now());
     }
 

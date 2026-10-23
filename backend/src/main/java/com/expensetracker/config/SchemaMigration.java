@@ -2,6 +2,7 @@ package com.expensetracker.config;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
@@ -11,8 +12,11 @@ import java.util.Random;
 /**
  * Runs after schema.sql/data.sql to handle migrations that require conditional
  * logic (which can't be expressed in plain SQL without stored procedures).
+ * Skipped on Lambda (app.startup-jobs.enabled=false) so cold starts stay fast —
+ * apply new migrations by running the app once locally against the production DB.
  */
 @Component
+@ConditionalOnProperty(name = "app.startup-jobs.enabled", havingValue = "true", matchIfMissing = true)
 public class SchemaMigration implements ApplicationRunner {
 
     private final DataSource dataSource;

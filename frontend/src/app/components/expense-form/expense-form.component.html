@@ -90,7 +90,9 @@
           <mat-icon>folder_open</mat-icon><span>Choose File</span>
         </button>
       </mat-menu>
-      @if (!form.get('imageData')?.value) {
+      @if (loadingImage) {
+        <mat-spinner diameter="28"></mat-spinner>
+      } @else if (!form.get('imageData')?.value) {
         <button type="button" class="receipt-upload-btn"
                 [matMenuTriggerFor]="isAndroid ? receiptMenu : null"
                 (click)="!isAndroid && fileInput.click()">

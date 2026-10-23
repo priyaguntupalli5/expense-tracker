@@ -36,7 +36,10 @@ public class CategorySeederService {
         this.subCategoryRepo      = subCategoryRepo;
     }
 
-    @EventListener(ApplicationReadyEvent.class)
+    // Skipped on Lambda (new groups are seeded at registration instead). The check sits in the
+    // listener condition, not the method body, because @Transactional opens a DB connection on entry.
+    @EventListener(value = ApplicationReadyEvent.class,
+                   condition = "@environment.getProperty('app.startup-jobs.enabled', 'true') == 'true'")
     @Transactional
     public void migrateExistingGroups() {
         groupRepo.findAll().forEach(g -> {

@@ -274,6 +274,13 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
     });
   }
 
+  viewReceipt(expense: Expense) {
+    this.expenseService.getImage(expense.id!).subscribe(img => {
+      if (img) this.viewingImage = img;
+      else this.snackBar.open('Could not load receipt', 'Dismiss', { duration: 3000 });
+    });
+  }
+
   openAdd() {
     const ref = this.dialog.open(ExpenseFormComponent, { width: '520px', maxWidth: '95vw' });
     ref.afterClosed().subscribe(saved => { if (saved) this.expenseService.notifyRefresh(); });

@@ -40,6 +40,9 @@ export class ExpenseFormComponent implements OnInit {
   categories: Category[] = [];
   isEditing = false;
   saving = false;
+  loadingImage = false;
+  // Only send imageData on update when the user changed it; omitted = keep the stored receipt
+  private imageChanged = false;
   readonly isAndroid = /Android/i.test(navigator.userAgent);
 
   private readonly subcategoriesSubject = new BehaviorSubject<string[]>([]);
@@ -89,10 +92,17 @@ export class ExpenseFormComponent implements OnInit {
         ...this.data,
         date: new Date(this.data.date + 'T00:00:00'),
         subcategory: this.data.subcategory ?? null,
-        imageData: this.data.imageData ?? null,
+        imageData: null,
       });
       if (this.data.category) {
         this.loadSubcategories(this.data.category);
+      }
+      if (this.data.hasImage) {
+        this.loadingImage = true;
+        this.expenseService.getImage(this.data.id!).subscribe(img => {
+          this.loadingImage = false;
+          if (!this.imageChanged) this.form.patchValue({ imageData: img });
+        });
       }
     }
   }
@@ -128,6 +138,7 @@ export class ExpenseFormComponent implements OnInit {
         canvas.height = Math.round(img.height * ratio);
         canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
         this.form.patchValue({ imageData: canvas.toDataURL('image/jpeg', 0.75) });
+        this.imageChanged = true;
       };
       img.src = e.target!.result as string;
     };
@@ -136,6 +147,7 @@ export class ExpenseFormComponent implements OnInit {
 
   removeImage() {
     this.form.patchValue({ imageData: null });
+    this.imageChanged = true;
   }
 
   save() {
@@ -150,7 +162,9 @@ export class ExpenseFormComponent implements OnInit {
       subcategory: v.subcategory || undefined,
       date:        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
       notes:       v.notes || undefined,
-      imageData:   v.imageData || undefined,
+      imageData:   !this.isEditing ? (v.imageData || undefined)
+                 : this.imageChanged ? (v.imageData || '')   // '' tells the API to remove it
+                 : undefined,
     };
 
     const op = this.isEditing

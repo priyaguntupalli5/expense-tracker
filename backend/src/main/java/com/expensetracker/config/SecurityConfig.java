@@ -34,6 +34,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()  // register + login are open
+                .requestMatchers("/api/internal/jobs/**").permitAll() // JobController checks X-Job-Secret itself
                 .requestMatchers("/api/**").authenticated()   // all other API endpoints need auth
                 .anyRequest().permitAll()                     // static files and SPA routes are public
             )

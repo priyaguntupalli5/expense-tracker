@@ -5,12 +5,14 @@ import com.expensetracker.repository.PushSubscriptionRepository;
 import jakarta.annotation.PostConstruct;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.security.Security;
 import java.util.List;
 
 @Service
@@ -50,6 +52,10 @@ public class PushNotificationService {
 
     @PostConstruct
     public void init() {
+        // Registered here rather than in main() so it also happens on Lambda, which never calls main()
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
         if (vapidPublicKey == null || vapidPublicKey.isBlank()) {
             log.warn("════════════════════════════════════════════════════");
             log.warn("  Daily notifications are NOT active.");
