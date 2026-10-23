@@ -68,7 +68,9 @@ Resources:
         LogGroup: !Ref ApiLogGroup
       Environment:
         Variables:
-          JAVA_TOOL_OPTIONS: '-XX:+TieredCompilation -XX:TieredStopAtLevel=1'
+          # Lambda's runtime points javax.net.ssl.trustStore at /etc/pki/java/cacerts but sets no password,
+          # so Connector/J opens it with "" and fails — supply the JDK's standard (public) store password.
+          JAVA_TOOL_OPTIONS: '-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Djavax.net.ssl.trustStorePassword=changeit'
           # TiDB requires TLS; the JDK's default trust store verifies its certificate
           SPRING_DATASOURCE_URL: !Sub 'jdbc:mysql://${DbHost}:4000/${DbName}?sslMode=VERIFY_IDENTITY&serverTimezone=UTC'
           SPRING_DATASOURCE_USERNAME: !Ref DbUsername
