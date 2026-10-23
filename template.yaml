@@ -62,6 +62,9 @@ Resources:
       SnapStart:
         ApplyOn: PublishedVersions
       AutoPublishAlias: live
+      # Without this, SAM only publishes a new version when the code zip changes — and the Maven
+      # build is reproducible, so config-only changes (env vars, secrets) would never reach 'live'.
+      AutoPublishAliasAllProperties: true
       FunctionUrlConfig:
         AuthType: NONE   # app enforces JWT auth itself; CloudFront is the public entry point
       LoggingConfig:
