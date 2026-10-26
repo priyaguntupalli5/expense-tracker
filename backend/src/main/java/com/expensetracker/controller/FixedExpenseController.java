@@ -63,7 +63,8 @@ public class FixedExpenseController {
             existing.setStartDate(updated.getStartDate());
             existing.setEndDate(updated.getEndDate());
             FixedExpense saved = repository.save(existing);
-            if (saved.getStartDate() != null) recurringJobService.generateForFixedExpense(saved);
+            // Always run: besides filling in due entries, it removes ones now outside the date range
+            recurringJobService.generateForFixedExpense(saved);
             return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }

@@ -59,8 +59,9 @@ public class RecurringJobService implements ApplicationRunner {
             .filter(Income::isTemplate)
             .forEach(t -> generateForTemplate(t, until));
 
-        fixedExpenseRepository.findAll().stream()
-            .filter(fe -> fe.getStartDate() != null)
+        // Every template goes through generateForFixedExpense, which also prunes entries outside
+        // its date range — so the daily run cleans up after end dates added since the last run.
+        fixedExpenseRepository.findAll()
             .forEach(fe -> generateForFixedExpense(fe, until));
     }
 
@@ -103,6 +104,7 @@ public class RecurringJobService implements ApplicationRunner {
     // ── Fixed expense → generated expense entries ─────────────────────────────
 
     private void generateForFixedExpense(FixedExpense fe, LocalDate today) {
+        pruneOutOfRange(fe);
         if (fe.getStartDate() == null || fe.getRecurrence() == null) return;
 
         // Don't generate occurrences past the expense's end date, if it has one.
@@ -124,6 +126,22 @@ public class RecurringJobService implements ApplicationRunner {
                 entry.setSourceFixedId(fe.getId());
                 expenseRepository.save(entry);
             }
+        }
+    }
+
+    /**
+     * Removes generated entries dated after the end date or before the start date. Occurrences
+     * are materialized through the end of the current month, so setting or moving an end date
+     * (or moving the start date later) must take back the ones already created — otherwise they
+     * keep counting on the dashboard. Entries inside the range are left alone to preserve history.
+     */
+    private void pruneOutOfRange(FixedExpense fe) {
+        if (fe.getId() == null) return;
+        if (fe.getEndDate() != null) {
+            expenseRepository.deleteBySourceFixedIdAndDateAfter(fe.getId(), fe.getEndDate());
+        }
+        if (fe.getStartDate() != null) {
+            expenseRepository.deleteBySourceFixedIdAndDateBefore(fe.getId(), fe.getStartDate());
         }
     }
 
