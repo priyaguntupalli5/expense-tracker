@@ -28,12 +28,12 @@ export class ReportService {
 
       // Same scope as the dashboard: income categories aren't expenses
       const rows = [
-        ...expenses.map(e => ({ e, type: 'Expense' })),
-        ...fixed.map(e => ({ e, type: 'Fixed' })),
+        ...expenses.map(e => ({ e, type: 'Daily' })),   // entered by hand
+        ...fixed.map(e => ({ e, type: 'Fixed' })),      // generated from fixed expenses
       ]
         .filter(({ e }) => !isIncome.has(e.category))
         .sort((a, b) => a.e.date.localeCompare(b.e.date)
-                     || a.type.localeCompare(b.type)      // Expense before Fixed on the same day
+                     || a.type.localeCompare(b.type)      // Daily before Fixed on the same day
                      || a.e.title.localeCompare(b.e.title));
 
       const currency = this.settingsService.currency;

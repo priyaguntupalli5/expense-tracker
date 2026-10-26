@@ -14,12 +14,12 @@
       <div class="header-top">
         <div class="header-title">
           <mat-icon class="title-icon">receipt_long</mat-icon>
-          <span>Expenses</span>
+          <span>Daily Expenses</span>
           <span class="count-chip">{{ filteredExpenses.length }}</span>
         </div>
         @if (!selectionMode) {
           <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
-            <mat-icon>add</mat-icon> Add Expense
+            <mat-icon>add</mat-icon> Add Daily Expense
           </button>
         }
         <button mat-stroked-button class="select-btn" [class.active]="selectionMode" (click)="toggleSelectionMode()">
