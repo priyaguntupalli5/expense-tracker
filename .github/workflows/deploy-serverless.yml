@@ -1,6 +1,6 @@
 name: Deploy serverless (Lambda + S3 + CloudFront)
 
-# Separate from deploy.yml (EC2) so both work until switchover. Run it manually from the Actions tab.
+# Run it manually from the Actions tab.
 on:
   workflow_dispatch:
 
