@@ -50,6 +50,11 @@
         </button>
       </div>
 
+      <button mat-stroked-button class="manage-btn" (click)="downloadReport()" [disabled]="downloadingReport"
+              matTooltip="Download {{ months[selectedMonth - 1].label }} {{ selectedYear }} expenses and fixed expenses (CSV)">
+        <mat-icon>download</mat-icon> {{ downloadingReport ? 'Preparing…' : 'Download Report' }}
+      </button>
+
       <a mat-stroked-button routerLink="/expenses" class="manage-btn">
         <mat-icon>tune</mat-icon> Manage Expenses
       </a>

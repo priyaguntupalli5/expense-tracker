@@ -8,11 +8,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { IncomeService } from '../../services/income.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { SettingsService } from '../../services/settings.service';
+import { ReportService } from '../../services/report.service';
 import { Expense, FixedExpense, Summary, monthlyEquivalent, monthOccurrences } from '../../models/expense.model';
 
 interface PieSlice {
@@ -59,6 +61,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly destroy$        = new Subject<void>();
   readonly pushService    = inject(PushNotificationService);
   readonly settingsService = inject(SettingsService);
+  private readonly reportService = inject(ReportService);
+  private readonly snackBar      = inject(MatSnackBar);
+  downloadingReport = false;
 
   summary: Summary | null = null;
   selectedMonth = new Date().getMonth() + 1;
@@ -123,6 +128,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.clearDrillDown();
     this.expenseService.setPeriod(this.selectedMonth, this.selectedYear);
     this.loadData();
+  }
+
+  downloadReport() {
+    this.downloadingReport = true;
+    const label = `${this.months[this.selectedMonth - 1].label} ${this.selectedYear}`;
+    this.reportService.downloadMonthlyReport(this.selectedMonth, this.selectedYear).subscribe({
+      next: rows => {
+        this.downloadingReport = false;
+        if (rows === 0) this.snackBar.open(`No expenses in ${label} — downloaded an empty report.`, 'OK', { duration: 4000 });
+      },
+      error: () => {
+        this.downloadingReport = false;
+        this.snackBar.open('Could not create the report. Please try again.', 'OK', { duration: 4000 });
+      },
+    });
   }
 
   setViewMode(mode: ViewMode) {
