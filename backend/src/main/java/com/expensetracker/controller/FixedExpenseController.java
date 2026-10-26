@@ -34,14 +34,12 @@ public class FixedExpenseController {
     @PostMapping
     public ResponseEntity<?> create(@AuthenticationPrincipal User user,
                                     @Valid @RequestBody FixedExpense expense) {
-        if (expense.getEndDate() != null && expense.getStartDate() != null
-            && expense.getEndDate().isBefore(expense.getStartDate())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "End date cannot be before the first payment date."));
-        }
+        ResponseEntity<?> invalid = validateDates(expense);
+        if (invalid != null) return invalid;
         expense.setId(null);
         expense.setGroupId(user.getGroup().getId());
         FixedExpense saved = repository.save(expense);
-        if (saved.getStartDate() != null) recurringJobService.generateForFixedExpense(saved);
+        recurringJobService.generateForFixedExpense(saved);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -49,10 +47,8 @@ public class FixedExpenseController {
     public ResponseEntity<?> update(@AuthenticationPrincipal User user,
                                     @PathVariable Long id,
                                     @Valid @RequestBody FixedExpense updated) {
-        if (updated.getEndDate() != null && updated.getStartDate() != null
-            && updated.getEndDate().isBefore(updated.getStartDate())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "End date cannot be before the first payment date."));
-        }
+        ResponseEntity<?> invalid = validateDates(updated);
+        if (invalid != null) return invalid;
         return repository.findByIdAndGroupId(id, user.getGroup().getId()).map(existing -> {
             existing.setTitle(updated.getTitle());
             existing.setAmount(updated.getAmount());
@@ -67,6 +63,18 @@ public class FixedExpenseController {
             recurringJobService.generateForFixedExpense(saved);
             return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    // Start date is required: generated entries and every dashboard calculation are anchored to it.
+    // (The column stays nullable so legacy rows still load; they must get a start date when next edited.)
+    private ResponseEntity<?> validateDates(FixedExpense fe) {
+        if (fe.getStartDate() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "First payment date is required."));
+        }
+        if (fe.getEndDate() != null && fe.getEndDate().isBefore(fe.getStartDate())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "End date cannot be before the first payment date."));
+        }
+        return null;
     }
 
     @DeleteMapping("/{id}")

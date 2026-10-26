@@ -72,7 +72,7 @@ export class FixedExpenseFormComponent implements OnInit {
     title:       ['', [Validators.required, Validators.maxLength(100)]],
     amount:      [null as number | null, [Validators.required, Validators.min(0.01)]],
     recurrence:  ['MONTHLY', Validators.required],
-    startDate:   [null as Date | null],
+    startDate:   [null as Date | null, Validators.required], // anchors generation and every date calculation
     endDate:     [null as Date | null],
     subcategory: ['' as string | null],
     notes:       ['' as string | null],
