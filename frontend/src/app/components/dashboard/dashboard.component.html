@@ -158,16 +158,29 @@
                 </div>
                 <div class="legend">
                   @for (slice of pieSlices; track slice.category) {
-                    <div class="legend-row"
-                         [class.selected]="drillDownCategory === slice.category"
-                         (click)="onSliceClick(slice.category)">
-                      <span class="legend-dot" [style.background]="slice.color"></span>
-                      <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
-                      <span class="legend-label">{{ getCategoryLabel(slice.category) }}</span>
-                      <span class="legend-pct">{{ slice.percentage }}%</span>
-                      <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
-                      <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
-                    </div>
+                    @if (slice.isCredit) {
+                      <div class="legend-row legend-row--credit"
+                           [class.selected]="drillDownCategory === slice.category"
+                           (click)="onSliceClick(slice.category)">
+                        <span class="legend-dot" [style.background]="slice.color"></span>
+                        <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
+                        <span class="legend-label credit-label">{{ getCategoryLabel(slice.category) }}</span>
+                        <span class="legend-pct"></span>
+                        <span class="legend-amt credit-amt">+{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                        <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
+                      </div>
+                    } @else {
+                      <div class="legend-row"
+                           [class.selected]="drillDownCategory === slice.category"
+                           (click)="onSliceClick(slice.category)">
+                        <span class="legend-dot" [style.background]="slice.color"></span>
+                        <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
+                        <span class="legend-label">{{ getCategoryLabel(slice.category) }}</span>
+                        <span class="legend-pct">{{ slice.percentage }}%</span>
+                        <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                        <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
+                      </div>
+                    }
                   }
                 </div>
               </div>
@@ -204,7 +217,7 @@
                         }
                         <circle cx="100" cy="100" r="50" fill="white"/>
                         <text x="100" y="94" text-anchor="middle" class="donut-sm">{{ getCategoryLabel(drillDownCategory) }}</text>
-                        <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(subPieTotal) }}</text>
+                        <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ isCreditsRow(drillDownCategory) ? '+' : '' }}{{ formatCompact(subPieTotal) }}</text>
                       </svg>
                     </div>
                     <div class="legend">
@@ -286,16 +299,29 @@
                   </div>
                   <div class="legend">
                     @for (slice of labelCategorySlices; track slice.category) {
-                      <div class="legend-row"
-                           [class.selected]="labelDrillCategory === slice.category"
-                           (click)="onLabelCategorySliceClick(slice.category)">
-                        <span class="legend-dot" [style.background]="slice.color"></span>
-                        <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
-                        <span class="legend-label">{{ getCategoryLabel(slice.category) }}</span>
-                        <span class="legend-pct">{{ slice.percentage }}%</span>
-                        <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
-                        <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
-                      </div>
+                      @if (slice.isCredit) {
+                        <div class="legend-row legend-row--credit"
+                             [class.selected]="labelDrillCategory === slice.category"
+                             (click)="onLabelCategorySliceClick(slice.category)">
+                          <span class="legend-dot" [style.background]="slice.color"></span>
+                          <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
+                          <span class="legend-label credit-label">{{ getCategoryLabel(slice.category) }}</span>
+                          <span class="legend-pct"></span>
+                          <span class="legend-amt credit-amt">+{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                          <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
+                        </div>
+                      } @else {
+                        <div class="legend-row"
+                             [class.selected]="labelDrillCategory === slice.category"
+                             (click)="onLabelCategorySliceClick(slice.category)">
+                          <span class="legend-dot" [style.background]="slice.color"></span>
+                          <mat-icon class="legend-icon" [style.color]="slice.color">{{ getCategoryIcon(slice.category) }}</mat-icon>
+                          <span class="legend-label">{{ getCategoryLabel(slice.category) }}</span>
+                          <span class="legend-pct">{{ slice.percentage }}%</span>
+                          <span class="legend-amt">{{ slice.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+                          <mat-icon class="legend-drill-icon">chevron_right</mat-icon>
+                        </div>
+                      }
                     }
                   </div>
                 </div>
@@ -329,7 +355,7 @@
                           }
                           <circle cx="100" cy="100" r="50" fill="white"/>
                           <text x="100" y="94" text-anchor="middle" class="donut-sm">{{ getCategoryLabel(labelDrillCategory) }}</text>
-                          <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ formatCompact(labelCategorySubTotal) }}</text>
+                          <text x="100" y="113" text-anchor="middle" class="donut-lg">{{ isCreditsRow(labelDrillCategory) ? '+' : '' }}{{ formatCompact(labelCategorySubTotal) }}</text>
                         </svg>
                       </div>
                       <div class="legend">
@@ -375,10 +401,10 @@
         <div class="items-popup-empty">No items found</div>
       }
       @for (item of popupItems; track item.id) {
-        <div class="items-popup-row" (click)="onItemClick(item)">
+        <div class="items-popup-row" [class.items-popup-row--credit]="item.isCredit" (click)="onItemClick(item)">
           <mat-icon class="items-popup-type">{{ item.isFixed ? 'repeat' : 'receipt_long' }}</mat-icon>
           <span class="items-popup-name">{{ item.title }}</span>
-          <span class="items-popup-amount">{{ item.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
+          <span class="items-popup-amount">{{ item.isCredit ? '+' : '' }}{{ item.amount | currency:settingsService.currency:'symbol-narrow':'1.0-2' }}</span>
           <mat-icon class="items-popup-nav">chevron_right</mat-icon>
         </div>
       }

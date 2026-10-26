@@ -23,7 +23,11 @@ interface PieSlice {
   category: string;
   amount: number;
   percentage: number;
+  isCredit?: boolean; // the "Refunds & Credits" legend row — no arc, shown green with a "+"
 }
+
+const CREDIT_COLOR = '#2e7d32';
+const CREDITS_ROW  = '__refunds_credits__';
 
 interface SubPieSlice {
   path: string;
@@ -39,6 +43,7 @@ interface ExpenseItem {
   title: string;
   amount: number;
   isFixed: boolean;
+  isCredit?: boolean; // refund / credit — shown green with a "+" in the items popup
 }
 
 type ViewMode   = 'to-date' | 'end-of-month';
@@ -179,8 +184,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.labelCategorySubTotal = 0;
   }
 
+  // Net of refunds: category rows are what was spent, the credits row is subtracted
   get labelCategoryTotal(): number {
-    return this.labelCategorySlices.reduce((s, sl) => s + sl.amount, 0);
+    return this.labelCategorySlices.reduce((s, sl) => s + (sl.isCredit ? -sl.amount : sl.amount), 0);
   }
 
   get isDrillDownOpen(): boolean {
@@ -221,6 +227,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   onSubSliceClick(subcategory: string) {
     const cat = this.drillDownCategory!;
+    if (cat === CREDITS_ROW) {
+      this.openItems(subcategory, this.creditItems(subcategory));
+      return;
+    }
     const items: ExpenseItem[] = [];
 
     for (const e of this.allExpenses.filter(e => e.category === cat)) {
@@ -236,13 +246,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     }
 
+    // A "Refunds & Credits" subcategory inside a regular category: every item in it is money back
+    this.openItems(subcategory, this.isRefund(subcategory) ? items.map(i => ({ ...i, isCredit: true })) : items);
+  }
+
+  // One item: go straight to it. Several: list them in the popup.
+  private openItems(title: string, items: ExpenseItem[]) {
     if (items.length === 1) {
       this.navigateToItem(items[0]);
     } else {
-      this.popupSubcategory = subcategory;
+      this.popupSubcategory = title;
       this.popupItems = items;
       this.itemsPopupOpen = true;
     }
+  }
+
+  // Refunds & credits in the current view whose drill-down group is `key` (optionally one label only)
+  private creditItems(key: string, tag?: string): ExpenseItem[] {
+    const items: ExpenseItem[] = this.allExpenses
+      .filter(e => (!tag || (e.tags ?? []).includes(tag))
+                && this.isCredit(e.category, e.subcategory)
+                && this.creditKey(e.category, e.subcategory) === key)
+      .map(e => ({ id: e.id!, title: e.title, amount: Number(e.amount), isFixed: false, isCredit: true }));
+    if (!tag) {
+      for (const fe of this.fixedExpenses) {
+        if (!this.isCredit(fe.category, fe.subcategory) || this.creditKey(fe.category, fe.subcategory) !== key) continue;
+        const amount = this.fixedAmount(fe);
+        if (amount !== 0) items.push({ id: fe.id!, title: fe.title, amount, isFixed: true, isCredit: true });
+      }
+    }
+    return items;
   }
 
   onLabelSelect(tag: string | null) {
@@ -268,17 +301,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   onLabelCategorySubSliceClick(subcategory: string) {
     const tag      = this.selectedLabel!;
     const category = this.labelDrillCategory!;
-    const items: ExpenseItem[] = this.allExpenses
-      .filter(e => (e.tags ?? []).includes(tag) && e.category === category && (e.subcategory || 'Other') === subcategory)
-      .map(e => ({ id: e.id!, title: e.title, amount: Number(e.amount), isFixed: false }));
+    const items: ExpenseItem[] = category === CREDITS_ROW
+      ? this.creditItems(subcategory, tag)
+      : this.allExpenses
+          .filter(e => (e.tags ?? []).includes(tag) && e.category === category && (e.subcategory || 'Other') === subcategory)
+          .map(e => ({ id: e.id!, title: e.title, amount: Number(e.amount), isFixed: false, isCredit: this.isRefund(subcategory) }));
 
-    if (items.length === 1) {
-      this.navigateToItem(items[0]);
-    } else {
-      this.popupSubcategory = subcategory;
-      this.popupItems = items;
-      this.itemsPopupOpen = true;
-    }
+    this.openItems(subcategory, items);
   }
 
   onItemClick(item: ExpenseItem) {
@@ -399,6 +428,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return (subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
   }
 
+  // Money back: the "Refunds & Credits" category (stored as an income-type category, e.g.
+  // Amazon Refund / Store Credit) or a "Refunds & Credits" subcategory under any category.
+  private isCredit(category: string, subcategory?: string): boolean {
+    return !!this.expenseService.getCategoryByValue(category)?.isIncome || this.isRefund(subcategory);
+  }
+
+  // Drill-down group for a credit: its subcategory within the Refunds & Credits category
+  // (Amazon Refund, Store Credit…), or the owning category's name for a "Refunds & Credits"
+  // subcategory filed elsewhere (e.g. a refund under Vacation & Travel).
+  private creditKey(category: string, subcategory?: string): string {
+    if (this.expenseService.getCategoryByValue(category)?.isIncome) {
+      const sub = subcategory || 'Other';
+      return this.isRefund(sub) ? 'Other' : sub; // never collide with buildSlices' refund marker
+    }
+    return this.getCategoryLabel(category);
+  }
+
   private computeAvailableLabels() {
     const tags = new Set<string>();
     for (const e of this.allExpenses) for (const t of (e.tags ?? [])) tags.add(t);
@@ -409,16 +455,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private buildLabelCategoryChart(tag: string) {
     const breakdown: Record<string, number> = {};
+    let credits = 0;
     for (const e of this.allExpenses) {
       if (!(e.tags ?? []).includes(tag)) continue;
-      if (this.expenseService.getCategoryByValue(e.category)?.isIncome) continue;
-      breakdown[e.category] = (breakdown[e.category] ?? 0) +
-        (this.isRefund(e.subcategory) ? -Number(e.amount) : Number(e.amount));
+      if (this.isCredit(e.category, e.subcategory)) { credits += Number(e.amount); continue; }
+      breakdown[e.category] = (breakdown[e.category] ?? 0) + Number(e.amount);
     }
-    this.labelCategorySlices = this.buildCategoryPieSlices(breakdown);
+    this.labelCategorySlices = this.withCreditsRow(this.buildCategoryPieSlices(breakdown), credits);
   }
 
   private buildLabelCategorySubChart(tag: string, category: string) {
+    if (category === CREDITS_ROW) {
+      const breakdown: Record<string, number> = {};
+      for (const e of this.allExpenses) {
+        if (!(e.tags ?? []).includes(tag) || !this.isCredit(e.category, e.subcategory)) continue;
+        const key = this.creditKey(e.category, e.subcategory);
+        breakdown[key] = (breakdown[key] ?? 0) + Number(e.amount);
+      }
+      const { slices, total } = this.buildSlices(breakdown, CREDITS_ROW);
+      this.labelCategorySubSlices = slices.map(s => ({ ...s, isCredit: true }));
+      this.labelCategorySubTotal  = total;
+      return;
+    }
     const breakdown: Record<string, number> = {};
     for (const e of this.allExpenses) {
       if (!(e.tags ?? []).includes(tag) || e.category !== category) continue;
@@ -430,31 +488,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.labelCategorySubTotal  = total;
   }
 
+  // Categories show what was spent; refunds & credits are collected into their own green "+" row
+  // instead of being silently netted out of each category. Totals (donut centre) remain net.
   private buildPieChart() {
     const breakdown: Record<string, number> = {};
+    let credits = 0;
+    const add = (category: string, subcategory: string | undefined, amount: number) => {
+      if (this.isCredit(category, subcategory)) credits += amount;
+      else breakdown[category] = (breakdown[category] ?? 0) + amount;
+    };
 
-    for (const e of this.allExpenses) {
-      if (this.expenseService.getCategoryByValue(e.category)?.isIncome) continue;
-      breakdown[e.category] = (breakdown[e.category] ?? 0) +
-        (this.isRefund(e.subcategory) ? -Number(e.amount) : Number(e.amount));
-    }
+    for (const e of this.allExpenses) add(e.category, e.subcategory, Number(e.amount));
 
     if (!this.isFuturePeriod) {
-      for (const e of this.relevantFixedEntries) {
-        if (this.expenseService.getCategoryByValue(e.category)?.isIncome) continue;
-        const amount = Number(e.amount);
-        breakdown[e.category] = (breakdown[e.category] ?? 0) +
-          (this.isRefund(e.subcategory) ? -amount : amount);
-      }
+      for (const e of this.relevantFixedEntries) add(e.category, e.subcategory, Number(e.amount));
     } else {
-      for (const fe of this.fixedExpenses) {
-        if (this.expenseService.getCategoryByValue(fe.category)?.isIncome) continue;
-        breakdown[fe.category] = (breakdown[fe.category] ?? 0) +
-          (this.isRefund(fe.subcategory) ? -this.fixedAmount(fe) : this.fixedAmount(fe));
-      }
+      for (const fe of this.fixedExpenses) add(fe.category, fe.subcategory, this.fixedAmount(fe));
     }
 
-    this.pieSlices = this.buildCategoryPieSlices(breakdown);
+    this.pieSlices = this.withCreditsRow(this.buildCategoryPieSlices(breakdown), credits);
+  }
+
+  // Appends the "Refunds & Credits" legend row (no arc — it isn't spending).
+  private withCreditsRow(slices: PieSlice[], credits: number): PieSlice[] {
+    if (credits <= 0) return slices;
+    return [...slices, { path: '', color: CREDIT_COLOR, category: CREDITS_ROW, amount: credits, percentage: 0, isCredit: true }];
   }
 
   // Builds a top-level pie (by category or by tag) from a { key: amount } breakdown.
@@ -510,6 +568,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private buildSubPieChart(category: string) {
+    if (category === CREDITS_ROW) { this.buildCreditsSubChart(); return; }
     const breakdown: Record<string, number> = {};
 
     for (const e of this.allExpenses.filter(e => e.category === category)) {
@@ -534,16 +593,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.subPieTotal  = total;
   }
 
+  // What makes up the Refunds & Credits row — same sources as buildPieChart. Every slice is a
+  // credit, so the legend rows all get the green background and "+".
+  private buildCreditsSubChart() {
+    const breakdown: Record<string, number> = {};
+    const add = (category: string, subcategory: string | undefined, amount: number) => {
+      if (!this.isCredit(category, subcategory)) return;
+      const key = this.creditKey(category, subcategory);
+      breakdown[key] = (breakdown[key] ?? 0) + amount;
+    };
+
+    for (const e of this.allExpenses) add(e.category, e.subcategory, Number(e.amount));
+    if (!this.isFuturePeriod) {
+      for (const e of this.relevantFixedEntries) add(e.category, e.subcategory, Number(e.amount));
+    } else {
+      for (const fe of this.fixedExpenses) add(fe.category, fe.subcategory, this.fixedAmount(fe));
+    }
+
+    const { slices, total } = this.buildSlices(breakdown, CREDITS_ROW);
+    this.subPieSlices = slices.map(s => ({ ...s, isCredit: true }));
+    this.subPieTotal  = total;
+  }
+
   private buildSlices(breakdown: Record<string, number>, category: string): { slices: SubPieSlice[]; total: number } {
     const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
     if (entries.length === 0) return { slices: [], total: 0 };
 
-    const CREDIT_COLOR = '#2e7d32';
     const nonCreditEntries = entries.filter(([label]) => !this.isRefund(label));
-    const baseColor = this.expenseService.getCategoryByValue(category)?.color ?? '#607d8b';
+    const baseColor = this.getCategoryColor(category);
     const colors = this.generateSubColors(baseColor, nonCreditEntries.length);
 
-    const total = entries.reduce((s, [, v]) => s + v, 0);
+    // Arcs are sized against everything shown; the displayed total is net (credits subtracted)
+    const total    = entries.reduce((s, [, v]) => s + v, 0);
+    const netTotal = entries.reduce((s, [label, v]) => s + (this.isRefund(label) ? -v : v), 0);
 
     // credit slices sorted last so they appear at the end of the pie
     const sorted = [
@@ -554,7 +636,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     if (sorted.length === 1) {
       const isCredit = this.isRefund(sorted[0][0]);
-      return { total, slices: [{
+      return { total: netTotal, slices: [{
         path: `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`,
         color: isCredit ? CREDIT_COLOR : colors[0],
         label: sorted[0][0],
@@ -589,7 +671,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       angle = endAngle;
     }
 
-    return { slices, total };
+    return { slices, total: netTotal };
   }
 
   // Generates N shades of a base hex color by varying lightness in HSL space.
@@ -679,15 +761,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getCategoryLabel(value: string) {
+    if (value === CREDITS_ROW) return 'Refunds & Credits';
     return this.expenseService.getCategoryByValue(value)?.label ?? value;
   }
 
   getCategoryIcon(value: string) {
+    if (value === CREDITS_ROW) return 'savings';
     return this.expenseService.getCategoryByValue(value)?.icon ?? 'more_horiz';
   }
 
   getCategoryColor(value: string) {
+    if (value === CREDITS_ROW) return CREDIT_COLOR;
     return this.expenseService.getCategoryByValue(value)?.color ?? '#607d8b';
+  }
+
+  isCreditsRow(value: string | null): boolean {
+    return value === CREDITS_ROW;
   }
 
   async testNotification() {

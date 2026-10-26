@@ -24,14 +24,13 @@ export class ReportService {
       fixed:      this.expenseService.getFixedEntries(month, year),
     }).pipe(map(({ categories, expenses, fixed }) => {
       const labelOf  = new Map(categories.map(c => [c.value, c.label]));
-      const isIncome = new Set(categories.filter(c => c.isIncome).map(c => c.value));
+      // The "Refunds & Credits" category is stored as income-type; its rows are money back
+      const creditCategories = new Set(categories.filter(c => c.isIncome).map(c => c.value));
 
-      // Same scope as the dashboard: income categories aren't expenses
       const rows = [
         ...expenses.map(e => ({ e, type: 'Daily' })),   // entered by hand
         ...fixed.map(e => ({ e, type: 'Fixed' })),      // generated from fixed expenses
       ]
-        .filter(({ e }) => !isIncome.has(e.category))
         .sort((a, b) => a.e.date.localeCompare(b.e.date)
                      || a.type.localeCompare(b.type)      // Daily before Fixed on the same day
                      || a.e.title.localeCompare(b.e.title));
@@ -42,7 +41,7 @@ export class ReportService {
       ];
       let total = 0;
       for (const { e, type } of rows) {
-        const amount = this.signedAmount(e);
+        const amount = this.signedAmount(e, creditCategories);
         total += amount;
         lines.push([
           e.date, type, labelOf.get(e.category) ?? e.category, e.subcategory ?? '',
@@ -57,9 +56,10 @@ export class ReportService {
     }));
   }
 
-  // Refunds reduce spending, matching how the dashboard totals them
-  private signedAmount(e: Expense): number {
-    const refund = (e.subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
+  // Refunds & credits reduce spending (negative), matching how the dashboard totals them
+  private signedAmount(e: Expense, creditCategories: Set<string>): number {
+    const refund = creditCategories.has(e.category)
+                || (e.subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
     return refund ? -Number(e.amount) : Number(e.amount);
   }
 
