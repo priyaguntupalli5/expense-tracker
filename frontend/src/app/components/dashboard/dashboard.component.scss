@@ -433,9 +433,12 @@
 
   &--clickable:hover .legend-nav-icon { opacity: 1; }
 
+  // Refunds & credits: money back, so green rather than a spending colour
   &--credit {
-    background: rgba(46, 125, 50, 0.05);
-    &:hover { background: rgba(46, 125, 50, 0.1); }
+    background: rgba(46, 125, 50, 0.12);
+    box-shadow: inset 3px 0 0 #2e7d32;
+    &:hover, &.selected { background: rgba(46, 125, 50, 0.18); }
+    .credit-label { color: #1b5e20; font-weight: 600; }
   }
 
   .legend-label {
@@ -598,6 +601,14 @@
 
     &:last-child { border-bottom: none; }
     &:hover { background: rgba(0,0,0,0.04); }
+
+    // Refunds & credits — same green treatment as the legend rows
+    &--credit {
+      background: rgba(46, 125, 50, 0.12);
+      box-shadow: inset 3px 0 0 #2e7d32;
+      &:hover { background: rgba(46, 125, 50, 0.18); }
+      .items-popup-amount { color: #2e7d32; }
+    }
   }
 
   &-type {
