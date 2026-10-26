@@ -1,0 +1,108 @@
+name: Back up TiDB
+
+# TiDB is the only live copy of the data, so every week a full dump goes to the stack's BackupBucket.
+# Each dump is restored into a scratch MySQL and its row counts compared with TiDB before upload,
+# so a dump that wouldn't restore fails the run (and GitHub emails about it) instead of being stored.
+on:
+  schedule:
+    - cron: '0 7 * * 0'   # Sundays 07:00 UTC (early morning Atlantic, nobody's entering expenses)
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC login to AWS, same role as the deploy workflow
+  contents: read
+
+concurrency:
+  group: backup-tidb
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  STACK_NAME: expense-tracker
+  DB_NAME: expensetracker
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    services:
+      restore-check:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: restore-check
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -prestore-check" --health-interval 5s --health-retries 20
+    steps:
+      - name: Write connection files
+        env:
+          DB_HOST: ${{ secrets.TIDB_HOST }}
+          DB_USERNAME: ${{ secrets.TIDB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.TIDB_PASSWORD }}
+        run: |
+          umask 077
+          # TiDB requires TLS; verify its certificate against the runner's system CAs
+          cat > "$RUNNER_TEMP/tidb.cnf" <<EOF
+          [client]
+          host="$DB_HOST"
+          port=4000
+          user="$DB_USERNAME"
+          password="$DB_PASSWORD"
+          ssl-mode=VERIFY_IDENTITY
+          ssl-ca=/etc/ssl/certs/ca-certificates.crt
+          EOF
+          cat > "$RUNNER_TEMP/check.cnf" <<EOF
+          [client]
+          host=127.0.0.1
+          port=3306
+          protocol=TCP
+          user=root
+          password=restore-check
+          EOF
+
+      # TiDB has no GTIDs, column statistics or tablespaces, so those mysqldump features are off.
+      # --hex-blob keeps receipt images byte-exact.
+      - name: Dump database
+        run: |
+          FILE="$DB_NAME-$(date -u +%Y-%m-%dT%H%MZ).sql.gz"
+          echo "FILE=$FILE" >> "$GITHUB_ENV"
+          set -o pipefail
+          mysqldump --defaults-extra-file="$RUNNER_TEMP/tidb.cnf" \
+            --single-transaction --set-gtid-purged=OFF --column-statistics=0 --no-tablespaces \
+            --skip-triggers --hex-blob --databases "$DB_NAME" | gzip -9 > "$FILE"
+          gzip -t "$FILE"
+          zcat "$FILE" | tail -n 1 | grep -q '^-- Dump completed' || { echo '::error::Dump is truncated'; exit 1; }
+
+      - name: Test-restore and compare row counts
+        run: |
+          counts() {
+            mysql --defaults-extra-file="$1" -N -B -e "SELECT table_name FROM information_schema.tables
+                WHERE table_schema = '$DB_NAME' AND table_type = 'BASE TABLE' ORDER BY table_name" |
+              while read -r t; do
+                echo "$t $(mysql --defaults-extra-file="$1" -N -B -e "SELECT COUNT(*) FROM \`$DB_NAME\`.\`$t\`")"
+              done
+          }
+          zcat "$FILE" | mysql --defaults-extra-file="$RUNNER_TEMP/check.cnf"
+          counts "$RUNNER_TEMP/tidb.cnf"  > live.txt
+          counts "$RUNNER_TEMP/check.cnf" > restored.txt
+          if ! diff live.txt restored.txt; then
+            echo '::error::Restored row counts differ from TiDB (left = TiDB, right = restored dump). If someone was editing during the backup, just re-run.'
+            exit 1
+          fi
+          {
+            echo "### Backup verified: $FILE ($(du -h "$FILE" | cut -f1))"
+            echo '| Table | Rows |'; echo '|---|---|'
+            sed 's/ / | /; s/^/| /; s/$/ |/' live.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log in to AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload to S3
+        run: |
+          BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+                     --query "Stacks[0].Outputs[?OutputKey=='BackupBucketName'].OutputValue" --output text)
+          aws s3 cp "$FILE" "s3://$BUCKET/tidb/$(date -u +%Y)/$FILE" --only-show-errors
+          echo "Uploaded to s3://$BUCKET/tidb/$(date -u +%Y)/$FILE" >> "$GITHUB_STEP_SUMMARY"

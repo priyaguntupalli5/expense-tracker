@@ -42,8 +42,8 @@ Parameters:
     AllowedValues: [ENABLED, DISABLED]
     Default: DISABLED
     Description: >
-      Keep DISABLED while EC2 is still live â€” its in-process jobs already send reminders, and running
-      both would notify everyone twice. Switch to ENABLED at cutover.
+      Set by the SCHEDULES_STATE repo variable (ENABLED in production). Never run two deployments
+      with schedules on at once, or everyone gets every reminder twice.
 
 Resources:
 
@@ -229,6 +229,39 @@ Resources:
             # Forwards Authorization etc. but not Host, which a Function URL rejects
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # Managed-AllViewerExceptHostHeader
 
+  # Backups
+
+  # Weekly TiDB dumps from .github/workflows/backup-tidb.yml. Retained even if the stack is deleted,
+  # and dumps never expire: each is only a few MB, and TiDB is the only live copy of the data.
+  BackupBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      # An overwritten or deleted dump stays recoverable for 30 days
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: tidy-old-versions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
 Outputs:
   AppUrl:
     Description: Open the app here
@@ -242,3 +275,6 @@ Outputs:
   ApiFunctionUrl:
     Description: Direct Lambda URL (for debugging; users go through AppUrl)
     Value: !GetAtt ApiFunctionUrl.FunctionUrl
+  BackupBucketName:
+    Description: Weekly database dumps land here
+    Value: !Ref BackupBucket
