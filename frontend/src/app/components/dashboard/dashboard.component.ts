@@ -210,7 +210,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     for (const fe of this.fixedExpenses.filter(fe => fe.category === cat)) {
       if ((fe.subcategory || 'Other') === subcategory) {
-        items.push({ id: fe.id!, title: fe.title, amount: this.fixedAmount(fe), isFixed: true });
+        const amount = this.fixedAmount(fe);
+        // Skip fixed expenses not charged this month (not started yet, already ended, off-cycle)
+        if (amount !== 0) items.push({ id: fe.id!, title: fe.title, amount, isFixed: true });
       }
     }
 
@@ -350,73 +352,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return toDate ? this.fixedEntries.filter(e => e.date <= toDate) : this.fixedEntries;
   }
 
+  // A fixed expense's cost for the selected month in to-date mode. Reuses monthOccurrences()
+  // (which honours both startDate and endDate) and, for the current month, caps the range at
+  // today so only payments that have already happened count.
   private toDateEquivalent(fe: FixedExpense): number {
-    if (fe.endDate) {
-      const ed = new Date(fe.endDate + 'T00:00:00');
-      const selectedMonthStart = new Date(this.selectedYear, this.selectedMonth - 1, 1);
-      if (ed < selectedMonthStart) return 0;
-    }
+    if (this.isFuturePeriod) return 0;
 
-    const now = new Date();
-    const thisMonth = now.getMonth() + 1;
-    const thisYear  = now.getFullYear();
+    const toDate = this.toDateParam; // set only when viewing the current month
+    const range  = toDate
+      ? { ...fe, endDate: fe.endDate && fe.endDate < toDate ? fe.endDate : toDate }
+      : fe;
 
-    if (this.selectedYear < thisYear ||
-        (this.selectedYear === thisYear && this.selectedMonth < thisMonth)) {
-      return monthlyEquivalent(fe);
-    }
-    if (this.selectedYear > thisYear ||
-        (this.selectedYear === thisYear && this.selectedMonth > thisMonth)) {
-      return 0;
-    }
-
-    const amount    = Number(fe.amount);
-    const todayDay  = now.getDate();
-    const recurrence = fe.recurrence ?? 'MONTHLY';
-
-    switch (recurrence) {
-      case 'MONTHLY': {
-        const dom = fe.startDate ? new Date(fe.startDate + 'T00:00:00').getDate() : 1;
-        return dom <= todayDay ? amount : 0;
-      }
-      case 'YEARLY': {
-        if (!fe.startDate) return 0;
-        const sd = new Date(fe.startDate + 'T00:00:00');
-        if ((sd.getMonth() + 1) !== this.selectedMonth) return 0;
-        return sd.getDate() <= todayDay ? amount : 0;
-      }
-      case 'QUARTERLY': {
-        if (!fe.startDate) return 0;
-        const sd = new Date(fe.startDate + 'T00:00:00');
-        const startMonth = sd.getMonth() + 1;
-        const monthDiff = ((this.selectedMonth - startMonth) % 12 + 12) % 12;
-        if (monthDiff % 3 !== 0) return 0;
-        return sd.getDate() <= todayDay ? amount : 0;
-      }
-      case 'WEEKLY':
-      case 'BIWEEKLY': {
-        const intervalMs = (recurrence === 'WEEKLY' ? 7 : 14) * 86_400_000;
-        const anchor     = fe.startDate
-          ? new Date(fe.startDate + 'T00:00:00')
-          : new Date(thisYear, thisMonth - 1, 1);
-        const monthStart = new Date(thisYear, thisMonth - 1, 1);
-        const today      = new Date(thisYear, thisMonth - 1, todayDay);
-
-        let cursor = new Date(anchor.getTime());
-        while (cursor < monthStart) cursor = new Date(cursor.getTime() + intervalMs);
-
-        let count = 0;
-        while (cursor <= today) {
-          count++;
-          cursor = new Date(cursor.getTime() + intervalMs);
-        }
-        return count * amount;
-      }
-      default: {
-        const dom = fe.startDate ? new Date(fe.startDate + 'T00:00:00').getDate() : 1;
-        return dom <= todayDay ? amount : 0;
-      }
-    }
+    const occ = monthOccurrences(range, this.selectedMonth, this.selectedYear);
+    if (occ !== null) return occ * Number(fe.amount);
+    // Recurrence can't be pinned to dates (no startDate): estimate past months, skip the current one
+    return toDate ? 0 : monthlyEquivalent(fe);
   }
 
   private fixedAmount(fe: FixedExpense): number {

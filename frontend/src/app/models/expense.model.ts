@@ -41,18 +41,19 @@ export function monthlyEquivalent(fe: FixedExpense): number {
  */
 export function monthOccurrences(fe: FixedExpense, month: number, year: number): number | null {
   const recurrence = fe.recurrence ?? 'MONTHLY';
+  const ed         = fe.endDate ? new Date(fe.endDate + 'T00:00:00') : null;
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd   = new Date(year, month, 0);
+
+  // Ended before this month — applies even without a startDate
+  if (ed && ed < monthStart) return 0;
 
   if (!fe.startDate) {
     return recurrence === 'MONTHLY' ? 1 : null;
   }
 
-  const sd         = new Date(fe.startDate + 'T00:00:00');
-  const ed         = fe.endDate ? new Date(fe.endDate + 'T00:00:00') : null;
-  const monthStart = new Date(year, month - 1, 1);
-  const monthEnd   = new Date(year, month, 0);
-
+  const sd = new Date(fe.startDate + 'T00:00:00');
   if (sd > monthEnd) return 0;
-  if (ed && ed < monthStart) return 0;
 
   const MS = 86_400_000;
   const countCutoff = ed && ed < monthEnd ? ed : monthEnd;
