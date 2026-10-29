@@ -10,7 +10,8 @@ export interface AuthResponse {
   token: string;
   username: string;
   groupName: string;
-  groupCode: string;
+  groupCode: string | null;
+  demo: boolean;
 }
 
 interface PendingResponse {
@@ -31,17 +32,27 @@ export class AuthService {
   private readonly USERNAME_KEY   = 'auth_username';
   private readonly GROUP_KEY      = 'auth_group';
   private readonly GROUP_CODE_KEY = 'auth_group_code';
+  private readonly DEMO_KEY       = 'auth_demo';
 
   get token(): string | null           { return localStorage.getItem(this.TOKEN_KEY); }
   get currentUsername(): string | null { return localStorage.getItem(this.USERNAME_KEY); }
   get groupName(): string | null       { return localStorage.getItem(this.GROUP_KEY); }
   get groupCode(): string | null       { return localStorage.getItem(this.GROUP_CODE_KEY); }
   get isLoggedIn(): boolean            { return !!this.token; }
+  get isDemo(): boolean                { return localStorage.getItem(this.DEMO_KEY) === 'true'; }
 
   lastCreatedGroupCode: string | null = null;
 
   login(username: string, password: string): Observable<void> {
     return this.http.post<AuthResponse>(`${API}/auth/login`, { username, password }).pipe(
+      tap(res => this.storeSession(res)),
+      map(() => void 0),
+    );
+  }
+
+  // Signs in to a fresh demo group with sample data; no account needed
+  startDemo(): Observable<void> {
+    return this.http.post<AuthResponse>(`${API}/auth/demo`, {}).pipe(
       tap(res => this.storeSession(res)),
       map(() => void 0),
     );
@@ -66,6 +77,7 @@ export class AuthService {
     localStorage.removeItem(this.USERNAME_KEY);
     localStorage.removeItem(this.GROUP_KEY);
     localStorage.removeItem(this.GROUP_CODE_KEY);
+    localStorage.removeItem(this.DEMO_KEY);
     this.router.navigate(['/login']);
   }
 
@@ -74,5 +86,7 @@ export class AuthService {
     localStorage.setItem(this.USERNAME_KEY, res.username);
     localStorage.setItem(this.GROUP_KEY, res.groupName);
     if (res.groupCode) localStorage.setItem(this.GROUP_CODE_KEY, res.groupCode);
+    if (res.demo) localStorage.setItem(this.DEMO_KEY, 'true');
+    else localStorage.removeItem(this.DEMO_KEY);
   }
 }

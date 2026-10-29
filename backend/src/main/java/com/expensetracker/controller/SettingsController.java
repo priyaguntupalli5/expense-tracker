@@ -8,6 +8,7 @@ import com.expensetracker.repository.GroupRepository;
 import com.expensetracker.repository.JoinRequestRepository;
 import com.expensetracker.repository.UserRepository;
 import com.expensetracker.security.JwtUtil;
+import com.expensetracker.service.DemoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -49,6 +50,9 @@ public class SettingsController {
     @DeleteMapping("/members/{username}")
     public ResponseEntity<?> removeMember(@AuthenticationPrincipal User user,
                                           @PathVariable String username) {
+        if (user.getGroup().isDemo()) {
+            return ResponseEntity.badRequest().body(Map.of("error", DemoService.NOT_IN_DEMO));
+        }
         if (!user.isAdmin()) {
             return ResponseEntity.status(403).body(Map.of("error", "Only the group admin can remove members."));
         }
@@ -67,6 +71,9 @@ public class SettingsController {
     @PutMapping("/username")
     public ResponseEntity<?> updateUsername(@AuthenticationPrincipal User user,
                                             @RequestBody Map<String, String> body) {
+        if (user.getGroup().isDemo()) {
+            return ResponseEntity.badRequest().body(Map.of("error", DemoService.NOT_IN_DEMO));
+        }
         String newUsername = body.get("username");
         if (newUsername == null || newUsername.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username is required."));
@@ -86,7 +93,7 @@ public class SettingsController {
         // The JWT subject is the username, so a rename invalidates the caller's
         // current token for lookup purposes — issue a fresh one immediately.
         String token = jwtUtil.generate(newUsername, user.getGroup().getId());
-        return ResponseEntity.ok(new AuthResponse(token, newUsername, user.getGroup().getName(), user.getGroup().getGroupCode()));
+        return ResponseEntity.ok(new AuthResponse(token, newUsername, user.getGroup().getName(), user.getGroup().getGroupCode(), user.getGroup().isDemo()));
     }
 
     @PutMapping("/currency")

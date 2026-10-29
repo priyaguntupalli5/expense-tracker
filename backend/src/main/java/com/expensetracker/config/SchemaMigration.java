@@ -188,6 +188,7 @@ public class SchemaMigration implements ApplicationRunner {
             // groups
             addColumnIfAbsent(conn, "groups", "group_code", "VARCHAR(6) NULL");
             addColumnIfAbsent(conn, "groups", "currency",   "VARCHAR(10) NOT NULL DEFAULT 'CAD'");
+            addColumnIfAbsent(conn, "groups", "is_demo",    "BOOLEAN NOT NULL DEFAULT FALSE");
             addColumnIfAbsent(conn, "groups", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
             addColumnIfAbsent(conn, "groups", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             // users

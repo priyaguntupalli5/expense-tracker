@@ -12,6 +12,8 @@ import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: 'login',          component: LoginComponent },
+  // Shareable link (e.g. from a portfolio) that drops visitors straight into the demo
+  { path: 'demo',           component: LoginComponent, data: { startDemo: true } },
   { path: '',               redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard',      component: DashboardComponent,      canActivate: [authGuard] },
   { path: 'income',         component: IncomeComponent,          canActivate: [authGuard] },

@@ -31,6 +31,13 @@
       <mat-icon>logout</mat-icon>
     </button>
   </mat-toolbar>
+  @if (auth.isDemo) {
+    <div class="demo-banner">
+      <mat-icon>visibility</mat-icon>
+      <span>You're exploring a demo with sample data. Feel free to change anything: it resets within a day.</span>
+      <button mat-button class="demo-exit" (click)="auth.logout()">Exit demo</button>
+    </div>
+  }
 }
 
 <router-outlet></router-outlet>

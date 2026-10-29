@@ -19,17 +19,19 @@
           <span class="field-value">{{ settings.groupName }}</span>
         </div>
 
-        <div class="field-row">
-          <span class="field-label">Invite code</span>
-          <div class="code-row">
-            <span class="group-code">{{ settings.groupCode }}</span>
-            <button mat-stroked-button class="copy-btn" (click)="copyCode()">
-              <mat-icon>{{ codeCopied ? 'check' : 'content_copy' }}</mat-icon>
-              {{ codeCopied ? 'Copied!' : 'Copy' }}
-            </button>
+        @if (!auth.isDemo) {
+          <div class="field-row">
+            <span class="field-label">Invite code</span>
+            <div class="code-row">
+              <span class="group-code">{{ settings.groupCode }}</span>
+              <button mat-stroked-button class="copy-btn" (click)="copyCode()">
+                <mat-icon>{{ codeCopied ? 'check' : 'content_copy' }}</mat-icon>
+                {{ codeCopied ? 'Copied!' : 'Copy' }}
+              </button>
+            </div>
+            <span class="field-hint">Share so others can request to join</span>
           </div>
-          <span class="field-hint">Share so others can request to join</span>
-        </div>
+        }
 
         <div class="members-section">
           <span class="field-label">Members</span>
@@ -115,9 +117,11 @@
             @if (!editingUsername) {
               <div class="username-display-row">
                 <span class="field-value">{{ auth.currentUsername }}</span>
-                <button mat-icon-button matTooltip="Edit username" (click)="startEditUsername()">
-                  <mat-icon>edit</mat-icon>
-                </button>
+                @if (!auth.isDemo) {
+                  <button mat-icon-button matTooltip="Edit username" (click)="startEditUsername()">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                }
               </div>
             } @else {
               <div class="currency-row">

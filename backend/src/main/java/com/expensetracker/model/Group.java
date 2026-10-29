@@ -22,6 +22,10 @@ public class Group {
     @Column(nullable = false, length = 10)
     private String currency = "CAD";
 
+    // Throwaway group created by "Try the demo"; deleted with all its data after DemoService.LIFETIME
+    @Column(name = "is_demo", nullable = false)
+    private boolean demo = false;
+
     @Column(name = "created_at", nullable = false, updatable = false,
             columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     @CreationTimestamp
@@ -45,6 +49,9 @@ public class Group {
 
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
+
+    public boolean isDemo() { return demo; }
+    public void setDemo(boolean demo) { this.demo = demo; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

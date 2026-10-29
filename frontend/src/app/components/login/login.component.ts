@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,14 +18,16 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
 
   mode: 'login' | 'register' = 'login';
   registerMode: 'create' | 'join' = 'create';
   loading = false;
+  demoLoading = false;
   error = '';
   hidePassword = true;
   newGroupCode = '';
@@ -37,6 +39,26 @@ export class LoginComponent {
     groupName: [''],
     groupCode: ['', [Validators.pattern(/^\d{6}$/)]],
   });
+
+  ngOnInit() {
+    if (this.route.snapshot.data['startDemo']) {
+      // Already signed in (demo or real): just show the app instead of starting another demo
+      if (this.auth.isLoggedIn) this.router.navigate(['/dashboard']);
+      else this.startDemo();
+    }
+  }
+
+  startDemo() {
+    this.demoLoading = true;
+    this.error = '';
+    this.auth.startDemo().subscribe({
+      next: () => { this.demoLoading = false; this.router.navigate(['/dashboard']); },
+      error: (err) => {
+        this.demoLoading = false;
+        this.error = err.error?.error ?? 'The demo could not be started. Please try again.';
+      },
+    });
+  }
 
   switchMode(mode: 'login' | 'register') {
     this.mode = mode;

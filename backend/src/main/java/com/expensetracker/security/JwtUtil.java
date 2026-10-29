@@ -23,11 +23,15 @@ public class JwtUtil {
     }
 
     public String generate(String email, Long groupId) {
+        return generate(email, groupId, expirationMs);
+    }
+
+    public String generate(String email, Long groupId, long validForMs) {
         return Jwts.builder()
             .subject(email)
             .claim("groupId", groupId)
             .issuedAt(new Date())
-            .expiration(new Date(System.currentTimeMillis() + expirationMs))
+            .expiration(new Date(System.currentTimeMillis() + validForMs))
             .signWith(key())
             .compact();
     }

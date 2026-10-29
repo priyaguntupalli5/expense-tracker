@@ -11,6 +11,8 @@ import com.expensetracker.repository.JoinRequestRepository;
 import com.expensetracker.repository.UserRepository;
 import com.expensetracker.security.JwtUtil;
 import com.expensetracker.service.CategorySeederService;
+import com.expensetracker.service.DemoService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -28,18 +30,20 @@ public class AuthController {
     private final PasswordEncoder      passwordEncoder;
     private final JwtUtil              jwtUtil;
     private final CategorySeederService categorySeeder;
+    private final DemoService          demoService;
     private final Random random = new Random();
 
     public AuthController(UserRepository userRepository, GroupRepository groupRepository,
                           JoinRequestRepository joinRequestRepository,
                           PasswordEncoder passwordEncoder, JwtUtil jwtUtil,
-                          CategorySeederService categorySeeder) {
+                          CategorySeederService categorySeeder, DemoService demoService) {
         this.userRepository       = userRepository;
         this.groupRepository      = groupRepository;
         this.joinRequestRepository = joinRequestRepository;
         this.passwordEncoder      = passwordEncoder;
         this.jwtUtil              = jwtUtil;
         this.categorySeeder       = categorySeeder;
+        this.demoService          = demoService;
     }
 
     @PostMapping("/register")
@@ -94,7 +98,16 @@ public class AuthController {
         userRepository.save(user);
 
         String token = jwtUtil.generate(user.getUsername(), group.getId());
-        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), group.getName(), group.getGroupCode()));
+        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), group.getName(), group.getGroupCode(), false));
+    }
+
+    // No credentials: creates a fresh, pre-filled demo group for this visitor (see DemoService)
+    @PostMapping("/demo")
+    public ResponseEntity<?> demo() {
+        return demoService.create()
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .orElse(ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(Map.of("error", "The demo is busy right now. Please try again in a little while.")));
     }
 
     @PostMapping("/login")
@@ -103,7 +116,7 @@ public class AuthController {
             .filter(u -> passwordEncoder.matches(req.password(), u.getPassword()))
             .map(u -> {
                 String token = jwtUtil.generate(u.getUsername(), u.getGroup().getId());
-                return ResponseEntity.ok(new AuthResponse(token, u.getUsername(), u.getGroup().getName(), u.getGroup().getGroupCode()));
+                return ResponseEntity.ok(new AuthResponse(token, u.getUsername(), u.getGroup().getName(), u.getGroup().getGroupCode(), u.getGroup().isDemo()));
             })
             .orElse(ResponseEntity.status(401).body(null));
     }

@@ -1,5 +1,6 @@
 package com.expensetracker.controller;
 
+import com.expensetracker.service.DemoService;
 import com.expensetracker.service.PushNotificationService;
 import com.expensetracker.service.RecurringJobService;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,20 +23,24 @@ public class JobController {
 
     private final RecurringJobService     recurringJobService;
     private final PushNotificationService pushService;
+    private final DemoService             demoService;
 
     @Value("${app.jobs.secret:}")
     private String jobSecret;
 
-    public JobController(RecurringJobService recurringJobService, PushNotificationService pushService) {
+    public JobController(RecurringJobService recurringJobService, PushNotificationService pushService,
+                         DemoService demoService) {
         this.recurringJobService = recurringJobService;
         this.pushService         = pushService;
+        this.demoService         = demoService;
     }
 
     @PostMapping("/recurring")
     public ResponseEntity<?> recurring(@RequestHeader(value = "X-Job-Secret", required = false) String secret) {
         if (!authorized(secret)) return forbidden();
         recurringJobService.runDaily();
-        return ResponseEntity.ok(Map.of("job", "recurring", "done", true));
+        int demosDeleted = demoService.deleteExpired();
+        return ResponseEntity.ok(Map.of("job", "recurring", "done", true, "demosDeleted", demosDeleted));
     }
 
     @PostMapping("/reminder/evening")
