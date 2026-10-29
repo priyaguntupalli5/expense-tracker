@@ -1,7 +1,10 @@
 package com.expensetracker.controller;
 
+import com.expensetracker.model.User;
+import com.expensetracker.service.DemoService;
 import com.expensetracker.service.PushNotificationService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -21,8 +24,12 @@ public class PushController {
         return Map.of("publicKey", pushService.getPublicKey());
     }
 
+    // Subscriptions aren't tied to a group, so a demo visitor would get every user's reminders
     @PostMapping("/subscribe")
-    public ResponseEntity<?> subscribe(@RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> subscribe(@AuthenticationPrincipal User user, @RequestBody Map<String, Object> body) {
+        if (user.getGroup().isDemo()) {
+            return ResponseEntity.badRequest().body(Map.of("error", DemoService.NOT_IN_DEMO));
+        }
         try {
             String endpoint = (String) body.get("endpoint");
             @SuppressWarnings("unchecked")
@@ -40,8 +47,12 @@ public class PushController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
+    // Sends to every subscribed device, not just the caller's
     @PostMapping("/test")
-    public ResponseEntity<?> test() {
+    public ResponseEntity<?> test(@AuthenticationPrincipal User user) {
+        if (user.getGroup().isDemo()) {
+            return ResponseEntity.badRequest().body(Map.of("error", DemoService.NOT_IN_DEMO));
+        }
         pushService.sendTestNotification();
         return ResponseEntity.ok(Map.of("sent", true));
     }

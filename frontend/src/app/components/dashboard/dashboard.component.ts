@@ -15,6 +15,7 @@ import { IncomeService } from '../../services/income.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { SettingsService } from '../../services/settings.service';
 import { ReportService } from '../../services/report.service';
+import { AuthService } from '../../services/auth.service';
 import { Expense, FixedExpense, Summary, monthlyEquivalent, monthOccurrences } from '../../models/expense.model';
 
 interface PieSlice {
@@ -66,6 +67,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly destroy$        = new Subject<void>();
   readonly pushService    = inject(PushNotificationService);
   readonly settingsService = inject(SettingsService);
+  readonly auth            = inject(AuthService);
   private readonly reportService = inject(ReportService);
   private readonly snackBar      = inject(MatSnackBar);
   downloadingReport = false;

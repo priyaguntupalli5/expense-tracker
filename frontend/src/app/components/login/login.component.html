@@ -96,6 +96,19 @@
           }
         </button>
       </form>
+
+      @if (mode === 'login') {
+        <div class="demo-divider"><span>or</span></div>
+        <button mat-stroked-button type="button" class="demo-btn" [disabled]="demoLoading || loading" (click)="startDemo()">
+          @if (demoLoading) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <mat-icon>visibility</mat-icon>
+          }
+          {{ demoLoading ? 'Setting up your demo…' : 'Try the demo' }}
+        </button>
+        <p class="demo-hint">No sign-up needed: explore with sample data.</p>
+      }
     }
   </div>
 </div>

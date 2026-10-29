@@ -5,7 +5,7 @@
 
     <div class="dash-title-row">
       <h1 class="dash-title">Expenses Dashboard</h1>
-      @if (pushService.swAvailable) {
+      @if (pushService.swAvailable && !auth.isDemo) {
         <button class="notif-icon-btn" [class.notif-on]="pushService.enabled()"
                 (click)="toggleNotifications()"
                 [matTooltip]="pushService.enabled() ? 'Notifications on – tap to disable' : 'Enable reminders'">
