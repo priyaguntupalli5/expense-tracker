@@ -7,16 +7,34 @@
         <div class="header-title">
           <mat-icon class="title-icon">repeat</mat-icon>
           <span>Fixed Expenses</span>
-          <span class="count-chip">{{ expenses.length }}</span>
+          <span class="count-chip">{{ activeExpenses.length }}</span>
         </div>
         <div class="header-sub">
           Est. {{ total | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} in
-          {{ months[selectedMonth - 1].label }}
+          {{ monthLabel }}
         </div>
       </div>
-      <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
-        <mat-icon>add</mat-icon> Add Fixed Expense
-      </button>
+      <div class="header-actions">
+        <!-- Month picker (drives both cards) -->
+        <div class="month-bar">
+          <button mat-icon-button matTooltip="Previous month" (click)="shiftMonth(-1)">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <mat-form-field appearance="outline" class="month-field">
+            <input matInput readonly [matDatepicker]="monthPicker" [value]="selectedDate"
+                   (click)="monthPicker.open()">
+            <mat-datepicker-toggle matIconSuffix [for]="monthPicker"></mat-datepicker-toggle>
+            <mat-datepicker #monthPicker startView="year"
+                            (monthSelected)="pickMonth($event, monthPicker)"></mat-datepicker>
+          </mat-form-field>
+          <button mat-icon-button matTooltip="Next month" (click)="shiftMonth(1)">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+        <button mat-flat-button color="primary" class="add-btn" (click)="openAdd()">
+          <mat-icon>add</mat-icon> Add Fixed Expense
+        </button>
+      </div>
     </div>
 
     <mat-card-content>
@@ -34,8 +52,13 @@
       @if (filteredExpenses.length === 0) {
         <div class="empty-state">
           <mat-icon>repeat</mat-icon>
-          <p>No fixed expenses yet</p>
-          <small>Add recurring items like Rent, EMI, Utilities, Subscriptions</small>
+          @if (expenses.length === 0) {
+            <p>No fixed expenses yet</p>
+            <small>Add recurring items like Rent, EMI, Utilities, Subscriptions</small>
+          } @else {
+            <p>No fixed expenses in {{ selectedDate | date:'MMMM y' }}</p>
+            <small>Nothing has started yet or everything had already ended by this month</small>
+          }
         </div>
       } @else {
         <div class="table-wrapper">
@@ -130,22 +153,6 @@
         <div class="header-sub">
           {{ entriesTotal | currency:settingsService.currency:'symbol-narrow':'1.0-2' }} total
         </div>
-      </div>
-      <div class="period-selectors">
-        <mat-form-field appearance="outline" class="period-field">
-          <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
-            @for (m of months; track m.value) {
-              <mat-option [value]="m.value">{{ m.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="period-field year-field">
-          <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
-            @for (y of years; track y) {
-              <mat-option [value]="y">{{ y }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
       </div>
     </div>
 

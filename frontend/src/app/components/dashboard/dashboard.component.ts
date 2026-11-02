@@ -322,7 +322,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     if (item.isFixed) {
       this.router.navigate(['/fixed-expenses'], {
-        queryParams: { highlightId: item.id },
+        queryParams: { highlightId: item.id, month: this.selectedMonth, year: this.selectedYear },
       });
     } else {
       const lastDay = new Date(this.selectedYear, this.selectedMonth, 0).getDate();

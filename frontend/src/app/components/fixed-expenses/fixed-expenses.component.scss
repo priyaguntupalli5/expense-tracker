@@ -13,6 +13,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 16px 20px 12px;
   border-bottom: 1px solid rgba(0,0,0,0.06);
 }
@@ -190,18 +192,26 @@
 
 .payments-card { margin-top: 20px; }
 
-.period-selectors {
+.header-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+}
+
+.month-bar {
+  display: flex;
   align-items: center;
 }
 
-.period-field {
-  width: 120px;
-  .mat-mdc-form-field-subscript-wrapper { display: none; }
+.month-field {
+  width: 180px;
+  ::ng-deep .mat-mdc-text-field-wrapper { height: 40px; }
+  ::ng-deep .mat-mdc-form-field-infix { padding-top: 8px !important; padding-bottom: 8px !important; min-height: 40px; }
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+  input { cursor: pointer; text-align: center; font-weight: 500; }
 }
-
-.year-field { width: 90px; }
 
 .date-col { white-space: nowrap; }
 
