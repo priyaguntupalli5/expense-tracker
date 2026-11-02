@@ -1,8 +1,10 @@
 package com.expensetracker.controller;
 
 import com.expensetracker.dto.SubcategoryDTO;
+import com.expensetracker.model.GroupCategory;
 import com.expensetracker.model.GroupSubcategory;
 import com.expensetracker.model.User;
+import com.expensetracker.repository.GroupCategoryRepository;
 import com.expensetracker.repository.GroupSubcategoryRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,20 +16,39 @@ import java.util.*;
 @RequestMapping("/api/subcategories")
 public class SubcategoryController {
 
-    private final GroupSubcategoryRepository groupSubcategoryRepo;
+    // Built into every spending category: entries filed under it are money back, and the frontend
+    // shows them green with a "+" and subtracts them from totals. Matched case-insensitively there too.
+    static final String REFUNDS = "Refunds & Credits";
 
-    public SubcategoryController(GroupSubcategoryRepository groupSubcategoryRepo) {
+    private final GroupSubcategoryRepository groupSubcategoryRepo;
+    private final GroupCategoryRepository    groupCategoryRepo;
+
+    public SubcategoryController(GroupSubcategoryRepository groupSubcategoryRepo,
+                                 GroupCategoryRepository groupCategoryRepo) {
         this.groupSubcategoryRepo = groupSubcategoryRepo;
+        this.groupCategoryRepo    = groupCategoryRepo;
     }
 
     @GetMapping
     public List<SubcategoryDTO> getByCategory(@AuthenticationPrincipal User user,
                                               @RequestParam String category) {
         Long groupId = user.getGroup().getId();
-        return groupSubcategoryRepo.findByGroupIdAndCategoryValueOrderByNameAsc(groupId, category)
-                .stream()
+        List<SubcategoryDTO> subs = new ArrayList<>(
+            groupSubcategoryRepo.findByGroupIdAndCategoryValueOrderByNameAsc(groupId, category).stream()
+                .filter(gs -> !isRefunds(gs.getName()))
                 .map(gs -> new SubcategoryDTO(gs.getId(), gs.getCategoryValue(), gs.getName(), false))
-                .toList();
+                .toList());
+
+        // Not stored per group, so it also appears in categories created later. Marked shared so it
+        // can't be removed. The Refunds & Credits category itself (income-type) doesn't need it.
+        boolean incomeCategory = groupCategoryRepo.findByGroupIdAndValue(groupId, category)
+                .map(GroupCategory::getIsIncome).orElse(false);
+        if (!incomeCategory) subs.add(new SubcategoryDTO(null, category, REFUNDS, true));
+        return subs;
+    }
+
+    private static boolean isRefunds(String name) {
+        return name != null && name.trim().equalsIgnoreCase(REFUNDS);
     }
 
     @PostMapping
@@ -44,7 +65,7 @@ public class SubcategoryController {
             return ResponseEntity.badRequest().body(Map.of("error", "Name must be 100 characters or fewer."));
         }
 
-        boolean exists = groupSubcategoryRepo
+        boolean exists = isRefunds(name) || groupSubcategoryRepo
                 .findByGroupIdAndCategoryValueOrderByNameAsc(groupId, catValue)
                 .stream().anyMatch(s -> s.getName().equalsIgnoreCase(name));
 

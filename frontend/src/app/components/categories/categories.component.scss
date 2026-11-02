@@ -161,6 +161,13 @@ mat-card-content {
   margin-bottom: 12px;
 }
 
+.sub-chip.refund-chip {
+  padding-right: 10px;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+  background: #e8f5e9;
+}
+
 .sub-chip {
   display: inline-flex;
   align-items: center;

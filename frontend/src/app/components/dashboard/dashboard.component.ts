@@ -267,12 +267,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private creditItems(key: string, tag?: string): ExpenseItem[] {
     const items: ExpenseItem[] = this.allExpenses
       .filter(e => (!tag || (e.tags ?? []).includes(tag))
-                && this.isCredit(e.category, e.subcategory)
-                && this.creditKey(e.category, e.subcategory) === key)
+                && this.isCreditCategory(e.category)
+                && this.creditKey(e.subcategory) === key)
       .map(e => ({ id: e.id!, title: e.title, amount: Number(e.amount), isFixed: false, isCredit: true }));
     if (!tag) {
       for (const fe of this.fixedExpenses) {
-        if (!this.isCredit(fe.category, fe.subcategory) || this.creditKey(fe.category, fe.subcategory) !== key) continue;
+        if (!this.isCreditCategory(fe.category) || this.creditKey(fe.subcategory) !== key) continue;
         const amount = this.fixedAmount(fe);
         if (amount !== 0) items.push({ id: fe.id!, title: fe.title, amount, isFixed: true, isCredit: true });
       }
@@ -430,21 +430,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return (subcategory ?? '').toLowerCase().trim() === 'refunds & credits';
   }
 
-  // Money back: the "Refunds & Credits" category (stored as an income-type category, e.g.
-  // Amazon Refund / Store Credit) or a "Refunds & Credits" subcategory under any category.
-  private isCredit(category: string, subcategory?: string): boolean {
-    return !!this.expenseService.getCategoryByValue(category)?.isIncome || this.isRefund(subcategory);
+  // The Refunds & Credits category itself (income-type). Only these feed the green credits row;
+  // a "Refunds & Credits" subcategory is netted into its own category instead.
+  private isCreditCategory(category: string): boolean {
+    return !!this.expenseService.getCategoryByValue(category)?.isIncome;
   }
 
-  // Drill-down group for a credit: its subcategory within the Refunds & Credits category
-  // (Amazon Refund, Store Credit…), or the owning category's name for a "Refunds & Credits"
-  // subcategory filed elsewhere (e.g. a refund under Vacation & Travel).
-  private creditKey(category: string, subcategory?: string): string {
-    if (this.expenseService.getCategoryByValue(category)?.isIncome) {
-      const sub = subcategory || 'Other';
-      return this.isRefund(sub) ? 'Other' : sub; // never collide with buildSlices' refund marker
-    }
-    return this.getCategoryLabel(category);
+  // What an entry adds to its category's row: spending counts up, a refund subcategory counts down
+  private netAmount(subcategory: string | undefined, amount: number): number {
+    return this.isRefund(subcategory) ? -amount : amount;
+  }
+
+  // Drill-down group for a credit in the Refunds & Credits category (Amazon Refund, Store Credit…)
+  private creditKey(subcategory?: string): string {
+    const sub = subcategory || 'Other';
+    return this.isRefund(sub) ? 'Other' : sub; // never collide with buildSlices' refund marker
   }
 
   private computeAvailableLabels() {
@@ -460,8 +460,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     let credits = 0;
     for (const e of this.allExpenses) {
       if (!(e.tags ?? []).includes(tag)) continue;
-      if (this.isCredit(e.category, e.subcategory)) { credits += Number(e.amount); continue; }
-      breakdown[e.category] = (breakdown[e.category] ?? 0) + Number(e.amount);
+      if (this.isCreditCategory(e.category)) { credits += Number(e.amount); continue; }
+      breakdown[e.category] = (breakdown[e.category] ?? 0) + this.netAmount(e.subcategory, Number(e.amount));
     }
     this.labelCategorySlices = this.withCreditsRow(this.buildCategoryPieSlices(breakdown), credits);
   }
@@ -470,8 +470,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (category === CREDITS_ROW) {
       const breakdown: Record<string, number> = {};
       for (const e of this.allExpenses) {
-        if (!(e.tags ?? []).includes(tag) || !this.isCredit(e.category, e.subcategory)) continue;
-        const key = this.creditKey(e.category, e.subcategory);
+        if (!(e.tags ?? []).includes(tag) || !this.isCreditCategory(e.category)) continue;
+        const key = this.creditKey(e.subcategory);
         breakdown[key] = (breakdown[key] ?? 0) + Number(e.amount);
       }
       const { slices, total } = this.buildSlices(breakdown, CREDITS_ROW);
@@ -490,14 +490,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.labelCategorySubTotal  = total;
   }
 
-  // Categories show what was spent; refunds & credits are collected into their own green "+" row
-  // instead of being silently netted out of each category. Totals (donut centre) remain net.
+  // Each category shows its net spend (its own "Refunds & Credits" subcategory subtracted, e.g.
+  // Groceries $348 − $300 refund = $48). The Refunds & Credits category gets its own green "+" row.
   private buildPieChart() {
     const breakdown: Record<string, number> = {};
     let credits = 0;
     const add = (category: string, subcategory: string | undefined, amount: number) => {
-      if (this.isCredit(category, subcategory)) credits += amount;
-      else breakdown[category] = (breakdown[category] ?? 0) + amount;
+      if (this.isCreditCategory(category)) credits += amount;
+      else breakdown[category] = (breakdown[category] ?? 0) + this.netAmount(subcategory, amount);
     };
 
     for (const e of this.allExpenses) add(e.category, e.subcategory, Number(e.amount));
@@ -600,8 +600,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private buildCreditsSubChart() {
     const breakdown: Record<string, number> = {};
     const add = (category: string, subcategory: string | undefined, amount: number) => {
-      if (!this.isCredit(category, subcategory)) return;
-      const key = this.creditKey(category, subcategory);
+      if (!this.isCreditCategory(category)) return;
+      const key = this.creditKey(subcategory);
       breakdown[key] = (breakdown[key] ?? 0) + amount;
     };
 
@@ -724,12 +724,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   get fixedTotal(): number {
     if (!this.isFuturePeriod) {
       return this.relevantFixedEntries
-        .filter(e => !this.expenseService.getCategoryByValue(e.category)?.isIncome)
-        .reduce((sum, e) => sum + Number(e.amount), 0);
+        .filter(e => !this.isCreditCategory(e.category))
+        .reduce((sum, e) => sum + this.netAmount(e.subcategory, Number(e.amount)), 0);
     }
     return this.fixedExpenses
-      .filter(fe => !this.expenseService.getCategoryByValue(fe.category)?.isIncome)
-      .reduce((sum, fe) => sum + this.fixedAmount(fe), 0);
+      .filter(fe => !this.isCreditCategory(fe.category))
+      .reduce((sum, fe) => sum + this.netAmount(fe.subcategory, this.fixedAmount(fe)), 0);
   }
 
   get actualTotal(): number {

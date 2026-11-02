@@ -70,7 +70,13 @@
                     <p class="sub-empty">No subcategories yet. Add one below.</p>
                   } @else {
                     <div class="sub-chips">
-                      @for (sub of subcategoriesMap[c.value]; track sub.id) {
+                      @for (sub of subcategoriesMap[c.value]; track sub.name) {
+                        @if (sub.id == null) {
+                          <!-- Built into every category: entries here count as money back -->
+                          <span class="sub-chip refund-chip" matTooltip="Built in: entries here are subtracted as money back">
+                            {{ sub.name }}
+                          </span>
+                        } @else {
                         <span class="sub-chip" [style.border-color]="c.color + '55'" [style.color]="c.color">
                           {{ sub.name }}
                           @if (!sub.isShared) {
@@ -79,6 +85,7 @@
                             </button>
                           }
                         </span>
+                        }
                       }
                     </div>
                   }
