@@ -6,13 +6,13 @@
       <div class="recurring-header">
         <mat-icon class="rec-icon">repeat</mat-icon>
         <span class="rec-title">Recurring Income</span>
-        <span class="count-chip">{{ templates.length }}</span>
+        <span class="count-chip">{{ activeTemplates.length }}</span>
         <button mat-icon-button class="add-rec-btn" matTooltip="Add recurring income" (click)="openAdd(true)">
           <mat-icon>add</mat-icon>
         </button>
       </div>
       <div class="recurring-list">
-        @for (t of templates; track t.id) {
+        @for (t of activeTemplates; track t.id) {
           <div class="rec-row">
             <span class="source-badge"
               [style.background]="sourceInfo(t.sourceType).color + '15'"
@@ -33,6 +33,8 @@
               </button>
             </div>
           </div>
+        } @empty {
+          <div class="rec-empty">No recurring income had started by {{ selectedDate | date:'MMMM y' }}</div>
         }
       </div>
     </div>
@@ -52,20 +54,22 @@
         </div>
       </div>
       <div class="header-right">
-        <mat-form-field appearance="outline" class="period-field">
-          <mat-select [(ngModel)]="selectedMonth" (ngModelChange)="onPeriodChange()">
-            @for (m of months; track m.value) {
-              <mat-option [value]="m.value">{{ m.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="period-field year-field">
-          <mat-select [(ngModel)]="selectedYear" (ngModelChange)="onPeriodChange()">
-            @for (y of years; track y) {
-              <mat-option [value]="y">{{ y }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        <!-- Month picker (drives both cards) -->
+        <div class="month-bar">
+          <button mat-icon-button matTooltip="Previous month" (click)="shiftMonth(-1)">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <mat-form-field appearance="outline" class="month-field">
+            <input matInput readonly [matDatepicker]="monthPicker" [value]="selectedDate"
+                   (click)="monthPicker.open()">
+            <mat-datepicker-toggle matIconSuffix [for]="monthPicker"></mat-datepicker-toggle>
+            <mat-datepicker #monthPicker startView="year"
+                            (monthSelected)="pickMonth($event, monthPicker)"></mat-datepicker>
+          </mat-form-field>
+          <button mat-icon-button matTooltip="Next month" (click)="shiftMonth(1)">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
         @if (templates.length === 0) {
           <button mat-flat-button color="primary" class="add-btn" (click)="openAdd(false)">
             <mat-icon>add</mat-icon> Add Income

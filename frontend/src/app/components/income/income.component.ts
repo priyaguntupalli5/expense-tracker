@@ -1,13 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
-import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
+import { MatInputModule } from '@angular/material/input';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin } from 'rxjs';
@@ -21,12 +22,25 @@ const RECURRENCE_LABELS: Record<string, string> = {
   MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', YEARLY: 'Yearly',
 };
 
+const MONTH_YEAR = { year: 'numeric', month: 'long' } as const;
+
 @Component({
   selector: 'app-income',
+  // The month picker shows and edits "November 2026" rather than a full date
+  providers: [provideNativeDateAdapter({
+    parse:   { dateInput: null },
+    display: {
+      dateInput: MONTH_YEAR,
+      monthYearLabel: { year: 'numeric', month: 'short' },
+      dateA11yLabel: { year: 'numeric', month: 'long', day: 'numeric' },
+      monthYearA11yLabel: MONTH_YEAR,
+    },
+  })],
   imports: [
-    CurrencyPipe, DatePipe, FormsModule,
+    CurrencyPipe, DatePipe,
     MatTableModule, MatIconModule, MatButtonModule,
-    MatTooltipModule, MatCardModule, MatSelectModule, MatFormFieldModule,
+    MatTooltipModule, MatCardModule, MatFormFieldModule,
+    MatDatepickerModule, MatInputModule,
   ],
   templateUrl: './income.component.html',
   styleUrl: './income.component.scss',
@@ -44,19 +58,31 @@ export class IncomeComponent implements OnInit {
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
 
-  readonly months = [
-    { value: 1,  label: 'January' },   { value: 2,  label: 'February' },
-    { value: 3,  label: 'March' },     { value: 4,  label: 'April' },
-    { value: 5,  label: 'May' },       { value: 6,  label: 'June' },
-    { value: 7,  label: 'July' },      { value: 8,  label: 'August' },
-    { value: 9,  label: 'September' }, { value: 10, label: 'October' },
-    { value: 11, label: 'November' },  { value: 12, label: 'December' },
-  ];
-  readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+  get selectedDate(): Date { return new Date(this.selectedYear, this.selectedMonth - 1, 1); }
+
+  /** Recurring templates that have started by the end of the selected month. */
+  get activeTemplates(): Income[] {
+    const last = `${this.selectedYear}-${String(this.selectedMonth).padStart(2, '0')}-` +
+                 String(new Date(this.selectedYear, this.selectedMonth, 0).getDate()).padStart(2, '0');
+    return this.templates.filter(t => !t.startDate || t.startDate <= last);
+  }
 
   ngOnInit() { this.load(); }
 
-  onPeriodChange() { this.loadEntries(); }
+  pickMonth(date: Date, picker: MatDatepicker<Date>) {
+    picker.close();
+    this.setMonth(date);
+  }
+
+  shiftMonth(delta: number) {
+    this.setMonth(new Date(this.selectedYear, this.selectedMonth - 1 + delta, 1));
+  }
+
+  private setMonth(date: Date) {
+    this.selectedMonth = date.getMonth() + 1;
+    this.selectedYear  = date.getFullYear();
+    this.loadEntries();
+  }
 
   get total(): number {
     return this.entries.reduce((s, e) => s + Number(e.amount), 0);

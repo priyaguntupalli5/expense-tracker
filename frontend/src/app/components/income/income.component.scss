@@ -97,6 +97,12 @@
   text-align: right;
 }
 
+.rec-empty {
+  font-size: 0.85rem;
+  color: #64748b;
+  padding: 6px 4px 8px;
+}
+
 .rec-actions {
   display: flex;
   gap: 0;
@@ -169,17 +175,22 @@
   flex-wrap: wrap;
 }
 
-.period-field {
-  width: 120px;
+.month-bar {
+  display: flex;
+  align-items: center;
+}
+
+.month-field {
+  width: 180px;
 
   ::ng-deep {
     .mat-mdc-form-field-subscript-wrapper { display: none; }
-    .mat-mdc-form-field-infix { padding-top: 8px !important; padding-bottom: 8px !important; min-height: unset; }
+    .mat-mdc-form-field-infix { padding-top: 8px !important; padding-bottom: 8px !important; min-height: 40px; }
     .mat-mdc-text-field-wrapper { height: 40px; }
   }
-}
 
-.year-field { width: 90px; }
+  input { cursor: pointer; text-align: center; font-weight: 500; }
+}
 
 .add-btn {
   border-radius: 20px !important;
