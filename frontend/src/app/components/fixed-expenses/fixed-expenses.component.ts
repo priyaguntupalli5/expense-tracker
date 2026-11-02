@@ -1,14 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
-import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDatepicker, MatDatepickerModule } from '@angular/material/datepicker';
+import { MatInputModule } from '@angular/material/input';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin } from 'rxjs';
@@ -23,12 +24,25 @@ function nth(n: number): string {
   return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
 }
 
+const MONTH_YEAR = { year: 'numeric', month: 'long' } as const;
+
 @Component({
   selector: 'app-fixed-expenses',
+  // The month picker shows and edits "November 2026" rather than a full date
+  providers: [provideNativeDateAdapter({
+    parse:   { dateInput: null },
+    display: {
+      dateInput: MONTH_YEAR,
+      monthYearLabel: { year: 'numeric', month: 'short' },
+      dateA11yLabel: { year: 'numeric', month: 'long', day: 'numeric' },
+      monthYearA11yLabel: MONTH_YEAR,
+    },
+  })],
   imports: [
-    CurrencyPipe, DatePipe, FormsModule,
+    CurrencyPipe, DatePipe,
     MatTableModule, MatIconModule, MatButtonModule,
-    MatTooltipModule, MatCardModule, MatSelectModule, MatFormFieldModule,
+    MatTooltipModule, MatCardModule, MatFormFieldModule,
+    MatDatepickerModule, MatInputModule,
   ],
   templateUrl: './fixed-expenses.component.html',
   styleUrl: './fixed-expenses.component.scss',
@@ -45,10 +59,19 @@ export class FixedExpensesComponent implements OnInit {
   titleFilter = '';
   highlightId: number | null = null;
 
+  /** Fixed expenses whose start/end dates overlap the selected month. */
+  get activeExpenses(): FixedExpense[] {
+    const first = `${this.selectedYear}-${String(this.selectedMonth).padStart(2, '0')}-01`;
+    const last  = `${this.selectedYear}-${String(this.selectedMonth).padStart(2, '0')}-` +
+                  String(new Date(this.selectedYear, this.selectedMonth, 0).getDate()).padStart(2, '0');
+    return this.expenses.filter(e =>
+      (!e.startDate || e.startDate <= last) && (!e.endDate || e.endDate >= first));
+  }
+
   get filteredExpenses(): FixedExpense[] {
-    if (!this.titleFilter) return this.expenses;
+    if (!this.titleFilter) return this.activeExpenses;
     const t = this.titleFilter.toLowerCase();
-    return this.expenses.filter(e => e.title.toLowerCase().includes(t));
+    return this.activeExpenses.filter(e => e.title.toLowerCase().includes(t));
   }
 
   clearTitleFilter() { this.titleFilter = ''; }
@@ -58,23 +81,36 @@ export class FixedExpensesComponent implements OnInit {
   selectedMonth = new Date().getMonth() + 1;
   selectedYear  = new Date().getFullYear();
 
-  readonly months = [
-    { value: 1, label: 'January' }, { value: 2, label: 'February' },
-    { value: 3, label: 'March' },   { value: 4, label: 'April' },
-    { value: 5, label: 'May' },     { value: 6, label: 'June' },
-    { value: 7, label: 'July' },    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },{ value: 10,label: 'October' },
-    { value: 11,label: 'November' },{ value: 12,label: 'December' },
-  ];
-  readonly years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+  get selectedDate(): Date { return new Date(this.selectedYear, this.selectedMonth - 1, 1); }
+  get monthLabel(): string { return this.selectedDate.toLocaleDateString('en-US', { month: 'long' }); }
 
   ngOnInit() {
     this.expenseService.loadCategories().subscribe();
     this.route.queryParams.subscribe(params => {
       if (params['title'])      this.titleFilter = params['title'];
       if (params['highlightId']) this.highlightId = Number(params['highlightId']);
+      // Opened from the dashboard: show the month that was being viewed there
+      if (params['month'] && params['year']) {
+        this.selectedMonth = Number(params['month']);
+        this.selectedYear  = Number(params['year']);
+      }
     });
     this.load();
+  }
+
+  pickMonth(date: Date, picker: MatDatepicker<Date>) {
+    picker.close();
+    this.setMonth(date);
+  }
+
+  shiftMonth(delta: number) {
+    this.setMonth(new Date(this.selectedYear, this.selectedMonth - 1 + delta, 1));
+  }
+
+  private setMonth(date: Date) {
+    this.selectedMonth = date.getMonth() + 1;
+    this.selectedYear  = date.getFullYear();
+    this.loadEntries();
   }
 
   private scrollToRow(id: number) {
@@ -87,8 +123,6 @@ export class FixedExpensesComponent implements OnInit {
       }
     }, 150);
   }
-
-  onPeriodChange() { this.loadEntries(); }
 
   private load() {
     forkJoin([
@@ -113,7 +147,7 @@ export class FixedExpensesComponent implements OnInit {
 
   /** Actual cost for the selected month. */
   get total(): number {
-    return this.expenses.reduce((sum, e) => {
+    return this.activeExpenses.reduce((sum, e) => {
       const occ  = monthOccurrences(e, this.selectedMonth, this.selectedYear);
       const cost = occ !== null ? occ * Number(e.amount) : monthlyEquivalent(e);
       return sum + (this.isCredit(e.category, e.subcategory) ? -cost : cost);
