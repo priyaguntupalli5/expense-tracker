@@ -14,7 +14,7 @@
     <groupId>com.expensetracker</groupId>
     <artifactId>expense-tracker-backend</artifactId>
     <version>1.0.0</version>
-    <name>Expense Tracker Backend</name>
+    <name>Household Finance Backend</name>
 
     <properties>
         <java.version>21</java.version>

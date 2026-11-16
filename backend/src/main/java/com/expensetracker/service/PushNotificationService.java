@@ -23,7 +23,7 @@ public class PushNotificationService {
     private static final String PAYLOAD = """
             {
               "notification": {
-                "title": "💰 Expense Tracker",
+                "title": "💰 Household Finance",
                 "body": "Add your expenses now!",
                 "icon": "/icon-192.png",
                 "data": {
