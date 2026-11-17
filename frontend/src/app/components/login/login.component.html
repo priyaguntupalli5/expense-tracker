@@ -6,6 +6,29 @@
       <p class="brand-sub">Track smarter, save better</p>
     </div>
 
+    @if (!showSignIn) {
+      <!-- Most visitors come from the portfolio link: lead with the demo -->
+      <button mat-flat-button color="primary" type="button" class="demo-btn" [disabled]="demoLoading" (click)="startDemo()">
+        @if (demoLoading) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>visibility</mat-icon>
+        }
+        {{ demoLoading ? 'Setting up your demo…' : 'View the demo' }}
+      </button>
+      <p class="demo-hint">No sign-up needed: explore with sample data.</p>
+
+      @if (error) {
+        <div class="error-msg">{{ error }}</div>
+      }
+
+      <div class="demo-divider"><span>Already have an account?</span></div>
+      <button mat-stroked-button type="button" class="demo-btn" [disabled]="demoLoading" (click)="openSignIn()">
+        <mat-icon>login</mat-icon>
+        Sign in
+      </button>
+    } @else {
+
     <div class="tabs">
       <button class="tab" [class.active]="mode === 'login'" (click)="switchMode('login')">Sign In</button>
       <button class="tab" [class.active]="mode === 'register'" (click)="switchMode('register')">Register</button>
@@ -97,18 +120,11 @@
         </button>
       </form>
 
-      @if (mode === 'login') {
-        <div class="demo-divider"><span>or</span></div>
-        <button mat-stroked-button type="button" class="demo-btn" [disabled]="demoLoading || loading" (click)="startDemo()">
-          @if (demoLoading) {
-            <mat-spinner diameter="20"></mat-spinner>
-          } @else {
-            <mat-icon>visibility</mat-icon>
-          }
-          {{ demoLoading ? 'Setting up your demo…' : 'Try the demo' }}
-        </button>
-        <p class="demo-hint">No sign-up needed: explore with sample data.</p>
-      }
+      <button mat-button type="button" class="back-btn" [disabled]="loading" (click)="closeSignIn()">
+        <mat-icon>arrow_back</mat-icon>
+        Back to the demo
+      </button>
+    }
     }
   </div>
 </div>

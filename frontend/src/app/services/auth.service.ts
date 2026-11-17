@@ -33,6 +33,8 @@ export class AuthService {
   private readonly GROUP_KEY      = 'auth_group';
   private readonly GROUP_CODE_KEY = 'auth_group_code';
   private readonly DEMO_KEY       = 'auth_demo';
+  // Set once a real (non-demo) account signs in on this device; kept after sign-out
+  private readonly KNOWN_USER_KEY = 'auth_known_user';
 
   get token(): string | null           { return localStorage.getItem(this.TOKEN_KEY); }
   get currentUsername(): string | null { return localStorage.getItem(this.USERNAME_KEY); }
@@ -40,6 +42,7 @@ export class AuthService {
   get groupCode(): string | null       { return localStorage.getItem(this.GROUP_CODE_KEY); }
   get isLoggedIn(): boolean            { return !!this.token; }
   get isDemo(): boolean                { return localStorage.getItem(this.DEMO_KEY) === 'true'; }
+  get hasSignedInBefore(): boolean     { return localStorage.getItem(this.KNOWN_USER_KEY) === 'true'; }
 
   lastCreatedGroupCode: string | null = null;
 
@@ -87,6 +90,9 @@ export class AuthService {
     localStorage.setItem(this.GROUP_KEY, res.groupName);
     if (res.groupCode) localStorage.setItem(this.GROUP_CODE_KEY, res.groupCode);
     if (res.demo) localStorage.setItem(this.DEMO_KEY, 'true');
-    else localStorage.removeItem(this.DEMO_KEY);
+    else {
+      localStorage.removeItem(this.DEMO_KEY);
+      localStorage.setItem(this.KNOWN_USER_KEY, 'true');
+    }
   }
 }

@@ -24,6 +24,8 @@ export class LoginComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
 
+  // The page opens on the demo; the sign-in form appears only when asked for
+  showSignIn = false;
   mode: 'login' | 'register' = 'login';
   registerMode: 'create' | 'join' = 'create';
   loading = false;
@@ -58,6 +60,16 @@ export class LoginComponent implements OnInit {
         this.error = err.error?.error ?? 'The demo could not be started. Please try again.';
       },
     });
+  }
+
+  openSignIn() {
+    this.showSignIn = true;
+    this.switchMode('login');
+  }
+
+  closeSignIn() {
+    this.showSignIn = false;
+    this.error = '';
   }
 
   switchMode(mode: 'login' | 'register') {

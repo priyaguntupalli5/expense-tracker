@@ -6,6 +6,8 @@ export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (auth.isLoggedIn) return true;
-  router.navigate(['/login']);
+  // New visitors (e.g. from the portfolio link) go straight into the demo;
+  // anyone who has signed in with a real account on this device gets the sign-in page
+  router.navigate([auth.hasSignedInBefore ? '/login' : '/demo']);
   return false;
 };
